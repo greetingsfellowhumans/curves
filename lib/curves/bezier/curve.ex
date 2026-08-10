@@ -1,0 +1,45 @@
+defmodule Curves.Bezier.Curve do
+  @moduledoc false
+  alias Curves.Utils.{Point, Points}
+  alias Curves.Bezier.{Linear, Quadratic}#, Cubic}
+
+  defstruct [
+    :points,
+    :ids,
+    mode: :edit,
+    origin: Nx.tensor([0.0, 0.0])
+  ]
+
+  def define(points, opts \\ []) do
+    {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
+
+    struct(__MODULE__, %{
+      points: Points.new_points(points, opts),
+      origin: Point.new_point({originx, originy}, opts)
+    })
+  end
+
+  def solve(curve, t), do: solve(curve, t, [])
+  def solve(%__MODULE__{points: points, origin: origin}, t, opts)
+      when is_number(t) do
+    {_, size} = Nx.shape(points)
+    points = Nx.add(points, origin)
+
+    case size do
+      n when n < 2 -> {:error, "Cannot solve curve. only #{n} points. need at least 2."}
+      2 -> {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()}
+      3 -> {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()}
+      4 -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+    end
+
+  end
+
+  def solve!(curve, t), do: solve!(curve, t, [])
+  def solve!(curve, t, opts) do
+    case solve(curve, t, opts) do
+      {:ok, resp} -> resp
+      {:error, msg} when is_binary(msg) -> raise msg
+    end
+  end
+
+end
