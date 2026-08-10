@@ -1,8 +1,5 @@
 defmodule Curves do
   @moduledoc """
-  ## Introduction
-  Welcome to Curves!
-  Be sure to check out the Livebook in the github repo for an interactive demo. 
 
   ## Usage
   The basic cycle goes like this:
@@ -27,16 +24,6 @@ defmodule Curves do
   {0.1280975341796875, 0.28279876708984375} = {x, y}
   ```
 
-  ## A note about performance
-  We use the `Nx` library under the hood, so you should should follow their instructions
-  for setting up a GPU backend. Otherwise, it will still work fine, just not as blazing fast.
-
-  ## Current state
-  This project is under active development and evolving rapidly. Pull requests and issues are welcome. I am very approachable if you have any questions, quandries, queries, quagmires, or other aliteration.
-
-  It is possible there will be breaking changes in the future - at least until a v1 is released.
-
-  There are also many features planned that are still a WIP. For example splines, more utility functions for working with curves.
   """
 
 
