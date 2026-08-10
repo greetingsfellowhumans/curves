@@ -42,7 +42,7 @@ defmodule Curves.MixProject do
   defp deps do
     [
       # Required
-      {:nx, "~> 0.10"},
+      {:nx, "~> 0.8"},
 
       # dev/test only.
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
