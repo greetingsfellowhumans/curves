@@ -41,11 +41,10 @@ defmodule Curves.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # Required
       {:nx, "~> 0.10"},
 
-      #{:tucan, "~> 0.6.0", only: [:dev, :test], runtime: false},
-      #{:vega_lite, "~> 0.1.0", only: [:dev, :test], runtime: false},
-      #{:kino_vega_lite, "~> 0.1.0", only: :dev, runtime: false},
+      # dev/test only.
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
     ]
