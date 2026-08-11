@@ -14,16 +14,17 @@ defmodule Curves.Formula do
   @spec get_derivative(t :: float(), derivative :: integer(), dir :: :asc | :desc) :: Nx.Tensor.t()
   def get_derivative(t, derivative, dir) do
     d = case derivative do
-      0 -> [1, t, t ** 2, t ** 3]
-      1 -> [0, 1, 2 * t, 3 * (t ** 2)]  # velocity
+      0 -> [1, t, t ** 2, t ** 3]       # position
+      1 -> [0, 1, 2 * t, 3 * (t ** 2)]  # velocity. where the velocity at the end of the first curve must equal that of the start of the next curve
       2 -> [0, 0, 2, 6 * t]             # acceleration
       3 -> [0, 0, 2, 6]                 # jolt
     end
     case dir do
       :asc -> Nx.tensor(d)
-      :desc -> Nx.tensor(Enum.reverse(t))
+      :desc -> Nx.tensor(Enum.reverse(d))
     end
   end
+
 
 
   def run(mod, points, t, opts \\ []) do

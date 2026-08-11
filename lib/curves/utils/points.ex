@@ -81,4 +81,5 @@ defmodule Curves.Utils.Points do
     new_point = Curves.Utils.Point.new_point(coords, opts)
     put_point(points, new_point, opts)
   end
+
 end

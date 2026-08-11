@@ -1,24 +1,26 @@
 defmodule Curves.Spline.SplineTest do
   use ExUnit.Case
-  alias Curves.Bezier.Cubic, as: Mod
+  alias Curves.Spline
   alias Curves.Utils.Points
-  import Mod
-  doctest Mod
 
   @points [
     {0, 0},
-    {0.2, 0.8},
-    {0.6, 0.3},
-    {1, 1},
-    {1.2, 1.3},
-    {1.6, 1.8},
-    {2, 2}
+    {25, 25},
+    {50, 50},
+    {75, 75},
+    {100, 100},
+    {125, 125},
+    {150, 150},
+    {175, 175},
+    {200, 200},
   ]
 
+    test "split_points/1" do
+      curve = Curves.define_curve(@points)
+      [ hd, tl ] =  Spline.split_points(curve.points)
+      assert hd == Points.new_points([{0,0}, {25, 25}, {50, 50}, {75, 75}])
+      assert tl == Points.new_points([{75, 75}, {100, 100}, {125, 125}, {150, 150}, {175, 175}, {200, 200}])
+    end
 
-  test "Cubic Bezier" do
-    curve = Curves.define_curve(@points)
-    p = Curves.solve!(curve, 0.9)
-    dbg p
-  end
+
 end
