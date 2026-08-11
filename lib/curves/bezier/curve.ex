@@ -30,6 +30,8 @@ defmodule Curves.Bezier.Curve do
       2 -> {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()}
       3 -> {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()}
       4 -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+      n when n > 4 ->
+        {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
     end
 
   end

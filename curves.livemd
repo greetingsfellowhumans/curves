@@ -75,3 +75,43 @@ curve = Curves.define_curve([
 
 print.(curve, "Cubic")
 ```
+
+```elixir
+curve = Curves.define_curve([
+  {0, 0},
+  {0.2, 0.8},
+  {0.6, 0.3},
+  {1, 1}
+])
+curve2 = Curves.define_curve([
+  {1, 1},
+  {1.2, 1.8},
+  {1.6, 1.3},
+  {2, 2}
+])
+points1 = for i <- 0..1000 do
+  {x, y} = Curves.solve!(curve, i * 0.001)
+  %{x: x, y: y, label: "c1"}
+end
+points2 = for i <- 0..1000 do
+  {x, y} = Curves.solve!(curve2, i * 0.001)
+  %{x: x, y: y, label: "c2"}
+end
+points1 ++ points2
+  |> Tucan.scatter("x", "y")
+  |> Tucan.color_by("label")
+```
+
+```elixir
+curve = Curves.define_curve([
+  {0, 0},
+  {0.2, 0.8},
+  {0.6, 0.3},
+  {1, 1},
+  {1.2, 1.8},
+  {1.6, 1.3},
+  {2, 2}
+])
+
+Curves.solve!(curve, 0.5)
+```

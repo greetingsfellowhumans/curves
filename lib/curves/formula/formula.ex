@@ -7,11 +7,39 @@ defmodule Curves.Formula do
   @callback required_opts() :: list()
   @callback point_count() :: integer()
 
-  def run(mod, points, t, _opts \\ []) do
-    mod.power_series(t)
-      |> Nx.dot(mod.blending_function())
-      |> Nx.multiply(mod.points_function(points))
-      |> Nx.window_sum({1, mod.point_count()})
+
+  @doc """
+  get the power_series based on the target derivative
+  """
+  @spec get_derivative(t :: float(), derivative :: integer(), dir :: :asc | :desc) :: Nx.Tensor.t()
+  def get_derivative(t, derivative, dir) do
+    d = case derivative do
+      0 -> [1, t, t ** 2, t ** 3]
+      1 -> [0, 1, 2 * t, 3 * (t ** 2)]  # velocity
+      2 -> [0, 0, 2, 6 * t]             # acceleration
+      3 -> [0, 0, 2, 6]                 # jolt
+    end
+    case dir do
+      :asc -> Nx.tensor(d)
+      :desc -> Nx.tensor(Enum.reverse(t))
+    end
+  end
+
+
+  def run(mod, points, t, opts \\ []) do
+    {_, size} = Nx.shape(points)
+    if size <= 4 do
+      mod.power_series(t)
+        |> Nx.dot(mod.blending_function())
+        |> Nx.multiply(mod.points_function(points))
+        |> Nx.window_sum({1, mod.point_count()})
+    else
+      points_before = Nx.slice(points, [0, 0], [2, 4])
+      points_after = Nx.slice(points, [0, 3], [2, 4])
+      a = run(mod, points_before, t, opts)
+      b = run(mod, points_after, t , opts)
+      {a, b}
+    end
   end
 
   defmacro __using__(_) do
