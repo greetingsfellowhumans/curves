@@ -1,27 +1,29 @@
-# Curves
+# Bezier Curves
 
 ```elixir
 Mix.install(
   [
-    {:curves, path: __DIR__, env: :dev},
+    {:curves, "~> 0.1"},
     {:tucan, "~> 0.6.0"},
     {:vega_lite, "~> 0.1.0"},
     {:kino_vega_lite, "~> 0.1.0"},
-    
   ],
   config_path: :curves,
   lockfile: :curves
 )
 
 # We'll use this as a helper for displaying graphs
-print = fn points, label ->
-  for i <- 0..1000 do
-    {x, y} = Curves.solve!(points, i * 0.001)
-    %{x: x, y: y, label: label}
+# You can skip over it for now
+print = fn points, opts ->
+  label = Keyword.get(opts, :label, "Curve")
+  count = Keyword.get(opts, :count, 1000)
+    for i <- 0..count do
+      {x, y} = Curves.solve!(points, i * (1 / count))
+      %{x: x, y: y, label: label}
+    end
+    |> Tucan.scatter("x", "y")
+    |> Tucan.color_by("label")
   end
-  |> Tucan.scatter("x", "y")
-  |> Tucan.color_by("label")
-end
 ```
 
 ## Curves tutorial
@@ -32,19 +34,31 @@ The basic cycle goes like this:
 2. Solve for y, given some percentage (t)
 
 ```elixir
-curve = Curves.define_curve([
+## A visual demo
+
+curve = Curves.define_bezier([
   {0, 0},
-  {0, 0.5},
-  {0.8, 0.4},
+  {0.2, 0.8},
+  {0.7, 0.3},
   {1, 1}
 ])
 
-
-Curves.solve!(curve, 0.25)
+# Using the helper defined in the setup, we create 50 dots along that curve, 
+# and print them on a graph so they appear as a solid line.
+# Try changing the count to 1000 so it looks like a solid line
+print.(curve, [count: 50])
 ```
 
 ```elixir
-curve = Curves.define_curve([
+## Understanding what just happened
+
+# We can get the {x, y} coords at a specific percentage between point0 and point3
+t = 0.5
+{x, y} = Curves.solve!(curve, t)
+```
+
+```elixir
+curve = Curves.define_bezier([
   {0, 0},
   {100, 100}
 ])
@@ -56,17 +70,18 @@ print.(curve, "Linear")
 ```
 
 ```elixir
-curve = Curves.define_curve([
+curve = Curves.define_bezier([
   {0, 50},
   {50, 0},
   {100, 50}
 ])
 
+
 print.(curve, "Quadratic")
 ```
 
 ```elixir
-curve = Curves.define_curve([
+curve = Curves.define_bezier([
   {0, 0},
   {0.2, 0.8},
   {0.6, 0.3},
@@ -77,13 +92,13 @@ print.(curve, "Cubic")
 ```
 
 ```elixir
-curve = Curves.define_curve([
+curve = Curves.define_bezier([
   {0, 0},
   {0.2, 0.8},
   {0.6, 0.3},
   {1, 1}
 ])
-curve2 = Curves.define_curve([
+curve2 = Curves.define_bezier([
   {1, 1},
   {1.2, 1.8},
   {1.6, 1.3},
@@ -102,16 +117,3 @@ points1 ++ points2
   |> Tucan.color_by("label")
 ```
 
-```elixir
-curve = Curves.define_curve([
-  {0, 0},
-  {0.2, 0.8},
-  {0.6, 0.3},
-  {1, 1},
-  {1.2, 1.8},
-  {1.6, 1.3},
-  {2, 2}
-])
-
-Curves.solve!(curve, 0.5)
-```

@@ -28,11 +28,11 @@ Be sure to check out the Livebook in the github repo for an interactive demo.
 The basic cycle goes like this:
 
 1. start with a list of `{x, y}` tuples. These can be any combination of integers and floats.
-2. build a `Curves.Curve` struct by passing the list of tuples into `Curves.define_curve/2`
+2. build a `Curves.Curve` struct by passing the list of tuples into `Curves.define_bezier/2`
 3. To find a point in the curve struct, call `Curves.solve/3` with a float (0.0 - 1.0)
 
 ```elixir
-curve = Curves.define_curve([
+curve = Curves.define_bezier([
 # {x,   y}
   {0,   0},
   {0,   0.5},

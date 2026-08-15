@@ -6,12 +6,13 @@ defmodule Curves.Bezier.CurveTest do
 
   test "Curve Struct" do
     c =
-      Curves.define_curve([
+      Curves.define_bezier([
         {0.1, 0.1},
         {0.2, 0.4},
         {0.5, 0.9},
         {0.9, 0.95}
       ])
+
     assert is_struct(c, Mod)
 
     {x, y} = Curves.solve!(c, 0.3)

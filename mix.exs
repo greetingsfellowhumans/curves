@@ -11,7 +11,19 @@ defmodule Curves.MixProject do
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/greetingsfellowhumans/curves",
       package: package(),
-      deps: deps()
+      deps: deps(),
+      docs: docs(),
+    ]
+  end
+
+  defp docs() do
+    [
+      main: "Curves",
+      extras: [
+        "CHANGELOG.md",
+        "guides/bezier_curves.livemd"
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
     ]
   end
 

@@ -2,7 +2,8 @@ defmodule Curves.Utils.Points do
   @moduledoc false
   alias Curves.Utils.{Coord, Point}
 
-  defguard is_points(p) when elem(p.shape, 0) == 2 and elem(p.shape, 1) >= 0
+  defguard is_points(p)
+           when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) >= 0
 
   _comment = ~s"""
   ## Examples
@@ -18,7 +19,10 @@ defmodule Curves.Utils.Points do
         ]
       >
   """
+
   def new_points(coords), do: new_points(coords, [])
+
+  def new_points(points, _opts) when is_points(points), do: points
 
   def new_points(coords, opts) do
     opts = Curves.Utils.Opts.merge_opts(opts)
@@ -39,9 +43,10 @@ defmodule Curves.Utils.Points do
       iex> tuple_at(points, 2)
       {3.0, 30.0}
   """
+
   def tuple_at(points, index) do
     p = points[point: index]
-    #{Nx.to_number(p[dimension: 0]), Nx.to_number(p[dimension: 1])}
+    # {Nx.to_number(p[dimension: 0]), Nx.to_number(p[dimension: 1])}
     Point.to_tuple(p)
   end
 
@@ -51,6 +56,7 @@ defmodule Curves.Utils.Points do
       iex> point_at(points, 2)
       Curves.Utils.Point.new_point({3, 30})
   """
+
   def point_at(points, index) do
     p = points[point: index]
     Nx.reshape(p, {2, 1}, names: [:dimension, :point])
@@ -68,6 +74,7 @@ defmodule Curves.Utils.Points do
         ]
       >
   """
+
   def put_point(points, coords), do: put_point(points, coords, [])
 
   def put_point(points, new_point, _opts) when is_struct(new_point, Nx.Tensor) do
@@ -81,5 +88,4 @@ defmodule Curves.Utils.Points do
     new_point = Curves.Utils.Point.new_point(coords, opts)
     put_point(points, new_point, opts)
   end
-
 end
