@@ -1,19 +1,28 @@
-<!-- livebook:{"file_entries":[{"file":{"file_system_id":"local","file_system_type":"local","path":"/Repos/curves/guides/development.livemd"},"name":"development.livemd","type":"file"}]} -->
-
 # Bezier Curves
 
 ```elixir
 Mix.install(
   [
-    {:curves, "~> 0.2"},
+    {:curves, path: Path.join(__DIR__, "../"), env: :dev},
     {:tucan, "~> 0.6.0"},
     {:vega_lite, "~> 0.1.0"},
     {:kino_vega_lite, "~> 0.1.0"},
-  ]
+  ],
+  config_path: :curves,
+  lockfile: :curves
 )
 
 # We'll use this as a helper for displaying graphs
 # You can skip over it for now
+normalize = fn points, opts ->
+  label = Keyword.get(opts, :label, "Curve")
+  count = Keyword.get(opts, :count, 100)
+  for i <- 0..count do
+    {x, y} = Curves.solve!(points, i * (1 / count))
+    %{x: x, y: y, label: label}
+  end
+end
+
 print = fn points, opts ->
   label = Keyword.get(opts, :label, "Curve")
   count = Keyword.get(opts, :count, 1000)
@@ -35,18 +44,28 @@ The basic cycle goes like this:
 
 ```elixir
 ## A visual demo
-
-curve = Curves.define_bezier([
+css = [
   {0, 0},
-  {0.2, 0.8},
-  {0.7, 0.3},
+  {0.32, 0.0},
+  {0.67, 0.0},
   {1, 1}
-])
+]
+cubic_in = [
+  {0,0}, {0.33, 0.035937}, {0.67, 0.30076}, {1, 1}
+]
+cubic = Curves.define_bezier(:ease_in_out_cubic) |> normalize.([label: "cubic"])
+quad = Curves.define_bezier(:ease_in_out_quad) |> normalize.([label: "quad"])
+quart_in = Curves.define_bezier(:ease_in_quart) |> normalize.([label: "in q"])
+quart_out = Curves.define_bezier(:ease_out_quart) |> normalize.([label: "out q"])
+
+quart = Curves.define_bezier(:ease_in_out_quart) |> normalize.([label: "quart"])
 
 # Using the helper defined in the setup, we create 50 dots along that curve, 
 # and print them on a graph so they appear as a solid line.
 # Try changing the count to 1000 so it looks like a solid line
-print.(curve, [count: 50])
+quart ++ quart_in ++ quart_out
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
 ```
 
 ```elixir
@@ -55,6 +74,12 @@ print.(curve, [count: 50])
 # We can get the {x, y} coords at a specific percentage between point0 and point3
 t = 0.5
 {x, y} = Curves.solve!(curve, t)
+```
+
+```elixir
+## We can also use predefined curves
+curve = Curves.define_bezier(:ease_in_out_sine)
+print.(curve, count: 80, label: "predefined")
 ```
 
 ```elixir
@@ -116,5 +141,3 @@ points1 ++ points2
   |> Tucan.scatter("x", "y")
   |> Tucan.color_by("label")
 ```
-
-<!-- livebook:{"offset":2346,"stamp":{"token":"XCP.YU_rFljV4ODx-FyExMCWSjihqYlND3Tas7F--XO2FyROp6d7FltLvabg3la9W6wPd16itWUU4jhm7CqeLORA0GCmENM0jbmRE7zzxg","version":2}} -->

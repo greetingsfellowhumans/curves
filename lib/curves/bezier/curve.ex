@@ -3,6 +3,7 @@ defmodule Curves.Bezier.Curve do
   alias Curves.Utils.{Point, Points}
   # , Cubic}
   alias Curves.Bezier.{Linear, Quadratic}
+  alias Curves.Bezier.Predefined
 
   defstruct [
     :points,
@@ -13,6 +14,10 @@ defmodule Curves.Bezier.Curve do
 
   def define(points, opts \\ []) do
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
+    points = case points do
+      k when is_atom(k) -> Predefined.get(k, opts)
+      _ -> points
+    end
 
     struct(__MODULE__, %{
       points: Points.new_points(points, opts),
