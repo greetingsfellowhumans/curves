@@ -4,14 +4,26 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.17",
       description: description(),
       cli: cli(),
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/greetingsfellowhumans/curves",
       package: package(),
-      deps: deps()
+      deps: deps(),
+      docs: docs(),
+    ]
+  end
+
+  defp docs() do
+    [
+      main: "Curves",
+      extras: [
+        "CHANGELOG.md",
+        "guides/bezier_curves.livemd"
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
     ]
   end
 
@@ -45,6 +57,7 @@ defmodule Curves.MixProject do
       {:nx, "~> 0.8"},
 
       # dev/test only.
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
     ]

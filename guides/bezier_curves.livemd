@@ -1,0 +1,123 @@
+# Bezier Curves
+
+```elixir
+Mix.install(
+  [
+    {:curves, "~> 0.2"},
+    {:tucan, "~> 0.6.0"},
+    {:vega_lite, "~> 0.1.0"},
+    {:kino_vega_lite, "~> 0.1.0"},
+  ])
+```
+
+## Curves (Bezier) tutorial
+
+```elixir
+# Before getting into the nitty gritty, let's start with a visual demo.
+# Evaluate this code block, and select a curve type
+types = Curves.list_predefined_bezier_types()
+        |> Enum.map(&{&1, &1})
+
+bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
+```
+
+```elixir
+# Now evaluate THIS code block to display a graph of the curve type you selected above.
+Kino.Input.read(bezier_type)
+|> Curves.define_bezier()
+|> Curves.Utils.Plotting.curve_to_scatterplot()
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+
+
+# Go ahead and play around with the select list to see the various predefined curves.
+```
+
+```elixir
+# Done playing? Alright, let's start digging into what just happened.
+
+# We always start off by defining a curve
+opts = [] # <- We'll come back to this
+curve = Curves.define_bezier(:ease_in, opts)
+
+# That's all it takes to define a bezier curve. Now we have a struct
+is_struct(curve, Curves.Bezier.Curve)
+
+# And we can easily find a point along the curve at a given percentage.
+# Our little `curve_to_scatterplot/2` helper, plus VegaLite basically did that 1000 times,
+# and rendered them so close together they looked like a solid line.
+
+# For academic reasons, percentage in a bezier curve is represented as `t`
+t = 0.2
+{x, y} = Curves.solve!(curve, t, opts)
+```
+
+```elixir
+# Waaaaait a minute. if the graph is from 0.0 to 1.0, then why does't x == 0.2 at 20%?
+#
+# Well because `t` represents percentage of the *curves length*, not the *x axis*.
+# (and the curve is actually longer than 1.0)
+#
+# Did that make no sense? Fair enough. Let's visualize it by lowering the dot count to 10
+# each dot is spaced 10% across the length. Notice how they are not all the same distance apart
+Curves.define_bezier(:ease_in)
+|> Curves.Utils.Plotting.curve_to_scatterplot(count: 10)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+## Advanced Usage
+
+# We can define our own curves manualy. 
+# At a minimum, you can supply 2 points to get a linear 'curve'
+curve = Curves.define_bezier([
+  {0, 0},
+  {100, 100}
+])
+
+# We are actually printing 1000 dots between {0,0} and {100,100}
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Linear")
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# With 3 points, we get a quadratic curve
+start = {0, 0}
+control_point = {20, 50}
+stop = {100, 0}
+
+curve = Curves.define_bezier([
+  {0, 0},
+  {20, 50},
+  {100, 0}
+])
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Quadratic")
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_bezier([
+  {0, 0},
+  {0.8, 0},
+  {0.3, 1.2},
+  {1, 1}
+])
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic")
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+

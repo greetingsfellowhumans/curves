@@ -23,5 +23,4 @@ defmodule Curves.Formula.CubicBezier do
 
   @impl true
   def points_function(points), do: Nx.slice(points, [0, 0], [2, 4])
-
 end

@@ -34,5 +34,24 @@ defmodule Curves.Utils.PointsTest do
       assert is_point(p)
       assert is_points(p)
     end
+
+    test "Conversions" do
+      coords = [
+        {1, 10},
+        {2, 20},
+        {3, 30},
+        {4, 40}
+      ]
+
+      points = new_points(coords, [])
+
+      maps = to_maps(points)
+      assert maps == [
+        %{x: 1.0, y: 10.0},
+        %{x: 2.0, y: 20.0},
+        %{x: 3.0, y: 30.0},
+        %{x: 4.0, y: 40.0},
+      ]
+    end
   end
 end

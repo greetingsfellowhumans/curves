@@ -1,15 +1,36 @@
 defmodule Curves do
+  @type coord :: float() | integer()
+  @type point_tuple :: {x :: coord(), y :: coord()}
+  @type point_list :: list(point_tuple())
+  @type curve :: Curves.Bezier.Curve.t()
+  @type opts :: keyword()
+  @type t :: float()
+  @type predefined_bezier_type :: atom()
   @moduledoc """
+  The best way to explore this library is through the interactive [livebook](bezier_curves.html).
 
-  ## Usage
-  The basic cycle goes like this:
-  1. start with a list of `{x, y}` tuples. These can be any combination of integers and floats.
-  2. build a `Curves.Curve` struct by passing the list of tuples into `Curves.define_curve/2`
-  3. To find a point in the curve struct, call `Curves.solve/3` with a float (0.0 - 1.0) 
+  ## Quickstart
 
-  For example:
+  The fastest way to get started is with the predefined bezier curves.
   ```elixir
-  curve = Curves.define_curve([
+  bezier_type = :ease_in
+  curve = Curves.define_bezier(bezier_type)
+
+  t = 0.24 # i.e. 24%  from the beginning to the end of the curve.
+  {x, y} = Curves.solve!(curve, t)
+
+  assert is_float(x)
+  assert is_float(y)
+  ```
+
+  For a list of all predefined bezier_types, use `list_predefined_bezier_types/0`
+
+  ## Custom curves
+
+  You can also create a custom bezier curve by passing in a list of `{x, y}` tuples. They can be any combination of floats and integers.
+
+  ```elixir
+  curve = Curves.define_bezier([
   # {x,   y}
     {0,   0},
     {0,   0.5},
@@ -17,40 +38,56 @@ defmodule Curves do
     {1,   1}
   ])
 
-  t = 0.25 # i.e. 25% from beginning to end of the curve.
+  t = 0.60
 
   {x, y} = Curves.solve!(curve, t)
 
-  {0.1280975341796875, 0.28279876708984375} = {x, y}
+  assert is_float(x)
+  assert is_float(y)
   ```
 
   """
-
 
   @doc ~s"""
   Build a new Bezier Curve struct.
 
   ## Examples
-      iex> c = Curves.define_curve([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
+      iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> is_struct(c, Curves.Curve)
       true
   """
-  defdelegate define_curve(points, opts \\ []), to: Curves.Bezier.Curve, as: :define
-
+  @spec define_bezier(points :: point_list() | predefined_bezier_type(), opts :: list()) :: curve()
+  defdelegate define_bezier(points, opts \\ []), to: Curves.Bezier.Curve, as: :define
 
   @doc ~s"""
   Given a struct, and t, find the point along the curve
 
   ## Examples
-      iex> c = Curves.define_curve([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
+      iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> Curves.solve(c, 0.3)
-      {0.3695499897003174, 0.727199912071228}
+      {:ok, {0.3695499897003174, 0.727199912071228}}
 
   ## Options
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
 
   """
+  @spec solve(curve(), t(), opts()) :: {:ok, point_tuple()} | {:error, term()}
   defdelegate solve(curve, t, opts \\ []), to: Curves.Bezier.Curve
+
+  @doc ~s"""
+  The raising version of `solve/3`
+  """
+  @spec solve!(curve(), t(), opts()) :: point_tuple()
   defdelegate solve!(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
+  @doc ~s"""
+  List of atoms that can be passed into `define_bezier/2`.
+
+  ## Examples
+      iex> li = Curves.list_predefined_bezier_types()
+      iex> :ease_in_cubic in li
+      true
+  """
+  @spec list_predefined_bezier_types() :: list(predefined_bezier_type())
+  defdelegate list_predefined_bezier_types(), to: Curves.Bezier.Predefined, as: :list
 end

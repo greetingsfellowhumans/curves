@@ -6,7 +6,7 @@ defmodule Curves.Utils.Point do
   A group of many points would be a {2, n} tensor.
   """
 
-  defguard is_point(p) when p.shape == {2, 1}
+  defguard is_point(p) when is_struct(p, Nx.Tensor) and p.shape == {2, 1}
   defguard is_n2(p) when p.shape == {2}
 
   _comment = ~s"""
@@ -22,6 +22,7 @@ defmodule Curves.Utils.Point do
         ]
       >
   """
+
   def new_point(coords), do: new_point(coords, [])
   def new_point({x, y}, opts), do: new_point(x, y, opts)
   def new_point([x, y], opts), do: new_point(x, y, opts)
@@ -54,9 +55,11 @@ defmodule Curves.Utils.Point do
   end
 
   def to_tuple({x, y}), do: {x, y}
+
   def to_tuple(point) when is_point(point) do
     {Nx.to_number(point[dimension: 0][point: 0]), Nx.to_number(point[dimension: 1][point: 0])}
   end
+
   def to_tuple(point) when is_n2(point) do
     {Nx.to_number(point[dimension: 0]), Nx.to_number(point[dimension: 1])}
   end
