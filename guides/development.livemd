@@ -11,24 +11,6 @@ Mix.install(
   config_path: :curves,
   lockfile: :curves
 )
-
-# We'll use this as a helper for displaying graphs
-# You can skip over it for now
-normalize = fn points, opts ->
-  label = Keyword.get(opts, :label, "Curve")
-  count = Keyword.get(opts, :count, 1000)
-  for i <- 1..count do
-    {x, y} = Curves.solve!(points, i * (1 / count))
-    %{x: x, y: y, label: label}
-  end
-end
-
-visualize_control_points = fn li, control_points ->
-  cps = Enum.map(control_points, fn {x, y} -> %{x: x, y: y, label: "control point"} end)
-  cps ++ li
-end
-
-
 ```
 
 ## Curves (Bezier) tutorial
@@ -36,8 +18,8 @@ end
 ```elixir
 # Before getting into the nitty gritty, let's start with a visual demo.
 # Evaluate this code block, and select a curve type
-types = Curves.Bezier.Predefined.list()
-             |> Enum.map(&{&1, &1})
+types = Curves.list_predefined_bezier_types()
+        |> Enum.map(&{&1, &1})
 
 bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 ```
@@ -46,8 +28,10 @@ bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 # Now evaluate THIS code block to display a graph of the curve type you selected above.
 Kino.Input.read(bezier_type)
 |> Curves.define_bezier()
-|> normalize.([label: "Curve"])
+|> Curves.Utils.Plotting.curve_to_scatterplot()
 |> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
 
 # Go ahead and play around with the select list to see the various predefined curves.
 ```
@@ -80,8 +64,10 @@ t = 0.2
 # Did that make no sense? Fair enough. Let's visualize it by lowering the dot count to 10
 # each dot is spaced 10% across the length. Notice how they are not all the same distance apart
 Curves.define_bezier(:ease_in)
-|> normalize.([label: "Curve", count: 10])
+|> Curves.Utils.Plotting.curve_to_scatterplot(count: 10)
 |> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
 ```
 
 ```elixir
@@ -97,9 +83,11 @@ curve = Curves.define_bezier([
 
 # Using the helper we made way up at the very top of this Livebook ^
 # We are actually printing 1000 dots between {0,0} and {100,100}
-normalize.(curve, [label: "Linear"])
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Linear")
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
+|> Tucan.fill_by("label")
 ```
 
 ```elixir
@@ -109,14 +97,13 @@ control_point = {20, 50}
 stop = {100, 0}
 
 curve = Curves.define_bezier([
-  start,
-  control_point,
-  stop
+  {0, 0},
+  {20, 50},
+  {100, 0}
 ])
 
-
-normalize.(curve, [label: "Quadratic"])
-|> visualize_control_points.([control_point])
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Quadratic")
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
@@ -124,17 +111,15 @@ normalize.(curve, [label: "Quadratic"])
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-start = {0, 0}
-control_point1 = {0.8, 0}
-control_point2 = {0.3, 1.2}
-stop = {1, 1}
-points = [start, control_point1, control_point2, stop]
-
-curve = Curves.define_bezier(points)
+curve = Curves.define_bezier([
+  {0, 0},
+  {0.8, 0},
+  {0.3, 1.2},
+  {1, 1}
+])
 
 curve
-|> normalize.([label: "Cubic"])
-|> visualize_control_points.([control_point1, control_point2])
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic")
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")

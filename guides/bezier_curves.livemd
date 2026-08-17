@@ -34,8 +34,8 @@ end
 ```elixir
 # Before getting into the nitty gritty, let's start with a visual demo.
 # Evaluate this code block, and select a curve type
-types = Curves.Bezier.Predefined.list()
-             |> Enum.map(&{&1, &1})
+types = Curves.list_predefined_bezier_types()
+        |> Enum.map(&{&1, &1})
 
 bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 ```
