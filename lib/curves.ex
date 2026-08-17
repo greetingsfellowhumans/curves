@@ -81,6 +81,17 @@ defmodule Curves do
   defdelegate solve!(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
   @doc ~s"""
+  Take `n` samples, evenly spaced, from the curve.
+  """
+  @spec take(curve(), n :: pos_integer(), opts()) :: {:ok, point_list()} | {:error, term()}
+  defdelegate take(curve, n, opts \\ []), to: Curves.Bezier.Curve
+  @doc ~s"""
+  The raising version of `take/3`
+  """
+  @spec take!(curve(), n :: pos_integer(), opts()) :: point_list()
+  defdelegate take!(curve, n, opts \\ []), to: Curves.Bezier.Curve
+
+  @doc ~s"""
   List of atoms that can be passed into `define_bezier/2`.
 
   ## Examples

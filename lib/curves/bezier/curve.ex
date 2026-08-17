@@ -67,4 +67,21 @@ defmodule Curves.Bezier.Curve do
       {:error, msg} when is_binary(msg) -> raise msg
     end
   end
+
+  def take(curve, n, opts \\ []) do
+    Enum.reduce_while(1..n, [], fn i, acc ->
+      case solve(curve, i * (1 / n), opts) do
+        {:ok, point} -> {:cont, [point | acc]}
+        {:error, term} -> {:halt, term}
+      end
+    end)
+      |> case do
+        li when is_list(li) -> {:ok, Enum.reverse(li)}
+        err -> {:error, err}
+      end
+  end
+  def take!(curve, n, opts \\ []) do
+    {:ok, points} = take(curve, n, opts)
+    points
+  end
 end

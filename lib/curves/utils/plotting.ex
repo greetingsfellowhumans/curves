@@ -16,10 +16,10 @@ defmodule Curves.Utils.Plotting do
 
     label = Keyword.get(opts, :label, "Curve")
     count = Keyword.get(opts, :count, 1000)
-    line = for i <- 1..count do
-      {x, y} = Curves.solve!(curve, i * (1 / count))
-      %{x: x, y: y, label: label}
-    end
+    line = Curves.take!(curve, count, opts)
+      |> Enum.map(fn {x, y} ->
+        %{x: x, y: y, label: label}
+      end)
     line ++ control_points
   end
 
