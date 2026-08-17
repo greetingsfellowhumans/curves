@@ -6,8 +6,13 @@ defmodule Curves.Bezier.Curve do
 
   defstruct [
     :points,
+    :xmax,
+    :xmin,
+    :ymax,
+    :ymin,
     :ids,
     mode: :edit,
+    opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
 
@@ -16,8 +21,13 @@ defmodule Curves.Bezier.Curve do
   """
   @type t :: %__MODULE__{
     points: Nx.Tensor.t(),
+    xmax: float(),
+    xmin: float(),
+    ymax: float(),
+    ymin: float(),
     ids: list(),
     mode: :edit | :run,
+    opts: list(),
     origin: Nx.Tensor.t()
   }
 
@@ -27,17 +37,27 @@ defmodule Curves.Bezier.Curve do
       k when is_atom(k) -> Predefined.get(k, opts)
       _ -> points
     end
+      |> Points.new_points(opts)
 
     struct(__MODULE__, %{
-      points: Points.new_points(points, opts),
-      origin: Point.new_point({originx, originy}, opts)
+      points: points,
+      ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
+      ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
+      xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
+      xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
+      origin: Point.new_point({originx, originy}, opts),
+      opts: opts
     })
   end
 
   def solve(curve, t), do: solve(curve, t, [])
 
-  def solve(%__MODULE__{points: points, origin: origin}, t, opts)
-      when is_number(t) do
+  def solve(%__MODULE__{points: points, origin: origin, opts: curve_opts} = curve, t, opts) when is_number(t) do
+    opts = 
+      curve_opts
+      |> Keyword.merge(opts)
+      |> Curves.Utils.Opts.merge_opts()
+
     {_, size} = Nx.shape(points)
     points = Nx.add(points, origin)
 
@@ -57,6 +77,10 @@ defmodule Curves.Bezier.Curve do
       n when n > 4 ->
         {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
     end
+      |> case do
+        {:ok, point} -> {:ok, force_percent(curve, point, opts)}
+        err -> err
+      end
   end
 
   def solve!(curve, t), do: solve!(curve, t, [])
@@ -83,5 +107,22 @@ defmodule Curves.Bezier.Curve do
   def take!(curve, n, opts \\ []) do
     {:ok, points} = take(curve, n, opts)
     points
+  end
+
+  defp to_perc(curve, coord, dimension) when is_float(coord) do
+    {min, max} = case dimension do
+      :x -> {curve.xmin, curve.xmax}
+      :y -> {curve.ymin, curve.ymax}
+    end
+    ( (coord - min) ) / (max - min)
+  end
+
+  defp force_percent(curve, point, opts) do
+    if !Keyword.get(opts, :force_percent) do
+      point
+    else
+      {x, y} = point
+      {to_perc(curve, x, :x), to_perc(curve, y, :y)}
+    end
   end
 end

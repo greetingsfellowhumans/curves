@@ -1,7 +1,8 @@
 defmodule Curves.Utils.Opts do
   @moduledoc false
   @config_opts [
-    float_dtype: %{default: 16, doc: "The default bitsize for floats.", one_of: [8, 16, 32, 64]}
+    float_dtype: %{default: 16, doc: "The default bitsize for floats.", one_of: [8, 16, 32, 64]},
+    force_percent: %{default: false, doc: "If true, all results from `take` and `solve` are normalized as percentages of the max `y` coordinate defined ", one_of: [true, false]}
   ]
 
   _todo = ~s"""
