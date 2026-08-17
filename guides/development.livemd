@@ -33,6 +33,7 @@ Kino.Input.read(bezier_type)
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
 
+
 # Go ahead and play around with the select list to see the various predefined curves.
 ```
 
@@ -47,7 +48,7 @@ curve = Curves.define_bezier(:ease_in, opts)
 is_struct(curve, Curves.Bezier.Curve)
 
 # And we can easily find a point along the curve at a given percentage.
-# Our little normalize/2 helper, plus VegaLite basically did that 1000 times,
+# Our little `curve_to_scatterplot/2` helper, plus VegaLite basically did that 1000 times,
 # and rendered them so close together they looked like a solid line.
 
 # For academic reasons, percentage in a bezier curve is represented as `t`
@@ -80,8 +81,6 @@ curve = Curves.define_bezier([
   {100, 100}
 ])
 
-
-# Using the helper we made way up at the very top of this Livebook ^
 # We are actually printing 1000 dots between {0,0} and {100,100}
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "Linear")

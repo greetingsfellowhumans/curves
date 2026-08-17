@@ -8,8 +8,8 @@ defmodule Curves.Utils.Plotting do
   Given a curve, build a list of points, in map format.
 
   ## Opts
-  `* :label` default: `"Curve"`
-  `* :count` default: `1000`
+  * `:label`, default: `"Curve"`
+  * `:count`, default: `1000`
   """
   def curve_to_scatterplot(curve, opts \\ []) do
     control_points = extract_control_points(curve)
@@ -33,6 +33,10 @@ defmodule Curves.Utils.Plotting do
           |> to_maps()
     end
       |> Enum.with_index()
-      |> Enum.map(fn {p, idx} -> Map.put(p, :label, "control point #{idx}") end)
+      |> Enum.map(fn {p, idx} -> 
+        Map.put(p, :label, "control point #{idx}")
+      end)
   end
+
+
 end

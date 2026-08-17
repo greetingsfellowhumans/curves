@@ -65,15 +65,18 @@ defmodule Curves do
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> Curves.solve(c, 0.3)
-      {0.3695499897003174, 0.727199912071228}
+      {:ok, {0.3695499897003174, 0.727199912071228}}
 
   ## Options
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
 
   """
-  @spec solve(curve(), t(), opts()) :: point_tuple()
+  @spec solve(curve(), t(), opts()) :: {:ok, point_tuple()} | {:error, term()}
   defdelegate solve(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
+  @doc ~s"""
+  The raising version of `solve/3`
+  """
   @spec solve!(curve(), t(), opts()) :: point_tuple()
   defdelegate solve!(curve, t, opts \\ []), to: Curves.Bezier.Curve
 

@@ -11,6 +11,16 @@ defmodule Curves.Bezier.Curve do
     origin: Nx.tensor([0.0, 0.0])
   ]
 
+  @typedoc ~s"""
+  As this library is a WIP, most of these fields are not actually being used.
+  """
+  @type t :: %__MODULE__{
+    points: Nx.Tensor.t(),
+    ids: list(),
+    mode: :edit | :run,
+    origin: Nx.Tensor.t()
+  }
+
   def define(points, opts \\ []) do
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
     points = case points do
