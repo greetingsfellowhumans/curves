@@ -1,7 +1,6 @@
 defmodule Curves.Bezier.Curve do
   @moduledoc false
   alias Curves.Utils.{Point, Points}
-  # , Cubic}
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
 

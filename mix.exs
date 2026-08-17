@@ -57,6 +57,7 @@ defmodule Curves.MixProject do
       {:nx, "~> 0.8"},
 
       # dev/test only.
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
     ]

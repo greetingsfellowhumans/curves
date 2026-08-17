@@ -88,4 +88,23 @@ defmodule Curves.Utils.Points do
     new_point = Curves.Utils.Point.new_point(coords, opts)
     put_point(points, new_point, opts)
   end
+
+  @doc ~s"""
+  Given a tensor of points, return a list like `[%{x: float, y: float}, %{...}]`
+  """
+  def to_maps(points) when is_points(points) do
+    xs = Nx.to_list(points[dimension: 0])
+    ys = Nx.to_list(points[dimension: 1])
+    Enum.zip_with([xs, ys], fn [x, y] -> %{x: x, y: y} end)
+  end
+
+
+  @doc ~s"""
+  Given a tensor of points, return a list like `[ {x1, y1}, {x2, y2}, ... ]`
+  """
+  def to_tuples(points) when is_points(points) do
+    xs = Nx.to_list(points[dimension: 0])
+    ys = Nx.to_list(points[dimension: 1])
+    Enum.zip_with([xs, ys], fn [x, y] -> {x, y} end)
+  end
 end
