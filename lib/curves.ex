@@ -1,11 +1,13 @@
 defmodule Curves do
-  @type coord :: float() | integer()
-  @type point_tuple :: {x :: coord(), y :: coord()}
-  @type point_list :: list(point_tuple())
-  @type curve :: Curves.Bezier.Curve.t()
-  @type opts :: keyword()
+  alias Curves.Utils.Types, as: T
+  alias Curves.Bezier.Curve, as: Bezier
+  alias Curves.Bezier.Predefined
+
+  @typedoc ~s"""
+  Float between 0.0 and 1.0, representing a percentage of progress from the first to last point.
+  """
   @type t :: float()
-  @type predefined_bezier_type :: atom()
+
   @moduledoc """
   The best way to explore this library is through the interactive [livebook](bezier_curves.html).
 
@@ -53,11 +55,11 @@ defmodule Curves do
 
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
-      iex> is_struct(c, Curves.Curve)
+      iex> is_struct(c, Curves.Bezier.Curve)
       true
   """
-  @spec define_bezier(points :: point_list() | predefined_bezier_type(), opts :: list()) :: curve()
-  defdelegate define_bezier(points, opts \\ []), to: Curves.Bezier.Curve, as: :define
+  @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.opts()) :: Bezier.t()
+  defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
   @doc ~s"""
   Given a struct, and t, find the point along the curve
@@ -71,34 +73,24 @@ defmodule Curves do
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
 
   """
-  @spec solve(curve(), t(), opts()) :: {:ok, point_tuple()} | {:error, term()}
+  @spec solve(Bezier.t(), t(), T.opts()) :: {:ok, T.point_tuple()} | {:error, term()}
   defdelegate solve(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
   @doc ~s"""
   The raising version of `solve/3`
   """
-  @spec solve!(curve(), t(), opts()) :: point_tuple()
+  @spec solve!(Bezier.t(), t(), T.opts()) :: T.point_tuple()
   defdelegate solve!(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
   @doc ~s"""
   Take `n` samples, evenly spaced, from the curve.
   """
-  @spec take(curve(), n :: pos_integer(), opts()) :: {:ok, point_list()} | {:error, term()}
+  @spec take(Bezier.t(), n :: pos_integer(), T.opts()) :: {:ok, T.point_list()} | {:error, term()}
   defdelegate take(curve, n, opts \\ []), to: Curves.Bezier.Curve
   @doc ~s"""
   The raising version of `take/3`
   """
-  @spec take!(curve(), n :: pos_integer(), opts()) :: point_list()
+  @spec take!(Bezier.t(), n :: pos_integer(), T.opts()) :: T.point_list()
   defdelegate take!(curve, n, opts \\ []), to: Curves.Bezier.Curve
 
-  @doc ~s"""
-  List of atoms that can be passed into `define_bezier/2`.
-
-  ## Examples
-      iex> li = Curves.list_predefined_bezier_types()
-      iex> :ease_in_cubic in li
-      true
-  """
-  @spec list_predefined_bezier_types() :: list(predefined_bezier_type())
-  defdelegate list_predefined_bezier_types(), to: Curves.Bezier.Predefined, as: :list
 end

@@ -1,6 +1,9 @@
 defmodule Curves.Bezier.Curve do
-  @moduledoc false
+  @moduledoc ~s"""
+  This module is meant to only be used internally. You are probably looking for `Curves.define_bezier/2` or `Curves.solve/3`
+  """
   alias Curves.Utils.{Point, Points}
+  alias Curves.Utils.Types, as: T
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
 
@@ -10,27 +13,37 @@ defmodule Curves.Bezier.Curve do
     :xmin,
     :ymax,
     :ymin,
-    :ids,
+    #:ids,
     mode: :edit,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
 
   @typedoc ~s"""
-  As this library is a WIP, most of these fields are not actually being used.
+  | field  	| description                                    	|
+  |--------	|------------------------------------------------	|
+  | `:points` 	| A tensor representing 2D points                	|
+  | `:xmax`   	| the highest x coord in the tensor              	|
+  | `:xmin`   	| the lowest x coord in the tensor               	|
+  | `:ymin`   	| the lowest y coord in the tensor               	|
+  | `:ymax`   	| the highest y coord in the tensor              	|
+  | `:mode`   	| Not yet used. Maybe removed in future versions 	|
+  | `:origin` 	| the origin of the graph.                       	|
+  | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
     points: Nx.Tensor.t(),
-    xmax: float(),
-    xmin: float(),
-    ymax: float(),
-    ymin: float(),
-    ids: list(),
+    xmax: T.coord(),
+    xmin: T.coord(),
+    ymax: T.coord(),
+    ymin: T.coord(),
+    #ids: list(),
     mode: :edit | :run,
-    opts: list(),
+    opts: T.opts(),
     origin: Nx.Tensor.t()
   }
 
+  @doc false
   def define(points, opts \\ []) do
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
     points = case points do
@@ -50,8 +63,10 @@ defmodule Curves.Bezier.Curve do
     })
   end
 
+  @doc false
   def solve(curve, t), do: solve(curve, t, [])
 
+  @doc false
   def solve(%__MODULE__{points: points, origin: origin, opts: curve_opts} = curve, t, opts) when is_number(t) do
     opts = 
       curve_opts
@@ -83,8 +98,10 @@ defmodule Curves.Bezier.Curve do
       end
   end
 
+  @doc false
   def solve!(curve, t), do: solve!(curve, t, [])
 
+  @doc false
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
@@ -92,6 +109,7 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
+  @doc false
   def take(curve, n, opts \\ []) do
     Enum.reduce_while(1..n, [], fn i, acc ->
       case solve(curve, i * (1 / n), opts) do
@@ -104,6 +122,8 @@ defmodule Curves.Bezier.Curve do
         err -> {:error, err}
       end
   end
+
+  @doc false
   def take!(curve, n, opts \\ []) do
     {:ok, points} = take(curve, n, opts)
     points

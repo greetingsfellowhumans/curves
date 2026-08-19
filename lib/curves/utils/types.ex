@@ -23,14 +23,19 @@ defmodule Curves.Utils.Types do
   """
   @type order :: 1 | 2 | 3
 
+  @typedoc "A single number, represented as either x or y in 2D space"
+  @type coord :: number()
 
   @typedoc ~s"""
   An {x, y} pair representing a coordinate in 2D space
   """
-  @type coord :: {x :: number(), y :: number()}
+  @type point_tuple :: {x :: coord(), y :: coord()}
 
   @typedoc "A list of {x, y} number coordinates"
-  @type coords :: list(coord())
+  @type point_list :: list(point_tuple())
+
+  @typedoc "@TODO WIP A keyword list of options."
+  @type opts :: keyword()
 
   @typedoc "Provides a formal structure for the {2, n} Tensors that represent a series of n points with two dimension values (x and y)"
   @type point_names :: list( :dimension | :point )

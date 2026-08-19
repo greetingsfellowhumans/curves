@@ -25,7 +25,7 @@ defmodule Curves.Bezier.Predefined do
   @typedoc ~s"""
   A map of useful info about a predefined curve.
   """
-  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.coords()}
+  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.point_list()}
 
   @typedoc ~s"""
   A list of curve type info
@@ -145,7 +145,7 @@ defmodule Curves.Bezier.Predefined do
   @doc ~s"""
   Return coordinates list for a given key
   """
-  @spec get_coords(curve_key()) :: T.coords()
+  @spec get_coords(curve_key()) :: T.point_list()
   def get_coords(k) do
     Map.get(@all, k)
   end
@@ -155,7 +155,7 @@ defmodule Curves.Bezier.Predefined do
   Return a tensor of points for a given key.
   Mainly for internal use.
   """
-  @spec get(curve_key(), list()) :: T.points()
+  @spec get(curve_key(), T.opts()) :: T.points()
   def get(k, opts \\ []) do
     Map.get(@all, k) |> new_points(opts)
   end
