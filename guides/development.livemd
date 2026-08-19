@@ -22,6 +22,7 @@ types = Curves.list_predefined_bezier_types()
         |> Enum.map(&{&1, &1})
 
 bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
+Curves.Bezier.Predefined.get(:linear)
 ```
 
 ```elixir
@@ -78,7 +79,7 @@ Curves.define_bezier(:ease_in)
 # At a minimum, you can supply 2 points to get a linear 'curve'
 curve = Curves.define_bezier([
   {0, 0},
-  {100, 100}
+  {10, 10}
 ])
 
 # We are actually printing 1000 dots between {0,0} and {100,100}
