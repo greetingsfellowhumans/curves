@@ -23,7 +23,7 @@ defmodule Curves do
   assert is_float(y)
   ```
 
-  For a list of all predefined bezier_types, use `list_predefined_bezier_types/0`
+  For a list of all predefined bezier_types, use `Curves.Bezier.Predefined.list/0`
 
   ## Custom curves
 
@@ -38,7 +38,7 @@ defmodule Curves do
     {1,   1}
   ])
 
-  t = 0.60
+  t = 0.248
 
   {x, y} = Curves.solve!(curve, t)
 
