@@ -1,4 +1,4 @@
-# Bezier Curves
+# Bezier Curves Dev
 
 ```elixir
 Mix.install(
@@ -18,11 +18,11 @@ Mix.install(
 ```elixir
 # Before getting into the nitty gritty, let's start with a visual demo.
 # Evaluate this code block, and select a curve type
-types = Curves.list_predefined_bezier_types()
+types = Curves.Bezier.Predefined.list()
         |> Enum.map(&{&1, &1})
 
 bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
-Curves.Bezier.Predefined.get(:linear)
+
 ```
 
 ```elixir
@@ -65,7 +65,7 @@ t = 0.2
 #
 # Did that make no sense? Fair enough. Let's visualize it by lowering the dot count to 10
 # each dot is spaced 10% across the length. Notice how they are not all the same distance apart
-Curves.define_bezier(:ease_in)
+Curves.define_bezier(:ease_in_expo)
 |> Curves.Utils.Plotting.curve_to_scatterplot(count: 10)
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
@@ -78,9 +78,11 @@ Curves.define_bezier(:ease_in)
 # We can define our own curves manualy. 
 # At a minimum, you can supply 2 points to get a linear 'curve'
 curve = Curves.define_bezier([
-  {0, 0},
-  {10, 10}
+  {0, 10},
+  {1, 0}
 ])
+curve = Curves.define_bezier(:linear_down_right)
+dbg Curves.take!(curve, 10)
 
 # We are actually printing 1000 dots between {0,0} and {100,100}
 curve
@@ -113,8 +115,8 @@ curve
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_bezier([
   {0, 0},
-  {0.8, 0},
-  {0.3, 1.2},
+  {0.8, 0.2},
+  {0.3, 2.2},
   {1, 1}
 ])
 

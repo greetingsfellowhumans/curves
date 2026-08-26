@@ -37,7 +37,7 @@ defmodule Curves.Bezier.Predefined do
     linear:              [{0, 0}, {1, 1}],
     linear_up_right:     [{0, 0}, {1, 1}],
     linear_down_right:   [{0, 1}, {1, 0}],
-    linear_horizontal:   [{0, 0}, {1, 0}],
+    linear_horizontal:   [{0, 1}, {1, 1}],
     linear_vertical:     [{0, 0}, {0, 1}],
   }
   @order2 %{
