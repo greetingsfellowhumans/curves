@@ -134,7 +134,8 @@ defmodule Curves.Bezier.Curve do
       :x -> {curve.xmin, curve.xmax}
       :y -> {curve.ymin, curve.ymax}
     end
-    ( (coord - min) ) / (max - min)
+    denominator = max - min
+    if denominator == 0, do: max, else: (coord - min) / denominator
   end
 
   defp force_percent(curve, point, opts) do
