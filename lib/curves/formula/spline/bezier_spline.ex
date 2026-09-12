@@ -1,4 +1,4 @@
-defmodule Curves.Formula.CubicBezier do
+defmodule Curves.Formula.BezierSpline do
   @moduledoc false
   use Curves.Formula
 

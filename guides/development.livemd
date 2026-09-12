@@ -126,3 +126,62 @@ curve
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
 ```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_spline([
+  # P0
+  [{5.0, 10.0},
+  {10.0, 10.0}],
+
+  # P1
+  [{10.0, 5.0},
+    {5.0, 5.0}, 
+    {15.0, 5.0}],
+
+  # P2
+  [{15.0, 10.0},
+   {15.0, 6.0},
+   {15.0, 14.0}
+  ],
+
+  # P3
+  [{20.0, 15.0},
+   {16.0, 15.0},
+   {23.0, 10.0}],
+
+  [{25.0, 10.0}, 
+    {20.0, 10.0}]
+], :bezier_spline)
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_spline([
+  # P0
+  [{5.0, 10.0}],
+
+  # P1
+  [{10.0, 5.0}],
+
+  # P2
+  [{15.0, 10.0}],
+
+  # P3
+  [{20.0, 15.0}],
+
+  [{25.0, 10.0}]
+], :hermite)
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
