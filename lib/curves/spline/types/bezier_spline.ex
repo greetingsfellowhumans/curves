@@ -1,6 +1,7 @@
-defmodule Curves.Formula.BezierSpline do
+defmodule Curves.Spline.Type.BezierSpline do
   @moduledoc false
-  use Curves.Formula
+  use Curves.Spline.Type,
+    derivative: 1
 
 
   @matrix ~MAT<

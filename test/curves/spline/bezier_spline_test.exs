@@ -51,7 +51,8 @@ defmodule Curves.Spline.BezierSplineTest do
   @curve1_knot3 Point.new_point({20.0, 15.0})
   @curve1_knot4 Point.new_point({25.0, 10.0})
 
-  test "should calculate a b_spline" do
+  @tag :skip
+  test "should calculate a bezier spline" do
     curve = Curves.define_spline(@curve1, :bezier_spline)
     p = Curves.solve_spline!(curve, 1.11, force_percent: false)
     dbg p

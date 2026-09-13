@@ -10,6 +10,7 @@ defmodule Curves.Spline.Curve do
     :points,
     :segments,
     :type,
+    :mod,
     :xmax,
     :xmin,
     :ymax,
@@ -36,6 +37,7 @@ defmodule Curves.Spline.Curve do
     points: Nx.Tensor.t(),
     segments: list(),
     type: atom(),
+    mod: module(),
     xmax: T.coord(),
     xmin: T.coord(),
     ymax: T.coord(),
@@ -55,9 +57,12 @@ defmodule Curves.Spline.Curve do
     segments = Segment.new_segments(coords, opts)
     points = to_points(coords, opts)
     #|> Points.new_points(opts)
+    mod = Curves.Spline.Type.get_mod(spline_type)
 
-    struct(__MODULE__, %{
+    # We use an intermediary bezier_spline in order to later calculate derivatives.
+    bezier_spline = struct(__MODULE__, %{
       type: spline_type,
+      mod: mod,
       points: points,
       segments: segments, 
       ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
@@ -67,6 +72,8 @@ defmodule Curves.Spline.Curve do
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
+
+    Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
   end
 
 
@@ -80,7 +87,7 @@ defmodule Curves.Spline.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{segments: _segments, type: type, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
+  def solve(%__MODULE__{segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
     opts = 
       curve_opts
       |> Keyword.merge(opts)
@@ -89,18 +96,23 @@ defmodule Curves.Spline.Curve do
     {segment, t} = Segment.split_u(curve, u)
     points = Nx.add(segment, origin)
 
-    case type do
-      :cubic_bezier -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
-      :hermite -> {:ok, Curves.Formula.run(Curves.Formula.Hermite, points, t, opts) |> Point.to_tuple()}
-      :b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
-      :bezier_spline -> {:ok, Curves.Formula.run(Curves.Formula.BezierSpline, points, t, opts) |> Point.to_tuple()}
-      #:b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
-      _ -> {:error, "UnKnown type :#{type}"}
-    end
-      |> case do
-        {:ok, point} -> {:ok, force_percent(curve, point, opts)}
-        err -> err
-      end
+    tuple = Curves.Formula.run(mod, points, t, opts)
+            |> Point.to_tuple()
+
+    {:ok, force_percent(curve, tuple, opts)}
+
+    #case type do
+    #  :cubic_bezier -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+    #  :hermite -> {:ok, Curves.Formula.run(Curves.Formula.Hermite, points, t, opts) |> Point.to_tuple()}
+    #  :b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
+    #  :bezier_spline -> {:ok, Curves.Formula.run(Curves.Formula.BezierSpline, points, t, opts) |> Point.to_tuple()}
+    #  #:b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
+    #  _ -> {:error, "UnKnown type :#{type}"}
+    #end
+    #  |> case do
+    #    {:ok, point} -> {:ok, force_percent(curve, point, opts)}
+    #    err -> err
+    #  end
   end
 
   @doc false

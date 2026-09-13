@@ -16,6 +16,32 @@ Mix.install(
 ## Curves (Bezier) tutorial
 
 ```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_spline([
+  # P0
+  [{5.0, 10.0}],
+
+  # P1
+  [{10.0, 15.0}],
+
+  # P2
+  [{15.0, 30.0}],
+
+  # P3
+  [{20.0, 15.0}],
+
+  [{25.0, 30.0}]
+], :hermite)
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
 # Before getting into the nitty gritty, let's start with a visual demo.
 # Evaluate this code block, and select a curve type
 types = Curves.Bezier.Predefined.list()
@@ -129,6 +155,8 @@ curve
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+type = :bezier_spline
+
 curve = Curves.define_spline([
   # P0
   [{5.0, 10.0},
@@ -152,32 +180,7 @@ curve = Curves.define_spline([
 
   [{25.0, 10.0}, 
     {20.0, 10.0}]
-], :bezier_spline)
-
-curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
-|> Tucan.scatter("x", "y")
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
-```
-
-```elixir
-# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-curve = Curves.define_spline([
-  # P0
-  [{5.0, 10.0}],
-
-  # P1
-  [{10.0, 5.0}],
-
-  # P2
-  [{15.0, 10.0}],
-
-  # P3
-  [{20.0, 15.0}],
-
-  [{25.0, 10.0}]
-], :hermite)
+], type)
 
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)

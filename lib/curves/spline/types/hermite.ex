@@ -1,9 +1,10 @@
-defmodule Curves.Formula.Hermite do
+defmodule Curves.Spline.Type.Hermite do
   @moduledoc ~s"""
   Hermite splines accept no control points. Only knots.
   Control points are calculated automatically based on the first derivative of each knot.
   """
-  use Curves.Formula,
+  use Curves.Spline.Type,
+    derivatives: [0, {:derivative, :p0, 1}, {:point, 1}, {:derivative, :p1, 1}],
     derivative: 0
 
   @matrix_new ~MAT<
@@ -23,12 +24,12 @@ defmodule Curves.Formula.Hermite do
   # Points: [P0, P'0, P1, P'1]
   def point_matrix(), do: [{0, 0}, {0, 1}, {1, 0}, {1, 1}]
 
-  @impl true
-  def points_function(points) do
-    dbg points
-    {dimensions, size} = Nx.shape(points)
-    Nx.slice(points, [0, 0], [dimensions, size])
-  end
+  #@impl true
+  #def points_function(points) do
+  #  dbg points
+  #  {dimensions, size} = Nx.shape(points)
+  #  Nx.slice(points, [0, 0], [dimensions, size])
+  #end
   #@impl true
   #def points_function(points, _segment \\ 0) do 
   #end

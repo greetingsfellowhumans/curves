@@ -7,6 +7,7 @@ defmodule Curves.MixProject do
       version: "0.2.4",
       elixir: "~> 1.17",
       description: description(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       cli: cli(),
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/greetingsfellowhumans/curves",
@@ -38,6 +39,9 @@ defmodule Curves.MixProject do
       links: %{"GitHub" => "https://github.com/greetingsfellowhumans/curves"}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   # Run "mix help compile.app" to learn about applications.
   def application do
