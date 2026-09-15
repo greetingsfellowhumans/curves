@@ -64,6 +64,22 @@ defmodule Curves do
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
 
   @doc ~s"""
+  Define a new Catmull-Rom spline. Only the joins need to be defined, the control points are calculated automatically.
+
+  ```elixir
+  curve = Curves.define_catmull_rom([
+    {0, 0},
+    {1, 0},
+    {1, 1},
+    {0, 1},
+    {0, 2},
+    {1, 2},
+  ])
+  ```
+  """
+  defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom
+
+  @doc ~s"""
   Given a struct, and t, find the point along the curve
 
   ## Examples

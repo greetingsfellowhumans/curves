@@ -36,6 +36,7 @@ defmodule Curves.Spline.Type do
   @callback blending_function() :: struct()
   @callback point_count() :: integer()
 
+
   @doc ~s"""
   Can be used to rearange the points in a segment. Apply derivatives here.
 

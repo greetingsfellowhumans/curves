@@ -25,7 +25,7 @@ curve = Curves.define_spline([
   [{0, 1}],
   [{0, 2}],
   [{1, 2}],
-], :catmull_rom)
+], :b_spline)
 
 
 curve
@@ -39,14 +39,30 @@ curve
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_spline([
   # P0
-  #[{125, 75}],
   [{0, 0}],
-  [{0, 10}],
-  [{10, 10}],
-  [{10, 0}]
-  #[{650, 350}],
-  #[{900, 500}],
+  [{1, 0}],
+  [{1, 1}],
+  [{0, 1}],
+  [{0, 2}],
+  [{1, 2}],
 ], :catmull_rom)
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_catmull_rom([
+  {0, 0},
+  {0, 10},
+  {10, 10},
+  {10, 0}
+])
 
 
 curve

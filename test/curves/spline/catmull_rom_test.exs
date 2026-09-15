@@ -55,19 +55,19 @@ defmodule Curves.Spline.CatmullRomTest do
       [[_, _, _, 18.0], [_, _, _, 10.0]] = last
       assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {20.0, 8.0}
     end
-    test "get slope", ctx do
-      {segments_list, curve} = initial_args(ctx, :catmull_rom2)
-      {rise, run} = get_slope({12, 18}, {15, 14})
-      assert rise == -4
-      assert run == 3
-    end
+    #test "get slope", ctx do
+    #  {segments_list, curve} = initial_args(ctx, :catmull_rom2)
+    #  {rise, run} = get_slope({12, 18}, {15, 14})
+    #  assert rise == -4
+    #  assert run == 3
+    #end
 
-    test "get control points", ctx do
-      {segments_list, curve} = initial_args(ctx, :catmull_rom2)
-      {cx, cy} = get_control_point({14, 16}, {12, 18}, {15, 14})
-      assert cx == 14 + 3
-      assert cy == 16 - 4
-    end
+    #test "get control points", ctx do
+    #  {segments_list, curve} = initial_args(ctx, :catmull_rom2)
+    #  {cx, cy} = get_control_point({14, 16}, {12, 18}, {15, 14})
+    #  assert cx == 14 + 3
+    #  assert cy == 16 - 4
+    #end
   end
 
 end

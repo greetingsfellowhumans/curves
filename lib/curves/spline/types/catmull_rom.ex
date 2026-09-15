@@ -3,6 +3,10 @@ defmodule Curves.Spline.Type.CatmullRom do
   use Curves.Spline.Type
   #alias Curves.Utils.Points
 
+  def define_catmull_rom(points, opts \\ []) do
+    Enum.map(points, &([&1]))
+      |> Curves.define_spline(:catmull_rom, opts)
+  end
 
   # Pk-1 == x0/y0
   # Pk   == x1/y1
@@ -41,8 +45,8 @@ defmodule Curves.Spline.Type.CatmullRom do
   end
 
   def map_segment([[x0, x1, x2, x3], [y0, y1, y2, y3]]) do
-    {dx0, dy0} = get_control_point({x1, y1}, {x0, y0}, {x2, y2})
-    {dx1, dy1} = get_control_point({x2, y2}, {x1, y1}, {x3, y3})
+    #{dx0, dy0} = get_control_point({x1, y1}, {x0, y0}, {x2, y2})
+    #{dx1, dy1} = get_control_point({x2, y2}, {x1, y1}, {x3, y3})
     #{dx0, dy0} = get_control_point({x1, y1}, {x2, y2}, {x0, y0})
     #{dx1, dy1} = get_control_point({x2, y2}, {x3, y3}, {x1, y1})
 
@@ -53,17 +57,17 @@ defmodule Curves.Spline.Type.CatmullRom do
       [y0, y1, y2, y3]
   ]
   end
-  def get_slope({inner_x, inner_y}, {outer_x, outer_y}) do
-    x = outer_x - inner_x
-    y = outer_y - inner_y
-    {y, x}
-  end
+  #def get_slope({inner_x, inner_y}, {outer_x, outer_y}) do
+  #  x = outer_x - inner_x
+  #  y = outer_y - inner_y
+  #  {y, x}
+  #end
 
-  def get_control_point({x1, y1}, left, right) do
-    {my, mx} = get_slope(left, right)
-    tension = 6
-    {x1 + mx / tension, y1 + my / tension}
-  end
+  #def get_control_point({x1, y1}, left, right) do
+  #  {my, mx} = get_slope(left, right)
+  #  tension = 6
+  #  {x1 + mx / tension, y1 + my / tension}
+  #end
 
   def get_prev_coord(all_segments, segment_idx, [ [x1, _, _, x2], [y1, _, _, y2] ]) do
     prev_idx = segment_idx - 1
