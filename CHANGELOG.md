@@ -7,14 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-none
-
 ## [0.2.4] - 2026-08-29
 
 ### Fixed
 
-- Predefined curve linear uses Y=1.0 instead of Y=0.0
-- Fixed a divide-by-zero bug that would happen with force_percent: true, sometimes
+- Predefined curve linear uses Y=1.0 instead of Y=0.0, du
 
 ## [0.2.3] - 2026-08-18
 

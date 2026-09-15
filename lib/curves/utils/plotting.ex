@@ -2,7 +2,7 @@ defmodule Curves.Utils.Plotting do
   @moduledoc ~s"""
   These are helper functions for making it easier to plot curves with VegaLite.
   """
-  import Curves.Utils.Points, only: [to_maps: 1]
+  import Curves.Utils.Points, only: [to_maps: 1, to_tuples: 1]
 
   @doc ~s"""
   Given a curve, build a list of points, in map format.
@@ -49,17 +49,30 @@ defmodule Curves.Utils.Plotting do
         Map.put(p, :label, "control point #{idx}")
       end)
   end
-  defp extract_control_points(%Curves.Spline.Curve{points: points, segments: segments}) do
-    case Nx.shape(points) do
-      {_, n} when n < 3 -> []
-      {_, n} -> 
-        Nx.slice(points, [0, 1], [2, n - 2])
-          |> to_maps()
-    end
+  defp extract_control_points(%Curves.Spline.Curve{segments: segments}) do
+    Nx.to_list(segments)
       |> Enum.with_index()
-      |> Enum.map(fn {p, idx} -> 
-        Map.put(p, :label, "control point #{idx}")
+      |> Enum.map(fn {segment, segment_idx} ->
+          Enum.zip_with(segment, fn [x, y] ->
+            %{x: x, y: y, label: "segment_#{segment_idx}"}
+          end)
       end)
+      |> List.flatten()
+      #|> to_tuples()
+      #  |> Enum.with_index()
+      #  |> Enum.map(fn {{x, y}, p_idx} ->
+      #  %{x: x, y: y, segment: segment_idx, label: "#{segment_idx}P#{p_idx}(#{x}, #{y})"}
+      #end)
+    #case Nx.shape(points) do
+    #  {_, n} when n < 3 -> []
+    #  {_, n} -> 
+    #    Nx.slice(points, [0, 1], [2, n - 2])
+    #      |> to_maps()
+    #end
+    #  |> Enum.with_index()
+    #  |> Enum.map(fn {p, idx} -> 
+    #    Map.put(p, :label, "control point #{idx}")
+    #  end)
   end
 
 

@@ -59,8 +59,8 @@ defmodule Curves.Utils.PointsTest do
       point0 = Curves.Utils.Point.new_point({0, 0})
       point1 = Curves.Utils.Point.new_point({5, 10})
       expected = 10 / 5
-      actual = get_slope(point0, point1)
-      assert expected == actual
+      {rise, run} = get_slope(point0, point1)
+      assert expected == rise / run
     end
 
     property "get_slope is always correct" do
@@ -70,9 +70,10 @@ defmodule Curves.Utils.PointsTest do
                 y1 <- integer() do
         point0 = Curves.Utils.Point.new_point({x0, y0})
         point1 = Curves.Utils.Point.new_point({x1, y1})
-        slope = get_slope(point0, point1)
+        {rise, run} = get_slope(point0, point1)
 
-        assert is_float(slope)
+        assert is_number(rise)
+        assert is_number(run)
       end
     end
 

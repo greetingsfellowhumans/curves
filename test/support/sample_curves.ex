@@ -55,6 +55,25 @@ defmodule Curves.Support.SampleCurves do
     [{25.0, 10.0}],
 
   ]
+
+  @catmull_rom [
+    [{0, 0}],
+    [{1, 0}],
+    [{1, 1}],
+    [{0, 1}],
+    [{0, 2}],
+    [{1, 2}],
+  ]
+
+  @catmull_rom2 [
+    [{10, 20}],
+    [{12, 18}],
+    [{14, 16}],
+    [{15, 14}],
+    [{16, 12}],
+    [{18, 10}],
+  ]
+
   def with_curves(ctx) do
     ctx
       |> Map.put(:curves, %{
@@ -65,7 +84,9 @@ defmodule Curves.Support.SampleCurves do
       |> Map.put(:curve_specs, %{
       curve0: @curve0,
       curve1: @curve1,
-      hermite0: @hermite
+      hermite0: @hermite,
+      catmull_rom: @catmull_rom,
+      catmull_rom2: @catmull_rom2,
     })
   end
 end

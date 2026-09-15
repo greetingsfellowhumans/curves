@@ -73,7 +73,8 @@ defmodule Curves.Spline.Curve do
       opts: opts
     })
 
-    Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
+    #Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
+    Curves.Utils.Derivatives.apply_derivatives(bezier_spline)
   end
 
 

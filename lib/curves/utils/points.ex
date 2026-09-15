@@ -116,8 +116,8 @@ defmodule Curves.Utils.Points do
     Nx.subtract(point1, point0)
       |> Point.to_tuple()
       |> case do
-        {+0.0, _y} -> 1_000_000.0
-        {x, y} -> y / x
+        {+0.0, _y} -> {1_000_000.0, 1}
+        {x, y} -> {y , x}
       end
   end
 
