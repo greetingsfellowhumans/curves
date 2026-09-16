@@ -79,6 +79,8 @@ defmodule Curves.Spline.Type do
       @derivatives Keyword.get(unquote(opts), :derivatives, [0, 0, 0, 0])
       @derivative  Keyword.get(unquote(opts), :derivative, 0)
 
+      @override_segment_parsing  Keyword.get(unquote(opts), :override_segment_parsing, false)
+      def override_segment_parsing(), do: @override_segment_parsing
 
       @impl true
       def power_series(t), do: Curves.Formula.build_power_series(t, @derivative)

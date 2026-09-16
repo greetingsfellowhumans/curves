@@ -73,6 +73,13 @@ defmodule Curves.Support.SampleCurves do
     [{16, 12}],
     [{18, 10}],
   ]
+  @b_spline [
+    {0, 0},
+    {3, 6},
+    {8, 6},
+    {12, 2},
+    {18, 9},
+  ]
 
   def with_curves(ctx) do
     ctx
@@ -87,6 +94,7 @@ defmodule Curves.Support.SampleCurves do
       hermite0: @hermite,
       catmull_rom: @catmull_rom,
       catmull_rom2: @catmull_rom2,
+      b_spline: @b_spline,
     })
   end
 end

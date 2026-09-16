@@ -49,15 +49,22 @@ defmodule Curves.Spline.Curve do
 
   @doc false
   def define(coords, spline_type, opts \\ []) do
+    mod = Curves.Spline.Type.get_mod(spline_type)
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
     coords = case coords do
       k when is_atom(k) -> Predefined.get(k, opts)
       _ -> coords
     end
-    segments = Segment.new_segments(coords, opts)
+
+    segments = if mod.override_segment_parsing() do
+      coords
+      |> Enum.map(&Points.new_points(&1, opts))
+      |> Nx.stack(name: :segment)
+    else
+      Segment.new_segments(coords, opts)
+    end
+
     points = to_points(coords, opts)
-    #|> Points.new_points(opts)
-    mod = Curves.Spline.Type.get_mod(spline_type)
 
     # We use an intermediary bezier_spline in order to later calculate derivatives.
     bezier_spline = struct(__MODULE__, %{

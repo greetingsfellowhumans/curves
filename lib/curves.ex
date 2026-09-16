@@ -61,7 +61,26 @@ defmodule Curves do
   @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.opts()) :: Bezier.t()
   defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
+
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
+
+
+  @doc ~s"""
+  Define a new B-Spline. Only the joins need to be defined, the control points are calculated automatically.
+
+  ```elixir
+  curve = Curves.define_b_spline([
+    {0, 0},
+    {1, 0},
+    {1, 1},
+    {0, 1},
+    {0, 2},
+    {1, 2},
+  ])
+  ```
+  """
+  defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline
+
 
   @doc ~s"""
   Define a new Catmull-Rom spline. Only the joins need to be defined, the control points are calculated automatically.

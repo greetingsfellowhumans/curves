@@ -17,21 +17,22 @@ Mix.install(
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-curve = Curves.define_spline([
-  [{0, 0}],
-  [{5, 10}],
-  [{10, 1}],
-  [{15, 6}],
-  [{12, -2}],
-  [{19,4}],
-], :b_spline)
-
+curve = Curves.define_b_spline([
+    {0, 2},
+    {3, 4},
+    {6, 4},
+    {9, -1},
+    {10, 8},
+    #{12, 2}
+])
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
+|> Tucan.set_width(400)
+|> Tucan.set_height(400)
 ```
 
 ```elixir
