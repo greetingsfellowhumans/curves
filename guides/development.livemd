@@ -18,13 +18,12 @@ Mix.install(
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_spline([
-  # P0
   [{0, 0}],
-  [{1, 0}],
-  [{1, 1}],
-  [{0, 1}],
-  [{0, 2}],
-  [{1, 2}],
+  [{5, 10}],
+  [{10, 1}],
+  [{15, 6}],
+  [{12, -2}],
+  [{19,4}],
 ], :b_spline)
 
 

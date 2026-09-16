@@ -87,7 +87,7 @@ defmodule Curves.Spline.Type do
       def point_derivatives(), do: @derivatives
 
       @impl true
-      def map_segments(segment_list, _curve), do: segment_list
+      def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2
 
 

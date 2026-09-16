@@ -65,9 +65,6 @@ defmodule Curves.Utils.Derivatives do
         Nx.to_list(segments)
           |> Enum.with_index()
           |> curve.mod.map_segments(curve)
-        #  |> Enum.map(fn {segment_list, segment_idx} ->
-        #    curve.mod.map_segments(curve, segment_list, 1.0 * segment_idx)
-        #  end)
           |> Nx.tensor(names: [:segment, :dimension, :point], type: Nx.type(segments))
     end
     %{curve | segments: segments}
