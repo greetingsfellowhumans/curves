@@ -22,6 +22,7 @@ defmodule Curves.MixProject do
       main: "Curves",
       extras: [
         "CHANGELOG.md",
+        "README.md",
         "guides/bezier_curves.livemd"
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"],

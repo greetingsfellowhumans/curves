@@ -33,8 +33,8 @@ curve
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
-|> Tucan.set_width(400)
-|> Tucan.set_height(400)
+#|> Tucan.set_width(400)
+#|> Tucan.set_height(400)
 ```
 
 ```elixir
@@ -191,9 +191,8 @@ curve
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-type = :bezier_spline
 
-curve = Curves.define_spline([
+curve = Curves.define_bezier_spline([
   # P0
   [{5.0, 10.0},
   {10.0, 10.0}],
@@ -216,7 +215,7 @@ curve = Curves.define_spline([
 
   [{30.0, 10.0}, 
     {32.0, 5.0}]
-], type)
+])
 
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
