@@ -19,6 +19,12 @@ Be sure to check out the [livebook](https://curves.hexdocs.pm/bezier_curves.html
 - [Hex package](https://hex.pm/packages/curves)
 - [Github Repo](https://github.com/greetingsfellowhumans/curves)
 
+## Hire me
+
+No AI was used in the creation of this project. Just good old fashioned software engineering.
+
+Full stack developer seeking new challenges. You can reach me at [hireme@aaronjprice.com](mailto:hireme@aaronjprice.com)
+
 ## Visual Demo
 
 ### Ease in-out Bezier
