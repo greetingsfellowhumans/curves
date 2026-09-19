@@ -1,6 +1,6 @@
 defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
-  This module is meant to only be used internally. You are probably looking for `Curves.define_spline/2` or `Curves.solve/3`
+  Struct representing a spline
   """
   alias Curves.Utils.{Point, Points, Segment}
   alias Curves.Utils.Types, as: T

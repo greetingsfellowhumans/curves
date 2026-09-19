@@ -91,7 +91,7 @@ defmodule Curves.Bezier.Predefined do
        end)
 
   @doc ~s"""
-  Return a list of all keys that can be used with `get/2`
+  Return a list of all keys that can be used with `get_coords/1`
 
   ## Examples
       iex> [:ease | _] = Curves.Bezier.Predefined.list()
@@ -100,7 +100,7 @@ defmodule Curves.Bezier.Predefined do
   def list(), do: Map.keys(@all) |> Enum.sort()
 
   @doc ~s"""
-  Return a list of all keys, within a given curve order, that can be used with `get/2`
+  Return a list of all keys, within a given curve order, that can be used with `get_coords/1`
   `(linear = 1, quadratic = 2, cubic = 3)`
 
   ## Examples
@@ -150,11 +150,7 @@ defmodule Curves.Bezier.Predefined do
     Map.get(@all, k)
   end
 
-  # Used internally, but probably doesn't need to be part of the public facing API.
-  @doc ~s"""
-  Return a tensor of points for a given key.
-  Mainly for internal use.
-  """
+  @doc false
   @spec get(curve_key(), T.opts()) :: T.points()
   def get(k, opts \\ []) do
     Map.get(@all, k) |> new_points(opts)

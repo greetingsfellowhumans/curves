@@ -16,7 +16,19 @@ Mix.install(
 ## Curves (Bezier) tutorial
 
 ```elixir
-# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_b_spline([
+    {0, -2},
+    {3, 4},
+    {6, 5},
+    {7, -1},
+    {10, 3},
+    {5, 1},
+    {12, 9}
+])
+Curves.solve!(curve, 0.5)
+```
+
+```elixir
 curve = Curves.define_b_spline([
     {0, -2},
     {3, 4},
@@ -33,14 +45,10 @@ curve
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
-#|> Tucan.set_width(400)
-#|> Tucan.set_height(400)
 ```
 
 ```elixir
-# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_catmull_rom([
-  # P0
   {0, 0},
   {1, 0},
   {1, 1},
@@ -58,9 +66,7 @@ curve
 ```
 
 ```elixir
-# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_hermite([
-  # P0
   {5, 10},
   {10, 5},
   {15, 10},
@@ -104,8 +110,7 @@ Kino.Input.read(bezier_type)
 # Done playing? Alright, let's start digging into what just happened.
 
 # We always start off by defining a curve
-opts = [] # <- We'll come back to this
-curve = Curves.define_bezier(:ease_in, opts)
+curve = Curves.define_bezier(:ease_in)
 
 # That's all it takes to define a bezier curve. Now we have a struct
 is_struct(curve, Curves.Bezier.Curve)
@@ -114,9 +119,9 @@ is_struct(curve, Curves.Bezier.Curve)
 # Our little `curve_to_scatterplot/2` helper, plus VegaLite basically did that 1000 times,
 # and rendered them so close together they looked like a solid line.
 
-# For academic reasons, percentage in a bezier curve is represented as `t`
+# Conventionally, percentage in a bezier curve is represented as `t`
 t = 0.2
-{x, y} = Curves.solve!(curve, t, opts)
+{x, y} = Curves.solve!(curve, t)
 ```
 
 ```elixir

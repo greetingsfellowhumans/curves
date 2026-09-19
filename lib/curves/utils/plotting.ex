@@ -1,7 +1,8 @@
 defmodule Curves.Utils.Plotting do
-  @moduledoc ~s"""
-  These are helper functions for making it easier to plot curves with VegaLite.
-  """
+  #@moduledoc ~s"""
+  #These are helper functions for making it easier to plot curves with VegaLite.
+  #"""
+  @moduledoc false
   import Curves.Utils.Points, only: [to_maps: 1]
 
   @doc ~s"""

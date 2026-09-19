@@ -45,4 +45,10 @@ defmodule Curves.Utils.Types do
 
   @typedoc "An Nx tensor representing a series of points"
   @type points :: %Nx.Tensor{shape: {2, pos_integer()}, names: point_names(), type: {:f, pos_integer()}}
+
+  @typedoc ~s"""
+  Float between 0.0 and 1.0, representing a percentage of progress from the first to last point.
+  """
+  @type t :: float()
+
 end

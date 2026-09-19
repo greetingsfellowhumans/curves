@@ -1,4 +1,5 @@
 defmodule Curves.Spline.TypeIndex do
+  @moduledoc false
   alias Curves.Spline.Type, as: T
 
   @all %{
@@ -21,16 +22,17 @@ end
 
 
 defmodule Curves.Spline.Type do
-  @moduledoc ~s"""
-  Turns a module into a spline type.
+  #@moduledoc ~s"""
+  #Turns a module into a spline type.
 
-  ```elixir
-  defmodule My.Spline do
-    use Curves.Spline.Type,
-      derivatives: [0, 1, 1, 0]
-  end
-  ```
-  """
+  #```elixir
+  #defmodule My.Spline do
+  #  use Curves.Spline.Type,
+  #    derivatives: [0, 1, 1, 0]
+  #end
+  #```
+  #"""
+  @moduledoc false
 
   @callback power_series(t :: float()) :: Nx.Tensor.t()
   @callback blending_function() :: struct()
@@ -80,15 +82,19 @@ defmodule Curves.Spline.Type do
       @derivatives Keyword.get(unquote(opts), :derivatives, [0, 0, 0, 0])
       @derivative  Keyword.get(unquote(opts), :derivative, 0)
 
+      @doc false
       @override_segment_parsing  Keyword.get(unquote(opts), :override_segment_parsing, false)
       def override_segment_parsing(), do: @override_segment_parsing
 
+      @doc false
       @impl true
       def power_series(t), do: Curves.Formula.build_power_series(t, @derivative)
       defoverridable power_series: 1
 
+      @doc false
       def point_derivatives(), do: @derivatives
 
+      @doc false
       @impl true
       def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2

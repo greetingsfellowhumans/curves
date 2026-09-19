@@ -1,6 +1,6 @@
 defmodule Curves.Bezier.Curve do
   @moduledoc ~s"""
-  This module is meant to only be used internally. You are probably looking for `Curves.define_bezier/2` or `Curves.solve/3`
+  Struct representing a bezier curve.
   """
   alias Curves.Utils.{Point, Points}
   alias Curves.Utils.Types, as: T

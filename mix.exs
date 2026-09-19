@@ -23,9 +23,12 @@ defmodule Curves.MixProject do
       extras: [
         "CHANGELOG.md",
         "README.md",
-        "guides/bezier_curves.livemd"
+        "guides/bezier_curves.livemd",
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md"],
+      nest_modules_by_prefix: [
+        Curves.Spline.Type
+      ],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"],
     ]
   end
 
