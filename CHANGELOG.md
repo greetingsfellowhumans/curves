@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.2.2] - 2026-08-17
+## [0.2.4] - 2026-08-29
 
-### Added
+### Fixed
 
-- `force_percent` opt
+- Predefined curve linear uses Y=1.0 instead of Y=0.0, du
 
 ## [0.2.3] - 2026-08-18
 

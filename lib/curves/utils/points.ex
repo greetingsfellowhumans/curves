@@ -107,4 +107,31 @@ defmodule Curves.Utils.Points do
     ys = Nx.to_list(points[dimension: 1])
     Enum.zip_with([xs, ys], fn [x, y] -> {x, y} end)
   end
+
+  @doc ~s"""
+  Given two points what is the slope between them
+
+  """
+  def get_slope(point0, point1) do
+    Nx.subtract(point1, point0)
+      |> Point.to_tuple()
+      |> case do
+        {+0.0, _y} -> {1_000_000.0, 1}
+        {x, y} -> {y , x}
+      end
+  end
+
+
+
+  @doc ~s"""
+  Update in place a point at a specific idx
+
+  takes a cb function of type `({x, y}) => {x, y}`
+  """
+  def update_point_at(points, idx, cb) do
+    tuples = to_tuples(points)
+    List.update_at(tuples, idx, cb)
+      |> new_points()
+  end
+
 end

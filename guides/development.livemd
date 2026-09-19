@@ -1,4 +1,4 @@
-# Bezier Curves
+# Bezier Curves Dev
 
 ```elixir
 Mix.install(
@@ -16,13 +16,75 @@ Mix.install(
 ## Curves (Bezier) tutorial
 
 ```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_b_spline([
+    {0, -2},
+    {3, 4},
+    {6, 5},
+    {7, -1},
+    {10, 3},
+    {5, 1},
+    {12, 9}
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+|> Tucan.set_width(400)
+|> Tucan.set_height(400)
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_catmull_rom([
+  # P0
+  {0, 0},
+  {1, 0},
+  {1, 1},
+  {0, 1},
+  {0, 2},
+  {1, 2},
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_hermite([
+  # P0
+  {5, 10},
+  {10, 5},
+  {15, 10},
+  {20, 10},
+  {25, 5},
+  {30, 15},
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
 # Before getting into the nitty gritty, let's start with a visual demo.
 # Evaluate this code block, and select a curve type
-types = Curves.list_predefined_bezier_types()
+types = Curves.Bezier.Predefined.list()
         |> Enum.map(&{&1, &1})
 
 bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
-Curves.Bezier.Predefined.get(:linear)
+
 ```
 
 ```elixir
@@ -65,7 +127,7 @@ t = 0.2
 #
 # Did that make no sense? Fair enough. Let's visualize it by lowering the dot count to 10
 # each dot is spaced 10% across the length. Notice how they are not all the same distance apart
-Curves.define_bezier(:ease_in)
+Curves.define_bezier(:ease_in_expo)
 |> Curves.Utils.Plotting.curve_to_scatterplot(count: 10)
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
@@ -78,9 +140,11 @@ Curves.define_bezier(:ease_in)
 # We can define our own curves manualy. 
 # At a minimum, you can supply 2 points to get a linear 'curve'
 curve = Curves.define_bezier([
-  {0, 0},
-  {10, 10}
+  {0, 10},
+  {1, 0}
 ])
+curve = Curves.define_bezier(:linear_down_right)
+dbg Curves.take!(curve, 10)
 
 # We are actually printing 1000 dots between {0,0} and {100,100}
 curve
@@ -113,13 +177,49 @@ curve
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_bezier([
   {0, 0},
-  {0.8, 0},
-  {0.3, 1.2},
+  {0.8, 0.2},
+  {0.3, 2.2},
   {1, 1}
 ])
 
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic")
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+type = :bezier_spline
+
+curve = Curves.define_spline([
+  # P0
+  [{5.0, 10.0},
+  {10.0, 10.0}],
+
+  # P1
+  [{10.0, 5.0},
+    {5.0, 5.0}, 
+    {15.0, 5.0}],
+
+  # P2
+  [{15.0, 10.0},
+   {15.0, 6.0},
+   {15.0, 14.0}
+  ],
+
+  # P3
+  [{20.0, 15.0},
+   {18.0, 15.0},
+   {23.0, 15.0}],
+
+  [{30.0, 10.0}, 
+    {32.0, 5.0}]
+], type)
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")

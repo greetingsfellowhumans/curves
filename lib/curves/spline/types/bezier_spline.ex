@@ -1,6 +1,6 @@
-defmodule Curves.Formula.CubicBezier do
+defmodule Curves.Spline.Type.BezierSpline do
   @moduledoc false
-  use Curves.Formula
+  use Curves.Spline.Type
 
 
   @matrix ~MAT<
@@ -9,6 +9,10 @@ defmodule Curves.Formula.CubicBezier do
     3  -6  3 0
     -1  3 -3 1
   >
+
+  def define_bezier_spline(points, opts \\ []) do
+    Curves.define_spline(points, :bezier_spline)
+  end
 
   @impl true
   def point_count(), do: 4

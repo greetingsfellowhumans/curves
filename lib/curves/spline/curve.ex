@@ -1,14 +1,16 @@
-defmodule Curves.Bezier.Curve do
+defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
-  This module is meant to only be used internally. You are probably looking for `Curves.define_bezier/2` or `Curves.solve/3`
+  This module is meant to only be used internally. You are probably looking for `Curves.define_spline/2` or `Curves.solve/3`
   """
-  alias Curves.Utils.{Point, Points}
+  alias Curves.Utils.{Point, Points, Segment}
   alias Curves.Utils.Types, as: T
-  alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
 
   defstruct [
     :points,
+    :segments,
+    :type,
+    :mod,
     :xmax,
     :xmin,
     :ymax,
@@ -33,27 +35,43 @@ defmodule Curves.Bezier.Curve do
   """
   @type t :: %__MODULE__{
     points: Nx.Tensor.t(),
+    segments: list(),
+    type: atom(),
+    mod: module(),
     xmax: T.coord(),
     xmin: T.coord(),
     ymax: T.coord(),
     ymin: T.coord(),
-    #ids: list(),
     mode: :edit | :run,
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
 
   @doc false
-  def define(points, opts \\ []) do
+  def define(coords, spline_type, opts \\ []) do
+    mod = Curves.Spline.Type.get_mod(spline_type)
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
-    points = case points do
+    coords = case coords do
       k when is_atom(k) -> Predefined.get(k, opts)
-      _ -> points
+      _ -> coords
     end
-      |> Points.new_points(opts)
 
-    struct(__MODULE__, %{
+    segments = if mod.override_segment_parsing() do
+      coords
+      |> Enum.map(&Points.new_points(&1, opts))
+      |> Nx.stack(name: :segment)
+    else
+      Segment.new_segments(coords, opts)
+    end
+
+    points = to_points(coords, opts)
+
+    # We use an intermediary bezier_spline in order to later calculate derivatives.
+    bezier_spline = struct(__MODULE__, %{
+      type: spline_type,
+      mod: mod,
       points: points,
+      segments: segments, 
       ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
       ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
@@ -61,41 +79,48 @@ defmodule Curves.Bezier.Curve do
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
+
+    #Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
+    Curves.Utils.Derivatives.apply_derivatives(bezier_spline)
   end
+
+
+  defp to_points(segments, opts) do
+    List.flatten(segments)
+      |> Points.new_points(opts)
+  end
+
 
   @doc false
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{points: points, origin: origin, opts: curve_opts} = curve, t, opts) when is_number(t) do
+  def solve(%__MODULE__{segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
     opts = 
       curve_opts
       |> Keyword.merge(opts)
       |> Curves.Utils.Opts.merge_opts()
 
-    {_, size} = Nx.shape(points)
-    points = Nx.add(points, origin)
+    {segment, t} = Segment.split_u(curve, u)
+    points = Nx.add(segment, origin)
 
-    case size do
-      n when n < 2 ->
-        {:error, "Cannot solve curve. only #{n} points. need at least 2."}
+    tuple = Curves.Formula.run(mod, points, t, opts)
+            |> Point.to_tuple()
 
-      2 ->
-        {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()}
+    {:ok, force_percent(curve, tuple, opts)}
 
-      3 ->
-        {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()}
-
-      4 ->
-        {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
-
-      n when n > 4 ->
-        {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
-    end
-      |> case do
-        {:ok, point} -> {:ok, force_percent(curve, point, opts)}
-        err -> err
-      end
+    #case type do
+    #  :cubic_bezier -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+    #  :hermite -> {:ok, Curves.Formula.run(Curves.Formula.Hermite, points, t, opts) |> Point.to_tuple()}
+    #  :b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
+    #  :bezier_spline -> {:ok, Curves.Formula.run(Curves.Formula.BezierSpline, points, t, opts) |> Point.to_tuple()}
+    #  #:b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
+    #  _ -> {:error, "UnKnown type :#{type}"}
+    #end
+    #  |> case do
+    #    {:ok, point} -> {:ok, force_percent(curve, point, opts)}
+    #    err -> err
+    #  end
   end
 
   @doc false
@@ -110,9 +135,13 @@ defmodule Curves.Bezier.Curve do
   end
 
   @doc false
-  def take(curve, n, opts \\ []) do
-    Enum.reduce_while(1..n, [], fn i, acc ->
-      case solve(curve, i * (1 / n), opts) do
+  def take(%{segments: segments} = curve, n, opts \\ []) do
+    seg_count = Nx.axis_size(segments, :segment)
+    step_size = seg_count / n
+
+    Enum.reduce_while(1..n, [], fn step, acc ->
+      i = step * step_size
+      case solve(curve, i, opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end
@@ -147,3 +176,4 @@ defmodule Curves.Bezier.Curve do
     end
   end
 end
+

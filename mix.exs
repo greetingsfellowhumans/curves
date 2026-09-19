@@ -4,9 +4,10 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "0.2.3",
+      version: "0.2.4",
       elixir: "~> 1.17",
       description: description(),
+      elixirc_paths: elixirc_paths(Mix.env()),
       cli: cli(),
       start_permanent: Mix.env() == :prod,
       source_url: "https://github.com/greetingsfellowhumans/curves",
@@ -39,6 +40,9 @@ defmodule Curves.MixProject do
     ]
   end
 
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
@@ -57,6 +61,7 @@ defmodule Curves.MixProject do
       {:nx, "~> 0.8"},
 
       # dev/test only.
+      {:stream_data, "~> 1.0", only: [:test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},

@@ -10,5 +10,6 @@ defmodule Curves.Utils.NumbersTest do
       assert split_float(0.5) == {0, 0.5}
       assert split_float(1234.56789) == {1234, 0.56789}
     end
+
   end
 end
