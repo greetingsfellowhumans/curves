@@ -2,6 +2,8 @@ defmodule Curves.Spline.Type.Hermite do
   @moduledoc ~s"""
   Hermite splines accept no control points. Only knots.
   Control points are calculated automatically based on the first derivative of each knot.
+
+  Points: `[P0, P'0, P1, P'1]`
   """
   use Curves.Spline.Type,
     derivatives: [0, {:derivative, :p0, 1}, {:point, 1}, {:derivative, :p1, 1}],
@@ -14,6 +16,11 @@ defmodule Curves.Spline.Type.Hermite do
     2 1 -2 1
   >
 
+  def define_hermite(points, opts \\ []) do
+    points = Enum.map(points, fn p -> [p] end)
+    points
+      |> Curves.define_spline(:hermite, opts)
+  end
 
   @impl true
   def point_count(), do: 4

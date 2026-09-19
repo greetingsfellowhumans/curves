@@ -55,6 +55,13 @@ defmodule Curves.Support.SampleCurves do
     [{25.0, 10.0}],
 
   ]
+  @hermite_flattened [
+    {5.0, 10.0},
+    {10.0, 5.0},
+    {15.0, 10.0},
+    {20.0, 15.0},
+    {25.0, 10.0},
+  ]
 
   @catmull_rom [
     [{0, 0}],
@@ -92,6 +99,7 @@ defmodule Curves.Support.SampleCurves do
       curve0: @curve0,
       curve1: @curve1,
       hermite0: @hermite,
+      hermite_flattened: @hermite_flattened,
       catmull_rom: @catmull_rom,
       catmull_rom2: @catmull_rom2,
       b_spline: @b_spline,

@@ -9,9 +9,6 @@ defmodule Curves.Spline.BSplineTest do
 
   def initial_args(ctx, k \\ :b_spline) do
     curve_spec = ctx.curve_specs[k]
-    #bezier = Curves.define_spline(curve_spec, :bezier_spline)
-    #segments_list = Nx.to_list(bezier.segments) |> Enum.with_index()
-    #{segments_list, bezier}
     curve_spec
   end
 

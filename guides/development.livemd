@@ -18,13 +18,15 @@ Mix.install(
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
 curve = Curves.define_b_spline([
-    {0, 2},
+    {0, -2},
     {3, 4},
-    {6, 4},
-    {9, -1},
-    {10, 8},
-    #{12, 2}
+    {6, 5},
+    {7, -1},
+    {10, 3},
+    {5, 1},
+    {12, 9}
 ])
+
 
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
@@ -37,15 +39,15 @@ curve
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-curve = Curves.define_spline([
+curve = Curves.define_catmull_rom([
   # P0
-  [{0, 0}],
-  [{1, 0}],
-  [{1, 1}],
-  [{0, 1}],
-  [{0, 2}],
-  [{1, 2}],
-], :catmull_rom)
+  {0, 0},
+  {1, 0},
+  {1, 1},
+  {0, 1},
+  {0, 2},
+  {1, 2},
+])
 
 
 curve
@@ -57,16 +59,19 @@ curve
 
 ```elixir
 # And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
-curve = Curves.define_catmull_rom([
-  {0, 0},
-  {0, 10},
-  {10, 10},
-  {10, 0}
+curve = Curves.define_hermite([
+  # P0
+  {5, 10},
+  {10, 5},
+  {15, 10},
+  {20, 10},
+  {25, 5},
+  {30, 15},
 ])
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", count: 1000)
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")

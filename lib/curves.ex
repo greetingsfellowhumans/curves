@@ -81,6 +81,7 @@ defmodule Curves do
   """
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline
 
+  defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite
 
   @doc ~s"""
   Define a new Catmull-Rom spline. Only the joins need to be defined, the control points are calculated automatically.
