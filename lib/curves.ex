@@ -62,7 +62,10 @@ defmodule Curves do
   defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
 
+  @doc false
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
+
+  defdelegate define_bezier_spline(points, opts \\ []), to: Curves.Spline.Type.BezierSpline, as: :define
 
 
   @doc ~s"""
@@ -79,9 +82,9 @@ defmodule Curves do
   ])
   ```
   """
-  defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline
+  defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
 
-  defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite
+  defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
 
   @doc ~s"""
   Define a new Catmull-Rom spline. Only the joins need to be defined, the control points are calculated automatically.
@@ -97,7 +100,7 @@ defmodule Curves do
   ])
   ```
   """
-  defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom
+  defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom, as: :define
 
   @doc ~s"""
   Given a struct, and t, find the point along the curve

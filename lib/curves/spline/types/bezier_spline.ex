@@ -10,8 +10,9 @@ defmodule Curves.Spline.Type.BezierSpline do
     -1  3 -3 1
   >
 
-  def define_bezier_spline(points, opts \\ []) do
-    Curves.define_spline(points, :bezier_spline)
+  @impl true
+  def define(points, opts \\ []) do
+    Curves.define_spline(points, :bezier_spline, opts)
   end
 
   @impl true

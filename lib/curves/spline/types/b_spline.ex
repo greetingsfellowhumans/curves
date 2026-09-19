@@ -36,7 +36,8 @@ defmodule Curves.Spline.Type.BSpline do
   #  segments_list
   #end
 
-  def define_b_spline(points, opts \\ []) do
+  @impl true
+  def define(points, opts \\ []) do
     points = rebuild_points(points, opts)
             |> auto_last([])
     points

@@ -54,6 +54,7 @@ defmodule Curves.Spline.Type do
   """
   @callback map_segments(segments_list :: list(), curve :: Curves.Spline.Curve.t()) :: list()
 
+  @callback define(points :: list(tuple() | list()), opts :: list()) :: Curves.Spline.Curve.t()
 
   @doc false
   defdelegate get_mod(key), to: Curves.Spline.TypeIndex, as: :get
