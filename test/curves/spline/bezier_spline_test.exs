@@ -7,12 +7,12 @@ defmodule Curves.Spline.BezierSplineTest do
 
   test "should calculate a bezier spline", ctx do
     curve = ctx.curves.curve1
-    {x, y} = Curves.solve_spline!(curve, 1.11)
+    {x, y} = Curves.solve!(curve, 1.11)
     assert is_float(x)
     assert is_float(y)
 
     curve = ctx.curves.curve0
-    assert_raise Curves.Exceptions.OutOfBoundU, fn -> Curves.solve_spline!(curve, 1.11) end
+    assert_raise Curves.Exceptions.OutOfBoundU, fn -> Curves.solve!(curve, 1.11) end
 
     #tuples0 =
     #  @sample_points

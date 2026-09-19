@@ -11,8 +11,8 @@ defmodule Curves.Utils.Derivatives do
       0 -> 0.0
       _ -> t - @small_num
     end
-    {x0, y0} = Curves.solve_spline!(curve, t)
-    {x1, y1} = Curves.solve_spline!(curve, coord)
+    {x0, y0} = Curves.solve!(curve, t)
+    {x1, y1} = Curves.solve!(curve, coord)
     slope = case {y1 - y0, x1 - x0} do
       {_, +0.0} -> {1_000_000, 1}
       {y, x} -> {y, x}

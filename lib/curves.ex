@@ -57,6 +57,7 @@ defmodule Curves do
   @doc false
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
 
+
   @doc ~s"""
   Return a `Curves.Spline.Curve` struct representing a `Curves.Spline.Type.BezierSpline`.
   Can later be passed into `solve/2`.
@@ -115,6 +116,7 @@ defmodule Curves do
   @spec define_b_spline(T.point_list(), T.opts()) :: Spline.t()
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
 
+
   @doc ~s"""
   Define a new `Curves.Spline.Type.Hermite` spline.
   Control points are calculated automatically based on the first derivative of each knot.
@@ -137,6 +139,7 @@ defmodule Curves do
   @spec define_hermite(T.point_list(), T.opts()) :: Spline.t()
   defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
 
+
   @doc ~s"""
   Define a new `Curves.Spline.Type.CatmullRom`. Only the joins need to be defined, the control points are calculated automatically.
 
@@ -156,6 +159,7 @@ defmodule Curves do
   @spec define_catmull_rom(T.point_list(), T.opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom, as: :define
 
+
   @doc ~s"""
   Given a struct, and t, find the point along the curve
 
@@ -169,56 +173,48 @@ defmodule Curves do
 
   """
   @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) :: {:ok, T.point_tuple()} | {:error, term()}
-  def solve(curve, t), do: solve(curve, t, [])
-  def solve(%Bezier{} = curve, t, opts), do: Bezier.solve(curve, t, opts)
-  def solve(%Spline{} = curve, t, opts), do: Spline.solve(curve, t, opts)
+  def solve(curve, t, opts \\ []) do
+    case curve do
+      %Bezier{} -> Bezier.solve(curve, t, opts)
+      %Spline{} -> Spline.solve(curve, t, opts)
+    end
+  end
+
 
   @doc ~s"""
   The raising version of `solve/3`
   """
   @spec solve!(Bezier.t() | Spline.t(), T.t(), T.opts()) :: T.point_tuple()
-  def solve!(curve, t), do: solve!(curve, t, [])
-  def solve!(%Bezier{} = curve, t, opts), do: Bezier.solve!(curve, t, opts)
-  def solve!(%Spline{} = curve, t, opts), do: Spline.solve!(curve, t, opts)
-  #defdelegate solve(curve, t, opts \\ []), to: Curves.Bezier.Curve
+  def solve!(curve, t, opts \\ []) do
+    case curve do
+      %Bezier{} -> Bezier.solve!(curve, t, opts)
+      %Spline{} -> Spline.solve!(curve, t, opts)
+    end
+  end
 
-  #defdelegate solve_spline(curve, t, opts \\ []), to: Curves.Spline.Curve, as: :solve
-  #defdelegate solve_spline!(curve, t, opts \\ []), to: Curves.Spline.Curve, as: :solve!
-
-  #@spec solve!(Bezier.t(), T.t(), T.opts()) :: T.point_tuple()
-  #defdelegate solve!(curve, t, opts \\ []), to: Curves.Bezier.Curve
 
   @doc ~s"""
   Take `n` samples, evenly spaced, from the curve.
   """
   @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: {:ok, T.point_list()} | {:error, term()}
-  def take(curve, t), do: take(curve, t, [])
-  def take(%Bezier{} = curve, t, opts), do: Bezier.take(curve, t, opts)
-  def take(%Spline{} = curve, t, opts), do: Spline.take(curve, t, opts)
+  def take(curve, n, opts \\ []) do
+    case curve do
+      %Bezier{} -> Bezier.take(curve, n, opts)
+      %Spline{} -> Spline.take(curve, n, opts)
+    end
+  end
 
 
   @doc ~s"""
   The raising version of `take/3`
   """
   @spec take!(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: T.point_list()
-  def take!(curve, t), do: take!(curve, t, [])
-  def take!(%Bezier{} = curve, t, opts), do: Bezier.take!(curve, t, opts)
-  def take!(%Spline{} = curve, t, opts), do: Spline.take!(curve, t, opts)
+  def take!(curve, n, opts \\ []) do
+    case curve do
+      %Bezier{} -> Bezier.take!(curve, n, opts)
+      %Spline{} -> Spline.take!(curve, n, opts)
+    end
+  end
 
-  #defdelegate take(curve, n, opts \\ []), to: Curves.Bezier.Curve
-  #@doc ~s"""
-  #The raising version of `take/3`
-  #"""
-  #@spec take!(Bezier.t(), n :: pos_integer(), T.opts()) :: T.point_list()
-  #defdelegate take!(curve, n, opts \\ []), to: Curves.Bezier.Curve
 
-  #@doc ~s"""
-  #The raising version of `take_spline/3`
-  #"""
-  #defdelegate take_spline(curve, n, opts \\ []), to: Curves.Spline.Curve, as: :take
-
-  #@doc ~s"""
-  #Take `n` samples, evenly spaced, from the spline.
-  #"""
-  #defdelegate take_spline!(curve, n, opts \\ []), to: Curves.Spline.Curve, as: :take!
 end
