@@ -1,61 +1,19 @@
 defmodule Curves.Spline.BezierSplineTest do
   use ExUnit.Case
-  alias Curves.Utils.{Points, Point}
-  alias Curves.Formula.{BezierSpline, CubicBezier}
+  import Curves.Support.SampleCurves
+
+  setup [:with_curves]
 
 
-  @curve0 [
-    # P0
-    [{5.0, 10.0},
-      {10.0, 10.0}
-    ],
+  test "should calculate a bezier spline", ctx do
+    curve = ctx.curves.curve1
+    {x, y} = Curves.solve_spline!(curve, 1.11)
+    assert is_float(x)
+    assert is_float(y)
 
-    # P1
-    [
-     {10.0, 5.0},
-     {5.0, 5.0},
-    ],
-  ]
+    curve = ctx.curves.curve0
+    assert_raise Curves.Exceptions.OutOfBoundU, fn -> Curves.solve_spline!(curve, 1.11) end
 
-  @curve1 [
-    # P0
-    [{5.0, 10.0},
-      {10.0, 10.0}
-    ],
-
-    # P1
-    [{10.0, 5.0},
-     {5.0, 5.0},
-     {15.0, 5.0}],
-
-    # P2
-    [{15.0, 10.0},
-     {15.0, 6.0},
-     {15.0, 14.0 }],
-
-    # P3
-    [{20.0, 15.0},
-     {16.0, 15.0},
-     {23.0, 15.0}],
-
-    # P4
-    [{25.0, 10.0},
-     {20.0, 10.0}]
-  ]
-  @curve0_knot0 Point.new_point({5.0, 10.0})
-  @curve0_knot1 Point.new_point({10.0, 5.0})
-
-  @curve1_knot0 Point.new_point({5.0, 10.0})
-  @curve1_knot1 Point.new_point({10.0, 5.0})
-  @curve1_knot2 Point.new_point({15.0, 10.0})
-  @curve1_knot3 Point.new_point({20.0, 15.0})
-  @curve1_knot4 Point.new_point({25.0, 10.0})
-
-  @tag :skip
-  test "should calculate a bezier spline" do
-    curve = Curves.define_spline(@curve1, :bezier_spline)
-    p = Curves.solve_spline!(curve, 1.11, force_percent: false)
-    dbg p
     #tuples0 =
     #  @sample_points
     #  |> List.flatten()

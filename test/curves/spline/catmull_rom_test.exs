@@ -3,8 +3,7 @@ defmodule Curves.Spline.CatmullRomTest do
   alias Curves.Spline.Type.CatmullRom, as: Mod
   import Mod
   import Curves.Support.SampleCurves
-  alias Curves.Utils.{Point, Points}
-  import Point
+  alias Curves.Utils.{Point}
 
   setup [:with_curves]
 

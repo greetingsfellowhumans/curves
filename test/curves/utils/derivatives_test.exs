@@ -11,7 +11,7 @@ defmodule Curves.Utils.DerivativesTest do
     property "get_derivative/3", ctx do
       c = ctx.curves.curve1
       check all t <- StreamData.float(min: 0.0, max: 4.0) do
-        d = get_derivative(c, 0.5, :point)
+        d = get_derivative(c, t, :point)
         assert is_point(d)
       end
     end
