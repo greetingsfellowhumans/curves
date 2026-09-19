@@ -2,6 +2,7 @@ defmodule Curves.Utils.Derivatives do
   alias Curves.Utils.{Point}
   @moduledoc false
   @small_num 0.001
+  def small_num(), do: @small_num
 
   @doc ~s"""
   Given a point on a curve, find the derivative

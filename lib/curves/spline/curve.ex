@@ -6,6 +6,8 @@ defmodule Curves.Spline.Curve do
   alias Curves.Utils.Types, as: T
   alias Curves.Bezier.Predefined
 
+  @minimum_u (0.0 - Curves.Utils.Derivatives.small_num())
+
   defstruct [
     :points,
     :segments,
@@ -100,7 +102,7 @@ defmodule Curves.Spline.Curve do
   @doc false
   def solve(%__MODULE__{max_u: max, segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
     cond do
-      (u > max or u < 0.0) -> {:error, :out_of_bounds}
+      (u > max or u < @minimum_u) -> {:error, :out_of_bounds}
       true ->
         opts = 
           curve_opts
