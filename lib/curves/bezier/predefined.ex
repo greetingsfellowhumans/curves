@@ -103,16 +103,23 @@ defmodule Curves.Bezier.Predefined do
   Return a list of all keys, within a given curve order, that can be used with `get_coords/1`
   `(linear = 1, quadratic = 2, cubic = 3)`
 
+  alternately, pass in one of `:linear`, `:quad`, `:cubic`.
+
   ## Examples
       iex> [:linear | _] = Curves.Bezier.Predefined.list(1)
       iex> [:quadratic_down | _] = Curves.Bezier.Predefined.list(2)
   """
-  @spec list(T.order()) :: curve_keys()
+  @spec list(T.order() | :linear | :quad | :cubic) :: curve_keys()
   def list(order) do
     case order do
       1 -> @order1
+      :linear -> @order1
+
       2 -> @order2
+      :quad -> @order2
+
       3 -> @order3
+      :cubic -> @order3
     end
       |> Map.keys()
       |> Enum.sort()
