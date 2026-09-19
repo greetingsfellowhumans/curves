@@ -6,7 +6,7 @@ defmodule Curves.Spline.Curve do
   alias Curves.Utils.Types, as: T
   alias Curves.Bezier.Predefined
 
-  @minimum_u (0.0 - Curves.Utils.Derivatives.small_num())
+  @minimum_u (0.0 - Curves.Utils.Constants.small_number())
 
   defstruct [
     :points,

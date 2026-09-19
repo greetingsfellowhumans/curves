@@ -16,21 +16,6 @@ defmodule Curves.Bezier.Predefined do
   alias Curves.Utils.Types, as: T
 
 
-  @typedoc "The type of curve"
-  @type curve_key :: atom()
-
-  @typedoc "A list of curve keys"
-  @type curve_keys :: list(curve_key())
-
-  @typedoc ~s"""
-  A map of useful info about a predefined curve.
-  """
-  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.point_list()}
-
-  @typedoc ~s"""
-  A list of curve type info
-  """
-  @type curve_type_infos :: list(curve_type_info())
 
 
   @order1 %{
@@ -41,9 +26,10 @@ defmodule Curves.Bezier.Predefined do
     linear_vertical:     [{0, 0}, {0, 1}],
   }
   @order2 %{
-    quadratic_up:         [{-2, 4}, {0, 0}, {2, 4}], # F(x) = x^2
-    quadratic_down:       [{-2, -4}, {0, 0}, {2, -4}], # F(x) = -x^2
-    quadratic_left:       [{-4, -2}, {0, 0}, {4, -2}], # F(x) = -x^2
+    quadratic_up:         [{0, 1}, {0.5, 0}, {1, 1}], # F(x) = x^2
+    quadratic_down:       [{0, 0}, {0.5, 1}, {1, 0}], # F(x) = -x^2
+    quadratic_left:       [{0, 0}, {1, 0.5}, {0, 1}], # F(x) = -x^2
+    quadratic_right:      [{1, 1}, {0, 0.5}, {1, 0}], # F(x) = -x^2
   }
   @order3 %{
     ease:                [{0.3, 0}, {0.65, 0}],
@@ -89,6 +75,31 @@ defmodule Curves.Bezier.Predefined do
        |> Map.new(fn {k, li} ->
          {k, Enum.map(li, fn {x, y} -> {x * 1.0, y * 1.0} end)} # Coerce to floats
        end)
+
+  @typedoc ~s"""
+  ### Cubic
+  `#{Map.keys(@order3) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+
+  ### Quadratic
+  `#{Map.keys(@order2) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+
+  ### Linear
+  `#{Map.keys(@order1) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  """
+  @type curve_key :: atom()
+
+  @typedoc "A list of curve keys"
+  @type curve_keys :: list(curve_key())
+
+  @typedoc ~s"""
+  A map of useful info about a predefined curve.
+  """
+  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.point_list()}
+
+  @typedoc ~s"""
+  A list of curve type info
+  """
+  @type curve_type_infos :: list(curve_type_info())
 
   @doc ~s"""
   Return a list of all keys that can be used with `get_coords/1`
