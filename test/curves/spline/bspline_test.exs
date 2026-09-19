@@ -44,7 +44,7 @@ defmodule Curves.Spline.BSplineTest do
           {16.0, 6.666666666666667}
         ]
       ]
-      curve = define_b_spline(curve_spec, [])
+      curve = define(curve_spec, [])
       assert is_struct(curve, Curves.Spline.Curve)
     end
 

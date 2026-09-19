@@ -2,7 +2,8 @@ defmodule Curves.Spline.Type.CatmullRom do
   @moduledoc false
   use Curves.Spline.Type
 
-  def define_catmull_rom(points, opts \\ []) do
+  @impl true
+  def define(points, opts \\ []) do
     Enum.map(points, &([&1]))
       |> Curves.define_spline(:catmull_rom, opts)
   end

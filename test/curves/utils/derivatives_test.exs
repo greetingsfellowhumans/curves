@@ -21,8 +21,9 @@ defmodule Curves.Utils.DerivativesTest do
     end
 
     test "apply_derivatives", ctx do
-      curve_spec = ctx.curve_specs.hermite0
-      curve = Curves.define_spline(curve_spec, :hermite)
+      curve_spec = ctx.curve_specs.hermite_flattened
+      curve = Curves.define_hermite(curve_spec)
+      assert is_struct(curve, Curves.Spline.Curve)
 
     end
   end

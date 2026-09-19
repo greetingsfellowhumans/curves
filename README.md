@@ -13,7 +13,6 @@ assert is_float(y)
 
 ## Directory
 
-Welcome to Curves!
 Be sure to check out the [livebook](https://curves.hexdocs.pm/bezier_curves.html) for an interactive demo/tutorial.
 
 - [Hex docs](https://curves.hexdocs.pm/)
@@ -29,7 +28,7 @@ The simplest way to use Curves is with the predefined ones like `:ease_in_out`
 ```elixir
 curves = Curves.define_bezier(:ease_in_out)
 for i <- 0..1000 do
-  Curves.solve!(curve, i * 0.001)
+  Curves.solve!(curve, i / 1000)
 end
 |> # render_vega_lite_chart(...)
 ```
@@ -82,28 +81,28 @@ Notice we are no longer using `define_bezier`, but `define_bezier_spline`. Now i
 ```elixir
 points = [
   # P0
-  [{5.0, 10.0},
-  {10.0, 10.0}],
+  [{5.0, 10.0},  # Knot
+  {10.0, 10.0}], # control point 0
 
   # P1
-  [{10.0, 5.0},
-    {5.0, 5.0}, 
-    {15.0, 5.0}],
+  [{10.0, 5.0},  # Knot
+    {5.0, 5.0},  # control point 0
+    {15.0, 5.0}],# control point 1
 
   # P2
-  [{15.0, 10.0},
-   {15.0, 6.0},
-   {15.0, 14.0}
+  [{15.0, 10.0}, # Knot
+   {15.0, 6.0},  # control point 0
+   {15.0, 14.0}  # control point 1
   ],
 
   # P3
-  [{20.0, 15.0},
-   {18.0, 15.0},
-   {23.0, 15.0}],
+  [{20.0, 15.0}, # Knot
+   {18.0, 15.0}, # control point 0
+   {23.0, 15.0}],# control point 1
 
   # P4
-  [{30.0, 10.0}, 
-    {32.0, 5.0}]
+  [{30.0, 10.0}, # Knot
+    {32.0, 5.0}] # control point 0
 ]
 curves = Curves.define_bezier_spline(points)
 ```
@@ -130,8 +129,7 @@ curve = Curves.define_hermite([
 
 ### Catmull-Rom Spline
 
-Similar to the Hermite spline, but now the derivative used is the slope between the previous and next point.
-One challenge is finding the point before the first, and after the last point passed in.
+Similar to the Hermite spline, but now the derivative comes from the slope between the previous and next point.
 
 ```elixir
 curve = Curves.define_catmull_rom([

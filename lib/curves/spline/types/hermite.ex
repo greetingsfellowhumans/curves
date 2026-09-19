@@ -16,7 +16,8 @@ defmodule Curves.Spline.Type.Hermite do
     2 1 -2 1
   >
 
-  def define_hermite(points, opts \\ []) do
+  @impl true
+  def define(points, opts \\ []) do
     points = Enum.map(points, fn p -> [p] end)
     points
       |> Curves.define_spline(:hermite, opts)
