@@ -54,25 +54,10 @@ defmodule Curves.Utils.Plotting do
       |> Enum.with_index()
       |> Enum.map(fn {segment, segment_idx} ->
           Enum.zip_with(segment, fn [x, y] ->
-            %{x: x, y: y, label: "segment_#{segment_idx}"}
+            %{x: x, y: y, label: "segment #{segment_idx} {#{Float.round(x, 3)}, #{Float.round(y, 3)}}"}
           end)
       end)
       |> List.flatten()
-      #|> to_tuples()
-      #  |> Enum.with_index()
-      #  |> Enum.map(fn {{x, y}, p_idx} ->
-      #  %{x: x, y: y, segment: segment_idx, label: "#{segment_idx}P#{p_idx}(#{x}, #{y})"}
-      #end)
-    #case Nx.shape(points) do
-    #  {_, n} when n < 3 -> []
-    #  {_, n} -> 
-    #    Nx.slice(points, [0, 1], [2, n - 2])
-    #      |> to_maps()
-    #end
-    #  |> Enum.with_index()
-    #  |> Enum.map(fn {p, idx} -> 
-    #    Map.put(p, :label, "control point #{idx}")
-    #  end)
   end
 
 
