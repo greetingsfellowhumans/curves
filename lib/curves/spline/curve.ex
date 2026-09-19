@@ -1,10 +1,12 @@
 defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
-  This module is meant to only be used internally. You are probably looking for `Curves.define_spline/2` or `Curves.solve/3`
+  Struct representing a spline
   """
   alias Curves.Utils.{Point, Points, Segment}
   alias Curves.Utils.Types, as: T
   alias Curves.Bezier.Predefined
+
+  @minimum_u (0.0 - Curves.Utils.Constants.small_number())
 
   defstruct [
     :points,
@@ -15,8 +17,7 @@ defmodule Curves.Spline.Curve do
     :xmin,
     :ymax,
     :ymin,
-    #:ids,
-    mode: :edit,
+    :max_u,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
@@ -29,20 +30,19 @@ defmodule Curves.Spline.Curve do
   | `:xmin`   	| the lowest x coord in the tensor               	|
   | `:ymin`   	| the lowest y coord in the tensor               	|
   | `:ymax`   	| the highest y coord in the tensor              	|
-  | `:mode`   	| Not yet used. Maybe removed in future versions 	|
   | `:origin` 	| the origin of the graph.                       	|
   | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
     points: Nx.Tensor.t(),
     segments: list(),
+    max_u: float(),
     type: atom(),
     mod: module(),
     xmax: T.coord(),
     xmin: T.coord(),
     ymax: T.coord(),
     ymin: T.coord(),
-    mode: :edit | :run,
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
@@ -71,17 +71,22 @@ defmodule Curves.Spline.Curve do
       type: spline_type,
       mod: mod,
       points: points,
-      segments: segments, 
+      segments: segments,
       ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
       ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
       xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
+      max_u: get_max_u(segments),
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
 
-    #Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
     Curves.Utils.Derivatives.apply_derivatives(bezier_spline)
+  end
+
+  defp get_max_u(segments) do
+    {s, _d, _p} = Nx.shape(segments)
+    s * 1.0
   end
 
 
@@ -95,32 +100,23 @@ defmodule Curves.Spline.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
-    opts = 
-      curve_opts
-      |> Keyword.merge(opts)
-      |> Curves.Utils.Opts.merge_opts()
+  def solve(%__MODULE__{max_u: max, segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
+    cond do
+      (u > max or u < @minimum_u) -> {:error, :out_of_bounds}
+      true ->
+        opts = 
+          curve_opts
+          |> Keyword.merge(opts)
+          |> Curves.Utils.Opts.merge_opts()
 
-    {segment, t} = Segment.split_u(curve, u)
-    points = Nx.add(segment, origin)
+        {segment, t} = Segment.split_u(curve, u)
+        points = Nx.add(segment, origin)
 
-    tuple = Curves.Formula.run(mod, points, t, opts)
-            |> Point.to_tuple()
+        tuple = Curves.Formula.run(mod, points, t, opts)
+                |> Point.to_tuple()
 
-    {:ok, force_percent(curve, tuple, opts)}
-
-    #case type do
-    #  :cubic_bezier -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
-    #  :hermite -> {:ok, Curves.Formula.run(Curves.Formula.Hermite, points, t, opts) |> Point.to_tuple()}
-    #  :b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
-    #  :bezier_spline -> {:ok, Curves.Formula.run(Curves.Formula.BezierSpline, points, t, opts) |> Point.to_tuple()}
-    #  #:b_spline -> {:ok, Curves.Formula.run(Curves.Formula.BSpline, points, t, opts) |> Point.to_tuple()}
-    #  _ -> {:error, "UnKnown type :#{type}"}
-    #end
-    #  |> case do
-    #    {:ok, point} -> {:ok, force_percent(curve, point, opts)}
-    #    err -> err
-    #  end
+        {:ok, force_percent(curve, tuple, opts)}
+    end
   end
 
   @doc false
@@ -130,7 +126,7 @@ defmodule Curves.Spline.Curve do
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
-      {:error, msg} when is_binary(msg) -> raise msg
+      {:error, :out_of_bounds} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: t
     end
   end
 

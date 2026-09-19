@@ -1,8 +1,9 @@
 defmodule Curves.Utils.Plotting do
-  @moduledoc ~s"""
-  These are helper functions for making it easier to plot curves with VegaLite.
-  """
-  import Curves.Utils.Points, only: [to_maps: 1, to_tuples: 1]
+  #@moduledoc ~s"""
+  #These are helper functions for making it easier to plot curves with VegaLite.
+  #"""
+  @moduledoc false
+  import Curves.Utils.Points, only: [to_maps: 1]
 
   @doc ~s"""
   Given a curve, build a list of points, in map format.
@@ -12,23 +13,12 @@ defmodule Curves.Utils.Plotting do
   * `:count`, default: `1000`
   """
   def curve_to_scatterplot(curve), do: curve_to_scatterplot(curve, [])
-  def curve_to_scatterplot(%Curves.Bezier.Curve{} = curve, opts) do
+  def curve_to_scatterplot(curve, opts) do
     control_points = extract_control_points(curve)
 
     label = Keyword.get(opts, :label, "Curve")
     count = Keyword.get(opts, :count, 1000)
     line = Curves.take!(curve, count, opts)
-      |> Enum.map(fn {x, y} ->
-        %{x: x, y: y, label: label}
-      end)
-    line ++ control_points
-  end
-  def curve_to_scatterplot(%Curves.Spline.Curve{} = curve, opts) do
-    control_points = extract_control_points(curve)
-
-    label = Keyword.get(opts, :label, "Curve")
-    count = Keyword.get(opts, :count, 1000)
-    line = Curves.take_spline!(curve, count, opts)
       |> Enum.map(fn {x, y} ->
         %{x: x, y: y, label: label}
       end)

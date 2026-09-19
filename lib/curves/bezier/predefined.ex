@@ -16,21 +16,6 @@ defmodule Curves.Bezier.Predefined do
   alias Curves.Utils.Types, as: T
 
 
-  @typedoc "The type of curve"
-  @type curve_key :: atom()
-
-  @typedoc "A list of curve keys"
-  @type curve_keys :: list(curve_key())
-
-  @typedoc ~s"""
-  A map of useful info about a predefined curve.
-  """
-  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.point_list()}
-
-  @typedoc ~s"""
-  A list of curve type info
-  """
-  @type curve_type_infos :: list(curve_type_info())
 
 
   @order1 %{
@@ -41,9 +26,10 @@ defmodule Curves.Bezier.Predefined do
     linear_vertical:     [{0, 0}, {0, 1}],
   }
   @order2 %{
-    quadratic_up:         [{-2, 4}, {0, 0}, {2, 4}], # F(x) = x^2
-    quadratic_down:       [{-2, -4}, {0, 0}, {2, -4}], # F(x) = -x^2
-    quadratic_left:       [{-4, -2}, {0, 0}, {4, -2}], # F(x) = -x^2
+    quadratic_up:         [{0, 1}, {0.5, 0}, {1, 1}], # F(x) = x^2
+    quadratic_down:       [{0, 0}, {0.5, 1}, {1, 0}], # F(x) = -x^2
+    quadratic_left:       [{0, 0}, {1, 0.5}, {0, 1}], # F(x) = -x^2
+    quadratic_right:      [{1, 1}, {0, 0.5}, {1, 0}], # F(x) = -x^2
   }
   @order3 %{
     ease:                [{0.3, 0}, {0.65, 0}],
@@ -90,8 +76,33 @@ defmodule Curves.Bezier.Predefined do
          {k, Enum.map(li, fn {x, y} -> {x * 1.0, y * 1.0} end)} # Coerce to floats
        end)
 
+  @typedoc ~s"""
+  ### Cubic
+  `#{Map.keys(@order3) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+
+  ### Quadratic
+  `#{Map.keys(@order2) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+
+  ### Linear
+  `#{Map.keys(@order1) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  """
+  @type curve_key :: atom()
+
+  @typedoc "A list of curve keys"
+  @type curve_keys :: list(curve_key())
+
+  @typedoc ~s"""
+  A map of useful info about a predefined curve.
+  """
+  @type curve_type_info :: %{order: T.order(), key: curve_key(), points: T.point_list()}
+
+  @typedoc ~s"""
+  A list of curve type info
+  """
+  @type curve_type_infos :: list(curve_type_info())
+
   @doc ~s"""
-  Return a list of all keys that can be used with `get/2`
+  Return a list of all keys that can be used with `get_coords/1`
 
   ## Examples
       iex> [:ease | _] = Curves.Bezier.Predefined.list()
@@ -100,19 +111,26 @@ defmodule Curves.Bezier.Predefined do
   def list(), do: Map.keys(@all) |> Enum.sort()
 
   @doc ~s"""
-  Return a list of all keys, within a given curve order, that can be used with `get/2`
+  Return a list of all keys, within a given curve order, that can be used with `get_coords/1`
   `(linear = 1, quadratic = 2, cubic = 3)`
+
+  alternately, pass in one of `:linear`, `:quad`, `:cubic`.
 
   ## Examples
       iex> [:linear | _] = Curves.Bezier.Predefined.list(1)
       iex> [:quadratic_down | _] = Curves.Bezier.Predefined.list(2)
   """
-  @spec list(T.order()) :: curve_keys()
+  @spec list(T.order() | :linear | :quad | :cubic) :: curve_keys()
   def list(order) do
     case order do
       1 -> @order1
+      :linear -> @order1
+
       2 -> @order2
+      :quad -> @order2
+
       3 -> @order3
+      :cubic -> @order3
     end
       |> Map.keys()
       |> Enum.sort()
@@ -136,7 +154,7 @@ defmodule Curves.Bezier.Predefined do
   @doc ~s"""
   Return list of all details for all predefined curves
   """
-  @spec list_details() :: curve_type_info()
+  @spec list_details() :: list(curve_type_info())
   def list_details() do
     list()
       |> Enum.map(&details/1)
@@ -150,11 +168,7 @@ defmodule Curves.Bezier.Predefined do
     Map.get(@all, k)
   end
 
-  # Used internally, but probably doesn't need to be part of the public facing API.
-  @doc ~s"""
-  Return a tensor of points for a given key.
-  Mainly for internal use.
-  """
+  @doc false
   @spec get(curve_key(), T.opts()) :: T.points()
   def get(k, opts \\ []) do
     Map.get(@all, k) |> new_points(opts)

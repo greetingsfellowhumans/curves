@@ -11,7 +11,7 @@ defmodule Curves.Utils.DerivativesTest do
     property "get_derivative/3", ctx do
       c = ctx.curves.curve1
       check all t <- StreamData.float(min: 0.0, max: 4.0) do
-        d = get_derivative(c, 0.5, :point)
+        d = get_derivative(c, t, :point)
         assert is_point(d)
       end
     end
@@ -21,8 +21,9 @@ defmodule Curves.Utils.DerivativesTest do
     end
 
     test "apply_derivatives", ctx do
-      curve_spec = ctx.curve_specs.hermite0
-      curve = Curves.define_spline(curve_spec, :hermite)
+      curve_spec = ctx.curve_specs.hermite_flattened
+      curve = Curves.define_hermite(curve_spec)
+      assert is_struct(curve, Curves.Spline.Curve)
 
     end
   end

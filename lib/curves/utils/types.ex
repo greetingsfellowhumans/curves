@@ -45,4 +45,20 @@ defmodule Curves.Utils.Types do
 
   @typedoc "An Nx tensor representing a series of points"
   @type points :: %Nx.Tensor{shape: {2, pos_integer()}, names: point_names(), type: {:f, pos_integer()}}
+
+  @typedoc ~s"""
+  Float between 0.0 and 1.0, representing a percentage of progress from the first to last point.
+  """
+  @type t :: float()
+
+  @typedoc ~s"""
+  All 'define_*' functions can receive the following options:
+
+  | `key` | `default` | `description` |
+  | --- | ---     | --- |
+  | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
+
+  """
+  @type define_opts :: [origin: point_tuple()]
+
 end

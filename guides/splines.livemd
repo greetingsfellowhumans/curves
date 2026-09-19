@@ -1,0 +1,106 @@
+# Splines
+
+```elixir
+Mix.install(
+  [
+    {:curves, "~> 0.2.5"},
+    {:tucan, "~> 0.6.0"},
+    {:vega_lite, "~> 0.1.0"},
+    {:kino_vega_lite, "~> 0.1.0"},
+  ])
+```
+
+## Curves (Spline) tutorial
+
+```elixir
+# A very common spline is the Bezier Spline.
+# It's basically a series of Bezier curves all linked together.
+# Notice you never define the endpoint for any of them,
+# they get that automatically from their neighbour.
+
+curve = Curves.define_bezier_spline([
+  # P0
+  [{5.0, 10.0},
+  {10.0, 10.0}],
+
+  # P1
+  [{10.0, 5.0},
+    {5.0, 5.0}, 
+    {15.0, 5.0}],
+
+  # P2
+  [{15.0, 10.0},
+   {15.0, 6.0},
+   {15.0, 14.0}
+  ],
+
+  # P3
+  [{20.0, 15.0},
+   {18.0, 15.0},
+   {23.0, 15.0}],
+
+  [{30.0, 10.0}, 
+    {32.0, 5.0}]
+])
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+curve = Curves.define_hermite([
+  {5, 10},
+  {10, 5},
+  {15, 10},
+  {20, 10},
+  {25, 5},
+  {30, 15},
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+curve = Curves.define_catmull_rom([
+  {0, 0},
+  {1, 0},
+  {1, 1},
+  {0, 1},
+  {0, 2},
+  {1, 2},
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```
+
+```elixir
+curve = Curves.define_b_spline([
+    {0, -2},
+    {3, 4},
+    {6, 5},
+    {7, -1},
+    {10, 3},
+    {5, 1},
+    {12, 9}
+])
+
+
+curve
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
+|> Tucan.scatter("x", "y")
+|> Tucan.color_by("label")
+|> Tucan.fill_by("label")
+```

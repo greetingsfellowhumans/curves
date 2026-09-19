@@ -3,7 +3,6 @@ defmodule Curves.Spline.BSplineTest do
   alias Curves.Spline.Type.BSpline, as: Mod
   import Mod
   import Curves.Support.SampleCurves
-  alias Curves.Utils.{Point, Points}
 
   setup [:with_curves]
 
@@ -14,8 +13,8 @@ defmodule Curves.Spline.BSplineTest do
 
   describe "B-Splines" do
 
-    test "split points", ctx do
-      curve_spec = ctx.curve_specs[:b_spline]
+    test "split points", _ctx do
+      #curve_spec = ctx.curve_specs[:b_spline]
       assert split_points({10, 10}, {14, 20}, 1) == [{12.0, 15.0}]
       assert split_points({0, 0}, {6, 9}, 2) == [{2.0, 3.0}, {4.0, 6.0}]
       assert split_points({0, 0}, {6, 9}, 1) == [{3.0, 4.5}]
@@ -44,7 +43,7 @@ defmodule Curves.Spline.BSplineTest do
           {16.0, 6.666666666666667}
         ]
       ]
-      curve = define_b_spline(curve_spec, [])
+      curve = define(curve_spec, [])
       assert is_struct(curve, Curves.Spline.Curve)
     end
 

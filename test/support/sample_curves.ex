@@ -91,8 +91,8 @@ defmodule Curves.Support.SampleCurves do
   def with_curves(ctx) do
     ctx
       |> Map.put(:curves, %{
-      curve0: Curves.define_spline(@curve0, :bezier_spline),
-      curve1: Curves.define_spline(@curve1, :bezier_spline),
+      curve0: Curves.define_bezier_spline(@curve0),
+      curve1: Curves.define_bezier_spline(@curve1),
       #hermite0: Curves.define_spline(@hermite, :hermite),
     })
       |> Map.put(:curve_specs, %{
