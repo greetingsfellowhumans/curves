@@ -136,7 +136,7 @@ defmodule Curves.Bezier.Predefined do
   @doc ~s"""
   Return list of all details for all predefined curves
   """
-  @spec list_details() :: curve_type_info()
+  @spec list_details() :: list(curve_type_info())
   def list_details() do
     list()
       |> Enum.map(&details/1)
