@@ -34,10 +34,7 @@ curve = Curves.define_b_spline([
     {3, 4},
     {6, 5},
     {7, -1},
-    {10, 3},
-    {5, 1},
-    {12, 9}
-])
+], force_percent: true)
 
 
 curve

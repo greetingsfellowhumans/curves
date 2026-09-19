@@ -1,6 +1,7 @@
 defmodule Curves.Spline.Type.BezierSpline do
   @moduledoc ~s"""
   The Bezier Spline is basically a series of Bezier Curves linked together.
+
   To define one, you pass in a list of curves, but without the endpoint, which is automatically calculated from the next curve
 
 

@@ -13,8 +13,6 @@ defmodule Curves.Bezier.Curve do
     :xmin,
     :ymax,
     :ymin,
-    #:ids,
-    mode: :edit,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
@@ -27,7 +25,6 @@ defmodule Curves.Bezier.Curve do
   | `:xmin`   	| the lowest x coord in the tensor               	|
   | `:ymin`   	| the lowest y coord in the tensor               	|
   | `:ymax`   	| the highest y coord in the tensor              	|
-  | `:mode`   	| Not yet used. Maybe removed in future versions 	|
   | `:origin` 	| the origin of the graph.                       	|
   | `:opts`   	| The keyword list of options                    	|
   """
@@ -37,8 +34,6 @@ defmodule Curves.Bezier.Curve do
     xmin: T.coord(),
     ymax: T.coord(),
     ymin: T.coord(),
-    #ids: list(),
-    mode: :edit | :run,
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
@@ -68,34 +63,37 @@ defmodule Curves.Bezier.Curve do
 
   @doc false
   def solve(%__MODULE__{points: points, origin: origin, opts: curve_opts} = curve, t, opts) when is_number(t) do
-    opts = 
-      curve_opts
-      |> Keyword.merge(opts)
-      |> Curves.Utils.Opts.merge_opts()
+    cond do
+      (t < 0.0 or t > 1.0) -> {:error, :out_of_bounds}
+      true ->
+        opts = 
+          curve_opts
+          |> Keyword.merge(opts)
+          |> Curves.Utils.Opts.merge_opts()
 
-    {_, size} = Nx.shape(points)
-    points = Nx.add(points, origin)
+        {_, size} = Nx.shape(points)
+        points = Nx.add(points, origin)
 
-    case size do
-      n when n < 2 ->
-        {:error, "Cannot solve curve. only #{n} points. need at least 2."}
+        case size do
+          n when n < 2 -> {:error, {:too_few_points, n, 2}}
 
-      2 ->
-        {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()}
+          2 ->
+            {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()}
 
-      3 ->
-        {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()}
+          3 ->
+            {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()}
 
-      4 ->
-        {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+          4 ->
+            {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
 
-      n when n > 4 ->
-        {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+          n when n > 4 ->
+            {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, opts) |> Point.to_tuple()}
+        end
+          |> case do
+            {:ok, point} -> {:ok, force_percent(curve, point, opts)}
+            err -> err
+          end
     end
-      |> case do
-        {:ok, point} -> {:ok, force_percent(curve, point, opts)}
-        err -> err
-      end
   end
 
   @doc false
@@ -105,7 +103,8 @@ defmodule Curves.Bezier.Curve do
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
-      {:error, msg} when is_binary(msg) -> raise msg
+      {:error, {:too_few_points, n, min}} ->  raise Curves.Exceptions.TooFewPoints, n: n, min: min
+      {:error, :out_of_bounds} ->  raise Curves.Exceptions.OutOfBoundT, t: t
     end
   end
 

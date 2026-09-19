@@ -11,13 +11,11 @@ defmodule Curves.Spline.Curve do
     :segments,
     :type,
     :mod,
-    :max_u,
     :xmax,
     :xmin,
     :ymax,
     :ymin,
-    #:ids,
-    mode: :edit,
+    :max_u,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
@@ -30,7 +28,6 @@ defmodule Curves.Spline.Curve do
   | `:xmin`   	| the lowest x coord in the tensor               	|
   | `:ymin`   	| the lowest y coord in the tensor               	|
   | `:ymax`   	| the highest y coord in the tensor              	|
-  | `:mode`   	| Not yet used. Maybe removed in future versions 	|
   | `:origin` 	| the origin of the graph.                       	|
   | `:opts`   	| The keyword list of options                    	|
   """
@@ -44,7 +41,6 @@ defmodule Curves.Spline.Curve do
     xmin: T.coord(),
     ymax: T.coord(),
     ymin: T.coord(),
-    mode: :edit | :run,
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
@@ -73,17 +69,16 @@ defmodule Curves.Spline.Curve do
       type: spline_type,
       mod: mod,
       points: points,
-      segments: segments, 
-      max_u: get_max_u(segments),
+      segments: segments,
       ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
       ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
       xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
+      max_u: get_max_u(segments),
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
 
-    #Curves.Utils.Derivatives.apply_derivatives(bezier_spline, mod.point_derivatives())
     Curves.Utils.Derivatives.apply_derivatives(bezier_spline)
   end
 
@@ -105,7 +100,7 @@ defmodule Curves.Spline.Curve do
   @doc false
   def solve(%__MODULE__{max_u: max, segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
     cond do
-      u > max -> {:error, :out_of_bounds}
+      (u > max or u < 0.0) -> {:error, :out_of_bounds}
       true ->
         opts = 
           curve_opts

@@ -9,7 +9,7 @@ defmodule Curves do
   ## Usage
 
   ```elixir
-  # Create a curve struct
+  # Create a bezier curve
   curve = Curves.define_bezier(:ease_in)
 
   # Find the {x, y} coordinate at 24% from the start
@@ -40,20 +40,36 @@ defmodule Curves do
   Be sure to check out the livebooks to see these points turn into graphs.
   1. [Bezier Curves](bezier_curves.html).
   2. [Splines](splines.html).
+
+  ## Options
+  All `define_*`, `solve*`, and `take*` functions can receive the following `opts`.
+
+  | `key` | `default` | `description` |
+  | --- | ---     | --- |
+  | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
+  | `:float_dtype` | `16` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
+  | `:force_percent` | `false` | If true, all results from `take` and `solve` are normalized as percentages of the max `y` coordinate defined  |
+
   """
+
 
   @doc ~s"""
   Build a new `Curves.Bezier.Curve`
+
+  ## Options
+  See [available opts](#module-options)
 
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> is_struct(c, Curves.Bezier.Curve)
       true
+
   """
-  @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.opts()) :: Bezier.t()
+  @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.define_opts()) :: Bezier.t()
   defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
 
+  # For internal use, not part of the public facing API.
   @doc false
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
 
@@ -61,6 +77,9 @@ defmodule Curves do
   @doc ~s"""
   Return a `Curves.Spline.Curve` struct representing a `Curves.Spline.Type.BezierSpline`.
   Can later be passed into `solve/2`.
+
+  ## Options
+  See [available opts](#module-options)
 
   ```elixir
   points = [
@@ -92,7 +111,7 @@ defmodule Curves do
   {x, y} = Curves.solve!(curves, 0.518)
   ```
   """
-  @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.opts()) :: Spline.t()
+  @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) :: Spline.t()
   defdelegate define_bezier_spline(points, opts \\ []), to: Curves.Spline.Type.BezierSpline, as: :define
 
 
@@ -100,6 +119,10 @@ defmodule Curves do
   Define a spline struct of type: `Curves.Spline.Type.BSpline`. 
 
   Only the knots need to be defined, the control points are calculated automatically.
+
+  ## Options
+  See [available opts](#module-options)
+
   ```elixir
   curve = Curves.define_b_spline([
     {0, 0},
@@ -113,13 +136,16 @@ defmodule Curves do
   {x, y} = Curves.solve!(curve, 0.15)
   ```
   """
-  @spec define_b_spline(T.point_list(), T.opts()) :: Spline.t()
+  @spec define_b_spline(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
 
 
   @doc ~s"""
   Define a new `Curves.Spline.Type.Hermite` spline.
   Control points are calculated automatically based on the first derivative of each knot.
+
+  ## Options
+  See [available opts](#module-options)
 
   ## Example
 
@@ -136,12 +162,15 @@ defmodule Curves do
   {x, y} = Curves.solve!(curve, 0.85)
   ```
   """
-  @spec define_hermite(T.point_list(), T.opts()) :: Spline.t()
+  @spec define_hermite(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
 
 
   @doc ~s"""
   Define a new `Curves.Spline.Type.CatmullRom`. Only the joins need to be defined, the control points are calculated automatically.
+
+  ## Options
+  See [available opts](#module-options)
 
   ```elixir
   curve = Curves.define_catmull_rom([
@@ -156,12 +185,20 @@ defmodule Curves do
   {x, y} = Curves.solve!(curves, 0.5)
   ```
   """
-  @spec define_catmull_rom(T.point_list(), T.opts()) :: Spline.t()
+  @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom, as: :define
 
 
   @doc ~s"""
-  Given a struct, and t, find the point along the curve
+  Given a `Curves.Bezier.Curve` or `Curves.Spline.Curve` struct, and `t`, find the point along the curve.
+
+  For a bezier curve, `t` must be between 0.0 and 1.0.
+
+  e.g. `t = 0.5` means the coordinate at 50% through the bezier curve.
+
+  For splines, the range of `t` depends on the number of segments (number of knots - 1).
+
+  e.g. `t = 0.5` means the coordinate at 50% through *the first segment*. But `t = 1.5` is 50% through the next segment.
 
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])

@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [0.2.5] - 2026-09-19
+
+### Added
+
+- Splines! 🥳🥳🥳
+
+This is the first release with splines. There should be no breaking changes, so it is still a patch version.
+Four Spline types have been defined: Hermite, CatmullRom, BezierSpline, and BSpline. All are using uniform cubic implementations.
+
+### Changed
+
+- Documentation has been overhauled quite a lot. Better typespecs. Options are finally documented.
 
 ## [0.2.4] - 2026-08-29
 

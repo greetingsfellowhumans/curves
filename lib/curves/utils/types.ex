@@ -51,4 +51,14 @@ defmodule Curves.Utils.Types do
   """
   @type t :: float()
 
+  @typedoc ~s"""
+  All 'define_*' functions can receive the following options:
+
+  | `key` | `default` | `description` |
+  | --- | ---     | --- |
+  | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
+
+  """
+  @type define_opts :: [origin: point_tuple()]
+
 end
