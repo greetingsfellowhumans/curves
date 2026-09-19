@@ -1,6 +1,5 @@
 defmodule Curves.Spline.HermiteSplineTest do
   use ExUnit.Case
-  alias Curves.Formula.{Hermite}
   import Curves.Support.SampleCurves
 
   setup [:with_curves]

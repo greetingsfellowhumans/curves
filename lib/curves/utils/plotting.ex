@@ -2,7 +2,7 @@ defmodule Curves.Utils.Plotting do
   @moduledoc ~s"""
   These are helper functions for making it easier to plot curves with VegaLite.
   """
-  import Curves.Utils.Points, only: [to_maps: 1, to_tuples: 1]
+  import Curves.Utils.Points, only: [to_maps: 1]
 
   @doc ~s"""
   Given a curve, build a list of points, in map format.

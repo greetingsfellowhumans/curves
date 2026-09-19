@@ -3,7 +3,6 @@ defmodule Curves.Spline.CatmullRomTest do
   alias Curves.Spline.Type.CatmullRom, as: Mod
   import Mod
   import Curves.Support.SampleCurves
-  alias Curves.Utils.{Point}
 
   setup [:with_curves]
 
@@ -26,7 +25,7 @@ defmodule Curves.Spline.CatmullRomTest do
 
 
     test "get_prev and get_next", ctx do
-      {segments_list, curve} = initial_args(ctx)
+      {segments_list, _curve} = initial_args(ctx)
       [{first, 0}, {second, 1} | _] = segments_list
       assert first == [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
       assert second == [[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
@@ -42,7 +41,7 @@ defmodule Curves.Spline.CatmullRomTest do
 
       assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {2.0, 2.0}
 
-      {segments_list, curve} = initial_args(ctx, :catmull_rom2)
+      {segments_list, _curve} = initial_args(ctx, :catmull_rom2)
       [{first, 0}, {second, 1} | _] = segments_list
 
       assert get_prev_coord(segments_list, 0, first) == {8.0, 22.0}
