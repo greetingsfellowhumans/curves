@@ -1,4 +1,5 @@
 defmodule Curves.Exceptions.OutOfBoundU do
+  @moduledoc false
   defexception [:message, :max, :u]
 
   @impl true

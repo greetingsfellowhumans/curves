@@ -1,4 +1,5 @@
 defmodule Curves.Exceptions.TooFewPoints do
+  @moduledoc false
   defexception [:message, :n, :min]
 
   @impl true

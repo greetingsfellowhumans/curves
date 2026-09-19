@@ -4,7 +4,7 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "0.2.4",
+      version: "0.2.5",
       elixir: "~> 1.17",
       description: description(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -24,6 +24,7 @@ defmodule Curves.MixProject do
         "CHANGELOG.md",
         "README.md",
         "guides/bezier_curves.livemd",
+        "guides/splines.livemd",
       ],
       nest_modules_by_prefix: [
         Curves.Spline.Type
