@@ -21,6 +21,7 @@ defmodule Curves.Spline.Curve do
     :ymin,
     :max_u,
     :scale,
+    :rotation,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
@@ -36,6 +37,7 @@ defmodule Curves.Spline.Curve do
   | `:max_u`   	| maximum allowable u value.              	|
   | `:scale`   	| multiplier for resizing curve.              	|
   | `:transformations` 	| list of transformations that have been applied |
+  | `:rotation` 	| the degrees by which the curve is rotated.   	|
   | `:compressed` 	| A preprocessed function for fast solving |
   | `:origin` 	| the origin of the graph.                       	|
   | `:opts`   	| The keyword list of options                    	|
@@ -53,6 +55,7 @@ defmodule Curves.Spline.Curve do
     ymax: T.coord(),
     ymin: T.coord(),
     scale: float(),
+    rotation: float(),
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
@@ -88,6 +91,7 @@ defmodule Curves.Spline.Curve do
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
       xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
       scale: 1.0,
+      rotation: 0.0,
       max_u: get_max_u(segments),
       origin: Point.new_point({originx, originy}, opts),
       opts: opts

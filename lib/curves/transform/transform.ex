@@ -1,6 +1,9 @@
 defmodule Curves.Transform do
+  @moduledoc ~s"""
+  Utility functions that allow you to resize, move, and rotate a curve.
+  """
   alias Curves.Utils.Types, as: T
-  alias Curves.Transform.{Move, Scale}
+  alias Curves.Transform.{Move, Scale, Rotate}
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
 
@@ -9,6 +12,7 @@ defmodule Curves.Transform do
     Enum.reduce(curve.transformations, curve, fn {mod, func, args, _prev}, curve -> apply(mod, func, [curve | args]) end)
       |> apply_origin_offset()
       |> apply_scale()
+      |> apply_rotation()
   end
 
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve) do
@@ -29,6 +33,16 @@ defmodule Curves.Transform do
     Map.put(curve, :segments, segments)
   end
 
+
+  def apply_rotation(%{rotation: 0} = curve), do: curve
+  def apply_rotation(%Bezier{points: points, rotation: angle} = curve) do
+    points = Rotate.rotate_points(points, angle)
+    Map.put(curve, :points, points)
+  end
+  def apply_rotation(%Spline{segments: segments, rotation: angle} = curve) do
+    segments = Rotate.rotate_points(segments, angle)
+    Map.put(curve, :segments, segments)
+  end
 
   # Put a new transformation in the :transformations list, then recompress.
   defp add(%Bezier{} = curve, transformation) do
@@ -121,8 +135,60 @@ defmodule Curves.Transform do
 
 
   @doc ~s"""
-  resize the entire curve. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.
+  resize the entire curve ignoring the existing scale. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.
+
+  ## Examples
+      iex> curve = Curves.define_bezier(:linear)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> x
+      0.5
+      iex> y
+      0.5
+      iex> curve = Transform.set_scale(curve, 10.0)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> x
+      5.0
+      iex> y
+      5.0
   """
   @spec set_scale(curve :: T.curve_struct(), scale :: number()) :: T.curve_struct()
   def set_scale(curve, scale), do: add(curve, {Scale, :set_scale, [scale], curve.scale})
+
+  @doc ~s"""
+  resize the entire curve, adding to the existing scale.
+
+  ## Examples
+      iex> curve = Curves.define_bezier(:linear)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> x
+      0.5
+      iex> y
+      0.5
+      iex> curve = Transform.inc_scale(curve, 10.0)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> x
+      5.5
+      iex> y
+      5.5
+  """
+  @spec inc_scale(curve :: T.curve_struct(), amount :: number()) :: T.curve_struct()
+  def inc_scale(curve, amount), do: add(curve, {Scale, :inc_scale, [amount], curve.scale})
+
+  def inc_rotation(curve, amount), do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
+
+#  @doc ~s"""
+#  rotate the curve around the origin
+#
+#  ## Examples
+#      iex> curve = Curves.define_bezier(:linear)
+#      iex> {x, y} = Curves.solve!(curve, 1.0)
+#      iex> x
+#      1.0
+#      iex> y
+#      1.0
+#      iex> curve = Transform.set_rotation(curve, 90 / 3.141565)
+#      iex> Curves.solve!(curve, 1.0) 
+#      {1.0, -1.0}
+#  """
+  def set_rotation(curve, amount), do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
 end

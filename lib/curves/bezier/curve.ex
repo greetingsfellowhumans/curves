@@ -15,6 +15,7 @@ defmodule Curves.Bezier.Curve do
     :ymin,
     :scale,
     :transformations,
+    :rotation,
     :compressed,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
@@ -29,6 +30,7 @@ defmodule Curves.Bezier.Curve do
   | `:ymin`   	| the lowest y coord in the tensor               	|
   | `:ymax`   	| the highest y coord in the tensor              	|
   | `:origin` 	| the origin of the graph.                       	|
+  | `:rotation` 	| the degrees by which the curve is rotated.   	|
   | `:transformations` 	| The list of transformations applied to this curve.                       	|
   | `:compressed` 	| A preprocessed function for fast solving.                       	|
   | `:opts`   	| The keyword list of options                    	|
@@ -40,6 +42,7 @@ defmodule Curves.Bezier.Curve do
     ymax: T.coord(),
     ymin: T.coord(),
     scale: float(),
+    rotation: float(),
     transformations: list(),
     compressed: (t :: float(), opts :: T.opts() -> T.point_tuple()),
     opts: T.opts(),
@@ -63,6 +66,7 @@ defmodule Curves.Bezier.Curve do
       xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
       transformations: [],
       scale: 1.0,
+      rotation: 0.0,
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
