@@ -34,12 +34,17 @@ curve = Curves.define_b_spline([
     {3, 4},
     {6, 5},
     {7, -1},
-], force_percent: true)
+    {10, 3},
+    {5, 1},
+    {12, 9}
+])
 
 
 curve
+#|> Curves.Transform.inc_y(2)
+|> Curves.Transform.set_rotation(25)
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
-|> Tucan.scatter("x", "y")
+|> Tucan.scatter("x", "y", width: 400, height: 400)
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
 ```
@@ -94,6 +99,10 @@ bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 # Now evaluate THIS code block to display a graph of the curve type you selected above.
 Kino.Input.read(bezier_type)
 |> Curves.define_bezier()
+|> Curves.Transform.inc_position({1, 1})
+#|> Curves.Transform.inc_position({-10, -10})
+|> Curves.Transform.set_rotation(4)
+#|> Curves.Transform.inc_position({10, 10})
 |> Curves.Utils.Plotting.curve_to_scatterplot()
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
@@ -145,8 +154,7 @@ curve = Curves.define_bezier([
   {0, 10},
   {1, 0}
 ])
-curve = Curves.define_bezier(:linear_down_right)
-dbg Curves.take!(curve, 10)
+#curve = Curves.define_bezier(:linear_down_right)
 
 # We are actually printing 1000 dots between {0,0} and {100,100}
 curve
@@ -180,7 +188,10 @@ curve = Curves.define_bezier([
   {1, 1}
 ])
 
+curve = curve |> Curves.Transform.inc_y(2)
+dbg curve
 curve
+|> Curves.Transform.inc_y(2)
 |> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic")
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")

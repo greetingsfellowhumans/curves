@@ -61,4 +61,8 @@ defmodule Curves.Utils.Types do
   """
   @type define_opts :: [origin: point_tuple()]
 
+  @typedoc ~s"""
+  Either a Bezier or Spline struct
+  """
+  @type curve_struct() :: Curves.Bezier.Curve.t() | Curves.Spline.Curve.t()
 end

@@ -11,6 +11,8 @@ defmodule Curves.Spline.Curve do
   defstruct [
     :points,
     :segments,
+    :transformations,
+    :compressed,
     :type,
     :mod,
     :xmax,
@@ -18,6 +20,8 @@ defmodule Curves.Spline.Curve do
     :ymax,
     :ymin,
     :max_u,
+    :scale,
+    :rotation,
     opts: [],
     origin: Nx.tensor([0.0, 0.0])
   ]
@@ -30,12 +34,19 @@ defmodule Curves.Spline.Curve do
   | `:xmin`   	| the lowest x coord in the tensor               	|
   | `:ymin`   	| the lowest y coord in the tensor               	|
   | `:ymax`   	| the highest y coord in the tensor              	|
+  | `:max_u`   	| maximum allowable u value.              	|
+  | `:scale`   	| multiplier for resizing curve.              	|
+  | `:transformations` 	| list of transformations that have been applied |
+  | `:rotation` 	| the degrees by which the curve is rotated.   	|
+  | `:compressed` 	| A preprocessed function for fast solving |
   | `:origin` 	| the origin of the graph.                       	|
   | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
     points: Nx.Tensor.t(),
     segments: list(),
+    transformations: list(),
+    compressed: (u :: float(), opts :: T.opts() -> T.point_tuple()),
     max_u: float(),
     type: atom(),
     mod: module(),
@@ -43,6 +54,8 @@ defmodule Curves.Spline.Curve do
     xmin: T.coord(),
     ymax: T.coord(),
     ymin: T.coord(),
+    scale: float(),
+    rotation: float(),
     opts: T.opts(),
     origin: Nx.Tensor.t()
   }
@@ -67,21 +80,47 @@ defmodule Curves.Spline.Curve do
     points = to_points(coords, opts)
 
     # We use an intermediary bezier_spline in order to later calculate derivatives.
-    bezier_spline = struct(__MODULE__, %{
+    curve = struct(__MODULE__, %{
       type: spline_type,
       mod: mod,
       points: points,
       segments: segments,
+      transformations: [],
       ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
       ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
       xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
+      scale: 1.0,
+      rotation: 0.0,
       max_u: get_max_u(segments),
       origin: Point.new_point({originx, originy}, opts),
       opts: opts
     })
 
-    Curves.Utils.Derivatives.apply_derivatives(bezier_spline)
+    {:ok, compressed} = compress(curve, opts)
+    curve = Map.put(curve, :compressed, compressed)
+    curve = Curves.Utils.Derivatives.apply_derivatives(curve)
+
+    {:ok, compressed} = compress(curve, opts)
+    Map.put(curve, :compressed, compressed)
+  end
+
+  @spec compress(__MODULE__.t(), opts :: list()) :: {:ok, (u :: float(), opts :: T.opts() -> T.point_tuple())} | {:error, any()}
+  def compress(%__MODULE__{opts: curve_opts, mod: mod} = curve, opts \\ []) do
+    opts = 
+      curve_opts
+      |> Keyword.merge(opts)
+      |> Curves.Utils.Opts.merge_opts()
+
+    curve = Curves.Transform.apply_all_transformations(curve)
+
+    {:ok, fn u, solve_opts ->
+      {points, t} = Segment.split_u(curve, u)
+      tuple = Curves.Formula.run(mod, points, t, Keyword.merge(opts, solve_opts))
+              |> Point.to_tuple()
+
+      {:ok, force_percent(curve, tuple, opts)}
+    end}
   end
 
   defp get_max_u(segments) do
@@ -100,22 +139,10 @@ defmodule Curves.Spline.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{max_u: max, segments: _segments, mod: mod, origin: origin, opts: curve_opts} = curve, u, opts) when is_float(u) do
+  def solve(%__MODULE__{max_u: max, compressed: cb}, u, opts) when is_float(u) do
     cond do
       (u > max or u < @minimum_u) -> {:error, :out_of_bounds}
-      true ->
-        opts = 
-          curve_opts
-          |> Keyword.merge(opts)
-          |> Curves.Utils.Opts.merge_opts()
-
-        {segment, t} = Segment.split_u(curve, u)
-        points = Nx.add(segment, origin)
-
-        tuple = Curves.Formula.run(mod, points, t, opts)
-                |> Point.to_tuple()
-
-        {:ok, force_percent(curve, tuple, opts)}
+      true -> cb.(u, opts)
     end
   end
 
