@@ -9,8 +9,11 @@ defmodule Curves do
   ## Usage
 
   ```elixir
-  # Create a bezier curve
+  # Create a bezier curve, and (optionally) apply any transformations you want.
   curve = Curves.define_bezier(:ease_in)
+          |> Curves.Transform.set_scale(1.5)
+          |> Curves.Transform.inc_position(10)
+          |> Curves.Transform.set_rotation(90)
 
   # Find the {x, y} coordinate at 24% from the start
   {x, y} = Curves.solve!(curve, 0.24)
@@ -40,6 +43,7 @@ defmodule Curves do
   Be sure to check out the livebooks to see these points turn into graphs.
   1. [Bezier Curves](bezier_curves.html).
   2. [Splines](splines.html).
+
 
   ## Transform
 

@@ -6,7 +6,10 @@ Curves aims to be the best elixir framework for calculating bezier curves and sp
 
 ```elixir
 curve = Curves.define_bezier(:ease_out)
-        |> Curves.Transform.rotate(90)
+        |> Curves.Transform.set_scale(1.5)
+        |> Curves.Transform.inc_position(10)
+        |> Curves.Transform.set_rotation(90)
+
 
 {x, y} = Curves.solve!(curve, 0.25)
 assert is_float(x)
@@ -15,8 +18,8 @@ assert is_float(y)
 
 ## Directory
 
-Be sure to check out the [livebook](https://curves.hexdocs.pm/bezier_curves.html) for an interactive demo/tutorial.
-
+- [Bezier Curves Livebook](bezier_curves.html).
+- [Splines Livebook](splines.html).
 - [Hex docs](https://curves.hexdocs.pm/)
 - [Hex package](https://hex.pm/packages/curves)
 - [Github Repo](https://github.com/greetingsfellowhumans/curves)
