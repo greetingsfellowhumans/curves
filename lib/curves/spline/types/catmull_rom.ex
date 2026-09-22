@@ -2,7 +2,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   @moduledoc ~s"""
   An implementation of the Catmull-Rom spline.
 
-  Similar to [Curves.Spline.Type.Hermite], except that the derivative of each point is the slope of the previous and next point.
+  Similar to `Curves.Spline.Type.Hermite`, except that the derivative of each point is the slope of the previous and next point.
 
   This makes a smooth, C1 continuous spline.
 

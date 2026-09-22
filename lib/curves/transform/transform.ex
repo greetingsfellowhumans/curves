@@ -34,6 +34,7 @@ defmodule Curves.Transform do
   end
 
 
+  @doc false
   def apply_rotation(%{rotation: 0} = curve), do: curve
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do
     points = Rotate.rotate_points(points, angle, origin)
@@ -174,6 +175,24 @@ defmodule Curves.Transform do
   @spec inc_scale(curve :: T.curve_struct(), amount :: number()) :: T.curve_struct()
   def inc_scale(curve, amount), do: add(curve, {Scale, :inc_scale, [amount], curve.scale})
 
+  @doc ~s"""
+  increase rotation (counter-clockwise) by the given amount.
+
+  ## Examples
+      iex> curve = Curves.define_bezier(:linear)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> x
+      0.5
+      iex> y
+      0.5
+      iex> curve = Transform.inc_rotation(curve, 45.0)
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> Float.round(x, 5)
+      0.0
+      iex> Float.round(y, 5)
+      0.70711
+  """
+  @spec inc_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
   def inc_rotation(curve, amount), do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
 
   @doc ~s"""
@@ -193,5 +212,6 @@ defmodule Curves.Transform do
       iex> Float.round(y, 5)
       1.0
   """
+  @spec set_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
   def set_rotation(curve, amount), do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
 end

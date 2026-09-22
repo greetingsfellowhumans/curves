@@ -41,6 +41,10 @@ defmodule Curves do
   1. [Bezier Curves](bezier_curves.html).
   2. [Splines](splines.html).
 
+  ## Transform
+
+  See the `Curves.Transform` module for functions that allow you to move, resize, and rotate existing curves.
+
   ## Options
   All `define_*`, `solve*`, and `take*` functions can receive the following `opts`.
 
