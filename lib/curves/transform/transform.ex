@@ -35,12 +35,12 @@ defmodule Curves.Transform do
 
 
   def apply_rotation(%{rotation: 0} = curve), do: curve
-  def apply_rotation(%Bezier{points: points, rotation: angle} = curve) do
-    points = Rotate.rotate_points(points, angle)
+  def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do
+    points = Rotate.rotate_points(points, angle, origin)
     Map.put(curve, :points, points)
   end
-  def apply_rotation(%Spline{segments: segments, rotation: angle} = curve) do
-    segments = Rotate.rotate_points(segments, angle)
+  def apply_rotation(%Spline{segments: segments, rotation: angle, origin: origin} = curve) do
+    segments = Rotate.rotate_points(segments, angle, origin)
     Map.put(curve, :segments, segments)
   end
 
@@ -176,19 +176,22 @@ defmodule Curves.Transform do
 
   def inc_rotation(curve, amount), do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
 
-#  @doc ~s"""
-#  rotate the curve around the origin
-#
-#  ## Examples
-#      iex> curve = Curves.define_bezier(:linear)
-#      iex> {x, y} = Curves.solve!(curve, 1.0)
-#      iex> x
-#      1.0
-#      iex> y
-#      1.0
-#      iex> curve = Transform.set_rotation(curve, 90 / 3.141565)
-#      iex> Curves.solve!(curve, 1.0) 
-#      {1.0, -1.0}
-#  """
+  @doc ~s"""
+  Rotate the curve counter-clockwise around the origin (Origin defaults to {0.0, 0.0}).
+
+  ## Examples
+      iex> curve = Curves.define_bezier(:linear_up_right)
+      iex> {x, y} = Curves.solve!(curve, 1.0)
+      iex> x
+      1.0
+      iex> y
+      1.0
+      iex> curve = Transform.set_rotation(curve, 90)
+      iex> {x, y} = Curves.solve!(curve, 1.0)
+      iex> x
+      -1.0
+      iex> Float.round(y, 5)
+      1.0
+  """
   def set_rotation(curve, amount), do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
 end

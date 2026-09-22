@@ -6,28 +6,34 @@ defmodule Curves.Transform.Rotate do
     sin = Nx.sin(radians) |> Nx.to_number()
     neg_sin = Nx.sin(radians) |> Nx.negate() |> Nx.to_number()
 
-
      Nx.tensor([
       [cos, neg_sin],
       [sin, cos]
     ], names: [:dimension, :point])
   end
 
-  def rotate_points(point, radians) do
+
+  def rotate_points(point, radians, origin) do
     matrix = rotation_matrix(radians)
+    rotate_points(point, radians, origin, matrix)
+  end
+  def rotate_points(point, radians, origin, matrix) do
     case Nx.shape(point) do
       {size, _dimention, _point} ->
         for i <- 0..size - 1 do
-          point[i] |> rotate_points(radians)
+          point[i]
+          |> rotate_points(radians, origin, matrix)
         end
           |> Nx.stack() 
           |> Nx.rename([:segment, :dimension, :point])
 
       {_dimention, _point} ->
+        point = Nx.subtract(point, origin)
         Nx.dot(matrix, point)
+          |> Nx.add(origin)
     end
-    
   end
+
 
   def set_rotation(curve, deg) do
     transform(curve, fn _ -> degrees_to_radians(deg) end)
