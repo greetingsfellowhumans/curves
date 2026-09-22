@@ -18,8 +18,8 @@ assert is_float(y)
 
 ## Directory
 
-- [Bezier Curves Livebook](bezier_curves.html).
-- [Splines Livebook](splines.html).
+- [Bezier Curves Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/bezier_curves.livemd)
+- [Splines Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/splines.livemd)
 - [Hex docs](https://curves.hexdocs.pm/)
 - [Hex package](https://hex.pm/packages/curves)
 - [Github Repo](https://github.com/greetingsfellowhumans/curves)
