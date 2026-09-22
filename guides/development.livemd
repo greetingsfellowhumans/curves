@@ -41,9 +41,7 @@ curve = Curves.define_b_spline([
 
 
 curve
-#|> Curves.Transform.inc_y(2)
-|> Curves.Transform.set_rotation(25)
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", scale: 5)
 |> Tucan.scatter("x", "y", width: 400, height: 400)
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
@@ -61,8 +59,8 @@ curve = Curves.define_catmull_rom([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
-|> Tucan.scatter("x", "y")
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", scale: 2.5, scale_offset: {0.5, 1})
+|> Tucan.scatter("x", "y", width: 400, height: 400)
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
 ```
@@ -79,7 +77,7 @@ curve = Curves.define_hermite([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", count: 1000)
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", scale: 8, scale_offset: {15, 6})
 |> Tucan.scatter("x", "y")
 |> Tucan.color_by("label")
 |> Tucan.fill_by("label")
