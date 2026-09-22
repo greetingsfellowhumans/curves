@@ -6,6 +6,8 @@ Curves aims to be the best elixir framework for calculating bezier curves and sp
 
 ```elixir
 curve = Curves.define_bezier(:ease_out)
+        |> Curves.Transform.rotate(90)
+
 {x, y} = Curves.solve!(curve, 0.25)
 assert is_float(x)
 assert is_float(y)
