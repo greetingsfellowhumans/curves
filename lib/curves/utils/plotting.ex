@@ -16,20 +16,18 @@ defmodule Curves.Utils.Plotting do
   def curve_to_scatterplot(curve, opts) do
     #control_points = extract_control_points(curve)
 
-    label = Keyword.get(opts, :label, "Curve")
-    scale = Keyword.get(opts, :scale, 1)
-    scale_offset = Keyword.get(opts, :scale_offset, {0, 0})
+    #label = Keyword.get(opts, :label, "Curve")
     count = Keyword.get(opts, :count, 1000)
     line = Curves.take!(curve, count, opts)
       |> Enum.map(fn {x, y} ->
-        %{x: x, y: y, label: label}
+        %{x: x, y: y}
         #%{x: x, y: y, label: label}
       end)
-    #line ++ control_points ++ scale_points(scale)
-    line ++ scale_points(scale, scale_offset)
+    line
+
   end
 
-  @doc false
+  #@doc false
   #Given a curve, get a list of the control points, in map format.
   #defp extract_control_points(%Curves.Bezier.Curve{points: points}) do
   #  case Nx.shape(points) do
@@ -54,20 +52,5 @@ defmodule Curves.Utils.Plotting do
   #    |> List.flatten()
   #end
 
-  # Place 4 points, one at each of the positive and negative corners in order to force the window to stop moving.
-  # Scale should always be set a little bit higher than the maximum number used.
-  # Unfortunately there is no way to automate it, by definition. If you did, it would defeat it's own purpose by moving with the dots.
-  defp scale_points(scale, {x_offset, y_offset}) do
-    xmin = scale - x_offset
-    ymin = scale - y_offset
-    xmax = scale + x_offset
-    ymax = scale + y_offset
-    [
-      %{label: "corner", x: xmin, y: ymin},
-      %{label: "corner", x: xmax, y: ymin},
-      %{label: "corner", x: xmin, y: ymax},
-      %{label: "corner", x: xmax, y: ymax},
-    ]
-  end
 
 end

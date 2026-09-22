@@ -41,10 +41,9 @@ curve = Curves.define_b_spline([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", scale: 5)
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline")
 |> Tucan.scatter("x", "y", width: 400, height: 400)
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+
 ```
 
 ```elixir
@@ -59,10 +58,9 @@ curve = Curves.define_catmull_rom([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", scale: 2.5, scale_offset: {0.5, 1})
-|> Tucan.scatter("x", "y", width: 400, height: 400)
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", scale: false)
+|> Tucan.scatter("x", "y", width: 400, height: 400, zoomable: true)
+
 ```
 
 ```elixir

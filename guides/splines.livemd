@@ -3,7 +3,7 @@
 ```elixir
 Mix.install(
   [
-    {:curves, "~> 0.2.5"},
+    {:curves, "~> 0.2.6"},
     {:tucan, "~> 0.6.0"},
     {:vega_lite, "~> 0.1.0"},
     {:kino_vega_lite, "~> 0.1.0"},
@@ -44,10 +44,11 @@ curve = Curves.define_bezier_spline([
 ])
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Cubic", count: 1000)
-|> Tucan.scatter("x", "y")
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+|> Curves.Transform.inc_rotation(0)
+|> Curves.Utils.Plotting.curve_to_scatterplot()
+|> Tucan.scatter("x", "y", zoomable: true, width: 400, height: 400)
+|> Tucan.Scale.set_x_domain(0, 35)
+|> Tucan.Scale.set_y_domain(0, 20)
 ```
 
 ```elixir
@@ -62,10 +63,10 @@ curve = Curves.define_hermite([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Hermite", count: 1000)
-|> Tucan.scatter("x", "y")
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+|> Curves.Utils.Plotting.curve_to_scatterplot()
+|> Tucan.scatter("x", "y", zoomable: true, width: 400, height: 400)
+|> Tucan.Scale.set_x_domain(0, 35)
+|> Tucan.Scale.set_y_domain(0, 20)
 ```
 
 ```elixir
@@ -80,10 +81,10 @@ curve = Curves.define_catmull_rom([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "Catmull-Rom", count: 1000)
-|> Tucan.scatter("x", "y")
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+|> Curves.Utils.Plotting.curve_to_scatterplot()
+|> Tucan.scatter("x", "y", zoomable: true, width: 400, height: 400)
+|> Tucan.Scale.set_x_domain(-0.5, 1.5)
+|> Tucan.Scale.set_y_domain(-0.5, 2.5)
 ```
 
 ```elixir
@@ -99,8 +100,8 @@ curve = Curves.define_b_spline([
 
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot(label: "BSpline", count: 1000)
-|> Tucan.scatter("x", "y")
-|> Tucan.color_by("label")
-|> Tucan.fill_by("label")
+|> Curves.Utils.Plotting.curve_to_scatterplot()
+|> Tucan.scatter("x", "y", zoomable: true, width: 400, height: 400)
+|> Tucan.Scale.set_x_domain(0, 15)
+|> Tucan.Scale.set_y_domain(-3, 10)
 ```
