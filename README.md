@@ -170,3 +170,20 @@ curve = Curves.define_b_spline([
 ```
 
 ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.png)
+
+## Benchmarks
+
+Benchmarks live in `bench/` and use [Benchee](https://github.com/bencheeorg/benchee). Run them all with:
+
+```sh
+mix bench
+```
+
+To check a change for slowdowns, save a run before the change, then run again afterwards. Each run is compared against every saved run.
+
+```sh
+mix bench baseline           # save this run under the tag "baseline"
+mix run bench/solve.exs      # later: run one script and compare it to the saved runs
+```
+
+Saved runs go in `bench/results/`, which is not committed. Only compare runs from the same machine.

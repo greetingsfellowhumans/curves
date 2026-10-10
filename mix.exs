@@ -13,6 +13,7 @@ defmodule Curves.MixProject do
       source_url: "https://github.com/greetingsfellowhumans/curves",
       package: package(),
       deps: deps(),
+      aliases: aliases(),
       docs: docs(),
     ]
   end
@@ -70,6 +71,20 @@ defmodule Curves.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
+      {:benchee, "~> 1.3", only: :dev},
     ]
+  end
+
+  defp aliases() do
+    [bench: &bench/1]
+  end
+
+  # Runs every benchmark script. Any args (e.g. a tag to save the run under) are passed through.
+  # `mix run` only runs once per invocation, so it has to be re-enabled for each script.
+  @spec bench(list(String.t())) :: :ok
+  defp bench(args) do
+    Enum.each(["bench/solve.exs", "bench/take.exs", "bench/define.exs"], fn script ->
+      Mix.Task.rerun("run", [script | args])
+    end)
   end
 end
