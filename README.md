@@ -179,7 +179,7 @@ Benchmarks live in `bench/` and use [Benchee](https://github.com/bencheeorg/benc
 mix bench
 ```
 
-To check a change for slowdowns, save a run before the change, then run again afterwards. Each run is compared against every saved run.
+To check a change for slowdowns, save a run before the change, then run again afterwards. A run without a tag is compared against every saved run.
 
 ```sh
 mix bench baseline           # save this run under the tag "baseline"

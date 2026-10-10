@@ -52,8 +52,8 @@ defmodule Curves.Bench.Helper do
   # Runs Benchee with the shared config.
   #
   # `name` picks the results files, e.g. "solve" uses bench/results/solve-<tag>.benchee.
-  # Every saved run for `name` is loaded, so this run is compared against them.
-  # If a tag was passed (`mix run bench/solve.exs -- baseline`), this run is saved under it.
+  # With a tag (`mix run bench/solve.exs baseline`), this run is only saved under it.
+  # Without one, every saved run for `name` is loaded and this run is compared against them.
   @spec run(String.t(), map(), keyword()) :: Benchee.Suite.t()
   def run(name, jobs, opts \\ []) do
     IO.puts("Nx backend: #{inspect(Nx.default_backend())}\n")
@@ -61,16 +61,16 @@ defmodule Curves.Bench.Helper do
     config =
       @config
       |> Keyword.merge(opts)
-      |> Keyword.merge(load: "bench/results/#{name}-*.benchee")
-      |> Keyword.merge(save_opts(name, System.argv()))
+      |> Keyword.merge(results_opts(name, System.argv()))
 
     Benchee.run(jobs, config)
   end
 
-  # No tag means nothing is saved.
-  @spec save_opts(String.t(), list(String.t())) :: keyword()
-  defp save_opts(_name, []), do: []
+  # Saving and comparing are kept apart: Benchee saves loaded runs too,
+  # so saving while comparing would copy old runs into every new file.
+  @spec results_opts(String.t(), list(String.t())) :: keyword()
+  defp results_opts(name, []), do: [load: "bench/results/#{name}-*.benchee"]
 
-  defp save_opts(name, [tag | _]),
+  defp results_opts(name, [tag | _]),
     do: [save: [path: "bench/results/#{name}-#{tag}.benchee", tag: tag]]
 end
