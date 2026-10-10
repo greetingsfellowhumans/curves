@@ -87,7 +87,8 @@ defmodule Curves.Bezier.Curve do
     {_, size} = Nx.shape(points)
 
     case size do
-      n when n < 2 -> {:error, {:too_few_points, n, 2}}
+      # Errors are deferred to solve-time so that define/2 and transforms never crash on a bad point count.
+      n when n < 2 -> {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
 
       2 ->
         {:ok, fn t, _opts -> {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()} end}
@@ -98,8 +99,7 @@ defmodule Curves.Bezier.Curve do
       4 ->
         {:ok, fn t, solve_opts -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> Point.to_tuple()} end}
 
-      n when n > 4 ->
-        {:ok, fn t, solve_opts -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> Point.to_tuple()} end}
+      n when n > 4 -> {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
     end
   end
 
@@ -112,7 +112,7 @@ defmodule Curves.Bezier.Curve do
       (t < 0.0 or t > 1.0) -> {:error, {:out_of_bounds, t}}
       true ->
         case compressed.(t, opts) do
-          {:ok, point} -> {:ok, force_percent(curve, point, opts)}
+          {:ok, point} -> {:ok, force_percent(curve, point, Keyword.merge(curve.opts, opts) |> Curves.Utils.Opts.merge_opts())}
           err -> err
         end
   end
@@ -125,8 +125,7 @@ defmodule Curves.Bezier.Curve do
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
-      {:error, {:too_few_points, n, min}} ->  raise Curves.Exceptions.TooFewPoints, n: n, min: min
-      {:error, {:out_of_bounds, t}} ->  raise Curves.Exceptions.OutOfBoundT, t: t
+      {:error, err} -> raise_error(err)
     end
   end
 
@@ -148,10 +147,13 @@ defmodule Curves.Bezier.Curve do
   def take!(curve, n, opts \\ []) do
     case take(curve, n, opts) do
       {:ok, points} -> points
-      {:error, {:too_few_points, n, min}} ->  raise Curves.Exceptions.TooFewPoints, n: n, min: min
-      {:error, {:out_of_bounds, t}} ->  raise Curves.Exceptions.OutOfBoundT, t: t
+      {:error, err} -> raise_error(err)
     end
   end
+
+  defp raise_error({:too_few_points, n, min}), do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
+  defp raise_error({:too_many_points, n, max}), do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
+  defp raise_error({:out_of_bounds, t}), do: raise(Curves.Exceptions.OutOfBoundT, t: t)
 
   defp to_perc(curve, coord, dimension) when is_float(coord) do
     {min, max} = case dimension do

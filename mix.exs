@@ -4,7 +4,7 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "0.2.7",
+      version: "0.3.0",
       elixir: "~> 1.17",
       description: description(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -38,7 +38,7 @@ defmodule Curves.MixProject do
 
   defp package() do
     [
-      files: ["lib", "mix.exs", "README*"],
+      files: ["lib", "mix.exs", "README*", "CHANGELOG*", "LICENSE*"],
       maintainers: ["greetingsfellowhumans"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/greetingsfellowhumans/curves"}

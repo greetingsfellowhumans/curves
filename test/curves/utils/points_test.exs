@@ -19,7 +19,7 @@ defmodule Curves.Utils.PointsTest do
 
       p = new_points(coords, opts)
       assert is_points(p)
-      assert Nx.type(p) == {:f, 16}
+      assert Nx.type(p) == {:f, 32}
       assert Nx.shape(p) == {2, 4}
 
       el = tuple_at(p, 3)
