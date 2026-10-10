@@ -26,20 +26,35 @@ defmodule Curves.Bezier.Quadratic do
   #    end_multiplier = t * t
   #    start_point * start_multiplier + control_point * control_multiplier + end_point * end_multiplier
   #  end
-  defn get_quadratic_point(points, t) do
-    remainder = 1 - t
-    start_multiplier = remainder * remainder
-    control_multiplier = remainder * t * 2
-    end_multiplier = t * t
+  # Finds the point a fraction `t` of the way along a 3-point bezier curve.
+  #
+  # Uses plain Nx calls rather than `defn`: without EXLA, `defn` re-traces the
+  # whole expression on every call, which made this about 3x slower.
+  # Because it calls `Nx.tensor/1`, it can't be called from inside a `defn`.
+  #
+  # The order of operations matches the old `defn` exactly. Changing it shifts
+  # results by float rounding, which the recorded-value tests will catch.
+  @spec get_quadratic_point(Nx.Tensor.t(), number()) :: Nx.Tensor.t()
+  def get_quadratic_point(points, t) do
+    # `defn` turns a plain number into a tensor this same way
+    # (floats -> f32, integers -> s32), so the output stays identical.
+    t = Nx.tensor(t)
+    remainder = Nx.subtract(1, t)
+    start_multiplier = Nx.multiply(remainder, remainder)
+    control_multiplier = remainder |> Nx.multiply(t) |> Nx.multiply(2)
+    end_multiplier = Nx.multiply(t, t)
 
-    raw =
-      points[point: 0] * start_multiplier + points[point: 1] * control_multiplier +
-        points[point: 2] * end_multiplier
-
-    Nx.reshape(raw, {2, 1}, names: [:dimension, :point])
+    points[point: 0]
+    |> Nx.multiply(start_multiplier)
+    |> Nx.add(Nx.multiply(points[point: 1], control_multiplier))
+    |> Nx.add(Nx.multiply(points[point: 2], end_multiplier))
+    |> Nx.reshape({2, 1}, names: [:dimension, :point])
   end
 
+  # Unused. The original version, built from three linear interpolations.
   @deprecated "This works, and it is easy to read, but is slightly less performant"
+  @spec get_quadratic_bezier_curve_old(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t(), number()) ::
+          Nx.Tensor.t()
   defn get_quadratic_bezier_curve_old(start_point, control_point, end_point, t) do
     interpolation_point0 =
       Curves.Bezier.Linear.get_linear_interpolation_point(start_point, control_point, t)
