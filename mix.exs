@@ -38,7 +38,7 @@ defmodule Curves.MixProject do
 
   defp package() do
     [
-      files: ["lib", "mix.exs", "README*"],
+      files: ["lib", "mix.exs", "README*", "CHANGELOG*", "LICENSE*"],
       maintainers: ["greetingsfellowhumans"],
       licenses: ["MIT"],
       links: %{"GitHub" => "https://github.com/greetingsfellowhumans/curves"}
