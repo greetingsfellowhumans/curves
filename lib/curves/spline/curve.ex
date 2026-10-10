@@ -119,7 +119,7 @@ defmodule Curves.Spline.Curve do
       tuple = Curves.Formula.run(mod, points, t, Keyword.merge(opts, solve_opts))
               |> Point.to_tuple()
 
-      {:ok, force_percent(curve, tuple, opts)}
+      {:ok, force_percent(curve, tuple, Keyword.merge(opts, solve_opts))}
     end}
   end
 
@@ -139,10 +139,10 @@ defmodule Curves.Spline.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{max_u: max, compressed: cb}, u, opts) when is_float(u) do
+  def solve(%__MODULE__{max_u: max, compressed: cb}, u, opts) when is_number(u) do
     cond do
-      (u > max or u < @minimum_u) -> {:error, :out_of_bounds}
-      true -> cb.(u, opts)
+      (u > max or u < @minimum_u) -> {:error, {:out_of_bounds, u}}
+      true -> cb.(u * 1.0, opts)
     end
   end
 
@@ -153,17 +153,17 @@ defmodule Curves.Spline.Curve do
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
-      {:error, :out_of_bounds} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: t
+      {:error, {:out_of_bounds, u}} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: u
     end
   end
 
   @doc false
   def take(%{segments: segments} = curve, n, opts \\ []) do
     seg_count = Nx.axis_size(segments, :segment)
-    step_size = seg_count / n
 
     Enum.reduce_while(1..n, [], fn step, acc ->
-      i = step * step_size
+      # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
+      i = step * seg_count / n
       case solve(curve, i, opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
@@ -177,8 +177,10 @@ defmodule Curves.Spline.Curve do
 
   @doc false
   def take!(curve, n, opts \\ []) do
-    {:ok, points} = take(curve, n, opts)
-    points
+    case take(curve, n, opts) do
+      {:ok, points} -> points
+      {:error, {:out_of_bounds, u}} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: u
+    end
   end
 
   defp to_perc(curve, coord, dimension) when is_float(coord) do

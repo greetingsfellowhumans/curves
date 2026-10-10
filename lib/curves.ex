@@ -55,7 +55,7 @@ defmodule Curves do
   | `key` | `default` | `description` |
   | --- | ---     | --- |
   | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
-  | `:float_dtype` | `16` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
+  | `:float_dtype` | `32` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
   | `:force_percent` | `false` | If true, all results from `take` and `solve` are normalized as percentages of the max `y` coordinate defined  |
 
   """

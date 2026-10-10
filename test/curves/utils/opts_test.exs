@@ -7,7 +7,7 @@ defmodule Curves.Utils.OptsTest do
   describe "Opts" do
     test "get the correct options" do
       opts = merge_opts([])
-      assert Keyword.get(opts, :float_dtype) == 16
+      assert Keyword.get(opts, :float_dtype) == 32
 
       opts = merge_opts(float_dtype: 8)
       assert Keyword.get(opts, :float_dtype) == 8
