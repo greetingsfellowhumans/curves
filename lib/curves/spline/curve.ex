@@ -2,7 +2,7 @@ defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
   Struct representing a spline
   """
-  alias Curves.Utils.{Point, Points, Segment}
+  alias Curves.Utils.{Percent, Point, Points, Segment}
   alias Curves.Utils.Types, as: T
   alias Curves.Bezier.Predefined
 
@@ -119,7 +119,7 @@ defmodule Curves.Spline.Curve do
       tuple = Curves.Formula.run(mod, points, t, Keyword.merge(opts, solve_opts))
               |> Point.to_tuple()
 
-      {:ok, force_percent(curve, tuple, Keyword.merge(opts, solve_opts))}
+      {:ok, Percent.maybe_normalize(curve, tuple, Keyword.merge(opts, solve_opts))}
     end}
   end
 
@@ -180,24 +180,6 @@ defmodule Curves.Spline.Curve do
     case take(curve, n, opts) do
       {:ok, points} -> points
       {:error, {:out_of_bounds, u}} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: u
-    end
-  end
-
-  defp to_perc(curve, coord, dimension) when is_float(coord) do
-    {min, max} = case dimension do
-      :x -> {curve.xmin, curve.xmax}
-      :y -> {curve.ymin, curve.ymax}
-    end
-    denominator = max - min
-    if denominator == 0, do: max, else: (coord - min) / denominator
-  end
-
-  defp force_percent(curve, point, opts) do
-    if !Keyword.get(opts, :force_percent) do
-      point
-    else
-      {x, y} = point
-      {to_perc(curve, x, :x), to_perc(curve, y, :y)}
     end
   end
 end

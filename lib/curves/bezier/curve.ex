@@ -2,7 +2,7 @@ defmodule Curves.Bezier.Curve do
   @moduledoc ~s"""
   Struct representing a bezier curve.
   """
-  alias Curves.Utils.{Point, Points}
+  alias Curves.Utils.{Percent, Point, Points}
   alias Curves.Utils.Types, as: T
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
@@ -112,7 +112,7 @@ defmodule Curves.Bezier.Curve do
       (t < 0.0 or t > 1.0) -> {:error, {:out_of_bounds, t}}
       true ->
         case compressed.(t, opts) do
-          {:ok, point} -> {:ok, force_percent(curve, point, Keyword.merge(curve.opts, opts) |> Curves.Utils.Opts.merge_opts())}
+          {:ok, point} -> {:ok, Percent.maybe_normalize(curve, point, Keyword.merge(curve.opts, opts) |> Curves.Utils.Opts.merge_opts())}
           err -> err
         end
   end
@@ -154,22 +154,4 @@ defmodule Curves.Bezier.Curve do
   defp raise_error({:too_few_points, n, min}), do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
   defp raise_error({:too_many_points, n, max}), do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
   defp raise_error({:out_of_bounds, t}), do: raise(Curves.Exceptions.OutOfBoundT, t: t)
-
-  defp to_perc(curve, coord, dimension) when is_float(coord) do
-    {min, max} = case dimension do
-      :x -> {curve.xmin, curve.xmax}
-      :y -> {curve.ymin, curve.ymax}
-    end
-    denominator = max - min
-    if denominator == 0, do: max, else: (coord - min) / denominator
-  end
-
-  defp force_percent(curve, point, opts) do
-    if !Keyword.get(opts, :force_percent) do
-      point
-    else
-      {x, y} = point
-      {to_perc(curve, x, :x), to_perc(curve, y, :y)}
-    end
-  end
 end
