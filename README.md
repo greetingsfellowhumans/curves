@@ -26,8 +26,6 @@ assert is_float(y)
 
 ## Hire me
 
-No AI was used in the creation of this project. Just good old fashioned software engineering.
-
 Full stack developer seeking new challenges. You can reach me at [hireme@aaronjprice.com](mailto:hireme@aaronjprice.com)
 
 ## Visual Demo
