@@ -82,6 +82,30 @@ defmodule Curves.RegressionTest do
     end
   end
 
+  # Pins down current outputs, including known oddities (stale bounds after transforms,
+  # flat ranges returning max), so refactors can't change them silently.
+  describe "force_percent characterization" do
+    test "moved bezier still uses define-time bounds" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}]) |> Curves.Transform.set_position({5, 5})
+      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.6666666666666666, 0.5166666666666667}
+    end
+
+    test "scaled spline still uses define-time bounds" do
+      curve = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}]) |> Curves.Transform.set_scale(2.0)
+      assert Curves.solve!(curve, curve.max_u / 2, force_percent: true) == {1.0, 1.0}
+    end
+
+    test "flat range returns max" do
+      curve = Curves.define_bezier(:linear_horizontal)
+      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.5, 1.0}
+    end
+
+    test "any truthy value turns it on" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}])
+      assert Curves.solve!(curve, 1.0, force_percent: 1) == {1.0, 1.0}
+    end
+  end
+
   describe "bezier point count" do
     test "more than 4 points returns an error instead of tensors" do
       curve = Curves.define_bezier([{0, 0}, {1, 1}, {2, 0}, {3, 1}, {4, 0}])
