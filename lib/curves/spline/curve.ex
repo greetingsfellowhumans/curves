@@ -23,7 +23,7 @@ defmodule Curves.Spline.Curve do
     :scale,
     :rotation,
     opts: [],
-    origin: Nx.tensor([0.0, 0.0])
+    origin: {0.0, 0.0}
   ]
 
   @typedoc ~s"""
@@ -45,7 +45,7 @@ defmodule Curves.Spline.Curve do
             scale: float(),
             rotation: float(),
             opts: T.opts(),
-            origin: TensorT.point()
+            origin: T.point_tuple()
           }
 
   # Each spline type's define/2 prepares `coords` first (e.g. wrapping each point in a list),
@@ -82,7 +82,7 @@ defmodule Curves.Spline.Curve do
         scale: 1.0,
         rotation: 0.0,
         max_u: get_max_u(segments),
-        origin: Point.new_point({originx, originy}, opts),
+        origin: Curves.Utils.Vec.new({originx, originy}),
         opts: opts
       })
 

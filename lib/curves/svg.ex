@@ -128,7 +128,7 @@ defmodule Curves.Svg do
   @spec control_points(T.curve_struct()) :: T.point_list()
   defp control_points(%Bezier{} = curve) do
     %{points: points} = Curves.Transform.apply_all_transformations(curve)
-    to_tuples(points)
+    Enum.dedup(points)
   end
 
   defp control_points(%Spline{points: points} = curve) do

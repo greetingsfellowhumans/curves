@@ -23,8 +23,6 @@ defmodule Curves.Support.ReferenceResults do
   ]
 
   # Transforms applied on top of a defined curve. `{:origin, xy}` is a define option instead.
-  # Rotations are kept apart: the current code converts degrees to radians in 32-bit floats,
-  # so their results only match a 64-bit rewrite to about 1e-6.
   @transforms [
     none: [],
     origin: [{:origin, {2, 3}}],
@@ -74,11 +72,12 @@ defmodule Curves.Support.ReferenceResults do
     predefined ++ custom ++ transformed
   end
 
-  # The tolerance a case's numbers must match within (see @transforms on rotations).
+  # The tolerance (relative, or absolute near zero) every recorded number must match within.
+  # The recording code was Nx-based: even with `float_dtype: 64`, it built `t`, its powers and the
+  # rotation angle as 32-bit floats, so recorded values carry rounding of about 1e-7. A real bug
+  # (a wrong matrix, a transform in the wrong order) is off by far more than 1e-6.
   @spec tolerance(String.t()) :: float()
-  def tolerance(name) do
-    if String.contains?(name, ["rotated", "combined"]), do: 1.0e-6, else: 1.0e-9
-  end
+  def tolerance(_name), do: 1.0e-6
 
   # Builds the curve, applying define options first and then each transform in order.
   @spec apply_steps((keyword() -> struct()), keyword() | list(), keyword()) :: struct()

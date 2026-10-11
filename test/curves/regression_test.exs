@@ -4,20 +4,6 @@ defmodule Curves.RegressionTest do
 
   @spline_points [{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}]
 
-  describe "default precision" do
-    test "defaults to f32" do
-      curve = Curves.define_bezier([{0, 0}, {1000.123, 1}])
-      assert Nx.type(curve.points) == {:f, 32}
-      {x, _y} = Curves.solve!(curve, 0.5)
-      assert_in_delta x, 500.0615, 0.001
-    end
-
-    test "float_dtype: 16 is still respected" do
-      curve = Curves.define_bezier([{0, 0}, {1000.123, 1}], float_dtype: 16)
-      assert Nx.type(curve.points) == {:f, 16}
-    end
-  end
-
   describe "spline u values" do
     test "a u within 0.0001 of the start is not rounded to the start" do
       curve = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}])
@@ -289,12 +275,12 @@ defmodule Curves.RegressionTest do
   # Pins down current outputs, including known oddities (flat ranges returning 0.5,
   # rotation noise on flat curves), so refactors can't change them silently.
   describe "force_percent characterization" do
-    # Rotating adds float noise (y becomes -1.0 and -1.0000001), so the flat y axis is no
-    # longer flat and gets rescaled over 0..1. Left as-is on purpose: see the :force_percent docs.
+    # Rotating adds float noise (y becomes -1.0000000000000002 and -0.9999999999999999), so the flat
+    # y axis is no longer flat and gets rescaled over 0..1. Left as-is on purpose: see the :force_percent docs.
     test "rotated flat curve rescales its float noise" do
       curve = Curves.define_bezier(:linear_horizontal) |> Curves.Transform.set_rotation(180)
-      assert Curves.solve!(curve, 0.0, force_percent: true) == {1.0, 1.0}
-      assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 0.0}
+      assert Curves.solve!(curve, 0.0, force_percent: true) == {1.0, 0.0}
+      assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 1.0}
     end
 
     test "flat range returns 0.5" do

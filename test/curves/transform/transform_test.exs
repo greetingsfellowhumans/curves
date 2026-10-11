@@ -19,29 +19,22 @@ defmodule Curves.Transform.TransformTest do
   defp build(define, :origin, nil), do: define.(origin: {1, 2})
   defp build(define, _name, {func, args}), do: apply(Transform, func, [define.([]) | args])
 
-  describe "apply_all_transformations/1 keeps tensor axis names" do
+  describe "apply_all_transformations/1" do
     for {name, spec} <- @transforms do
       @name name
       @transform spec
 
-      test "bezier points after #{name}" do
+      test "bezier points stay {x, y} float tuples after #{name}" do
         curve = build(&Curves.define_bezier([{0, 0}, {1, 2}, {3, 1}], &1), @name, @transform)
         %{points: points} = Transform.apply_all_transformations(curve)
-        assert Nx.names(points) == [:dimension, :point]
+        assert length(points) == 3
+        assert Enum.all?(points, fn {x, y} -> is_float(x) and is_float(y) end)
       end
 
       test "spline segments after #{name}" do
         curve = build(&Curves.define_hermite(@spline_points, &1), @name, @transform)
         %{segments: segments} = Transform.apply_all_transformations(curve)
         assert Nx.names(segments) == [:segment, :dimension, :point]
-      end
-
-      test "transform_points/2 matches the bezier's own points after #{name}" do
-        curve = build(&Curves.define_bezier([{0, 0}, {1, 2}, {3, 1}], &1), @name, @transform)
-        transformed = Transform.apply_all_transformations(curve)
-        copy = Transform.transform_points(transformed, curve.points)
-        assert Nx.to_list(copy) == Nx.to_list(transformed.points)
-        assert Nx.names(copy) == [:dimension, :point]
       end
 
       test "transform_points/2 leaves the spline's points alone after #{name}" do

@@ -12,8 +12,6 @@ defmodule Curves.Bezier.Predefined do
       [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
   ```
   """
-  import Curves.Utils.Points, only: [new_points: 2]
-  alias Curves.TensorTypes, as: TensorT
   alias Curves.Types, as: T
 
   @order1 %{
@@ -174,9 +172,9 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc false
-  @spec get(curve_key(), T.opts()) :: TensorT.points()
-  def get(k, opts \\ []) do
-    Map.get(@all, k) |> new_points(opts)
+  @spec get(curve_key(), T.opts()) :: T.point_list()
+  def get(k, _opts \\ []) do
+    Map.get(@all, k) |> Enum.map(&Curves.Utils.Vec.new/1)
   end
 
 end

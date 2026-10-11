@@ -7,6 +7,7 @@ defmodule Curves.Transform do
   alias Curves.TensorTypes, as: TensorT
   alias Curves.Transform.{Move, Rotate, Scale}
   alias Curves.Types, as: T
+  alias Curves.Utils.Vec
 
   # Replays the transformations list, then moves, scales and rotates a copy of the points
   # (beziers) or segments (splines). Used by compress; the stored curve keeps its original points.
@@ -22,21 +23,17 @@ defmodule Curves.Transform do
   end
 
   @spec apply_origin_offset(T.curve_struct()) :: T.curve_struct()
-  defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve) do
-    points = Nx.add(points, origin)
-    Map.put(curve, :points, points)
-  end
+  defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.add(&1, origin))}
 
-  defp apply_origin_offset(%Spline{segments: segments, origin: origin} = curve) do
-    segments = Nx.add(segments, origin)
+  defp apply_origin_offset(%Spline{segments: segments} = curve) do
+    segments = Nx.add(segments, origin_tensor(curve))
     Map.put(curve, :segments, segments)
   end
 
   @spec apply_scale(T.curve_struct()) :: T.curve_struct()
-  defp apply_scale(%Bezier{points: points, scale: scale, origin: _origin} = curve) do
-    points = Nx.multiply(points, Nx.tensor([[scale]]))
-    Map.put(curve, :points, points)
-  end
+  defp apply_scale(%Bezier{points: points, scale: scale} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.scale(&1, scale))}
 
   defp apply_scale(%Spline{segments: segments, scale: scale, origin: _origin} = curve) do
     segments = Nx.multiply(segments, Nx.tensor([[[scale]]]))
@@ -48,13 +45,11 @@ defmodule Curves.Transform do
   @spec apply_rotation(T.curve_struct()) :: T.curve_struct()
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
 
-  def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do
-    points = Rotate.rotate_points(points, angle, origin)
-    Map.put(curve, :points, points)
-  end
+  def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.rotate(&1, angle, origin))}
 
-  def apply_rotation(%Spline{segments: segments, rotation: angle, origin: origin} = curve) do
-    segments = Rotate.rotate_points(segments, angle, origin)
+  def apply_rotation(%Spline{segments: segments, rotation: angle} = curve) do
+    segments = Rotate.rotate_points(segments, angle, origin_tensor(curve))
     Map.put(curve, :segments, segments)
   end
 
@@ -65,9 +60,9 @@ defmodule Curves.Transform do
   @doc false
   @spec transform_points(curve :: T.curve_struct(), points :: TensorT.points()) ::
           TensorT.points()
-  def transform_points(%{origin: origin, scale: scale} = curve, points) do
+  def transform_points(%{scale: scale} = curve, points) do
     points
-    |> Nx.add(origin)
+    |> Nx.add(origin_tensor(curve))
     |> Nx.multiply(Nx.tensor([[scale]]))
     |> rotate_points(curve)
   end
@@ -76,8 +71,14 @@ defmodule Curves.Transform do
   @spec rotate_points(points :: TensorT.points(), curve :: T.curve_struct()) :: TensorT.points()
   defp rotate_points(points, %{rotation: rotation}) when rotation == 0, do: points
 
-  defp rotate_points(points, %{rotation: angle, origin: origin}),
-    do: Rotate.rotate_points(points, angle, origin)
+  defp rotate_points(points, %{rotation: angle} = curve),
+    do: Rotate.rotate_points(points, angle, origin_tensor(curve))
+
+  # Splines still store points as Nx tensors (until they move to plain floats too),
+  # so their tuple origin is turned into a {2, 1} tensor of the curve's float type.
+  @spec origin_tensor(Spline.t()) :: Nx.Tensor.t()
+  defp origin_tensor(%Spline{origin: origin, opts: opts}),
+    do: Curves.Utils.Point.new_point(origin, opts)
 
   # Put a new transformation in the :transformations list, then recompress.
   @spec add(T.curve_struct(), {module(), atom(), list(), term()}) :: T.curve_struct()
@@ -239,7 +240,7 @@ defmodule Curves.Transform do
       1.0
       iex> curve = Transform.set_rotation(curve, 90)
       iex> {x, y} = Curves.solve!(curve, 1.0)
-      iex> x
+      iex> Float.round(x, 5)
       -1.0
       iex> Float.round(y, 5)
       1.0

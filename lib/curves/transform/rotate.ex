@@ -66,8 +66,6 @@ defmodule Curves.Transform.Rotate do
 
   @spec degrees_to_radians(number()) :: float()
   def degrees_to_radians(deg) do
-    Nx.divide(Nx.Constants.pi(), 180)
-    |> Nx.multiply(deg)
-    |> Nx.to_number()
+    deg * :math.pi() / 180
   end
 end

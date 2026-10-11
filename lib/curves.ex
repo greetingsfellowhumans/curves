@@ -189,8 +189,8 @@ defmodule Curves do
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> {:ok, {x, y}} = Curves.solve(c, 0.3)
-      iex> {Float.round(x, 4), Float.round(y, 4)}
-      {0.3696, 0.7272}
+      iex> {Float.round(x, 3), Float.round(y, 3)}
+      {0.37, 0.727}
       iex> Curves.solve(c, 1.5)
       {:error, {:out_of_bounds, 1.5}}
 

@@ -14,6 +14,8 @@ defmodule Curves.Utils.Percent do
   # Rotating a curve adds tiny float noise, so a flat axis can come back
   # very slightly not flat (e.g. -1.0 and -1.0000001). That is left as-is.
   @spec get_bounds(points :: TensorT.points()) :: bounded()
+  def get_bounds(points) when is_list(points), do: Curves.Utils.Vec.bounds(points)
+
   def get_bounds(points) do
     %{
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
@@ -31,13 +33,13 @@ defmodule Curves.Utils.Percent do
   @spec get_bounds_after_transforms(T.curve_struct(), (-> TensorT.points())) :: bounded()
   def get_bounds_after_transforms(%{scale: scale, rotation: rotation} = curve, get_points)
       when scale == 1 and rotation == 0,
-      do: get_bounds_at_origin(Nx.to_flat_list(curve.origin), curve, get_points)
+      do: get_bounds_at_origin(curve.origin, curve, get_points)
 
   def get_bounds_after_transforms(_curve, get_points), do: get_bounds(get_points.())
 
   # Stored bounds when the origin is {0, 0}, otherwise the bounds of the transformed points.
   @spec get_bounds_at_origin(list(number()), T.curve_struct(), (-> TensorT.points())) :: bounded()
-  defp get_bounds_at_origin([x, y], curve, _get_points) when x == 0 and y == 0,
+  defp get_bounds_at_origin({x, y}, curve, _get_points) when x == 0 and y == 0,
     do: Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
 
   defp get_bounds_at_origin(_origin, _curve, get_points), do: get_bounds(get_points.())
