@@ -60,6 +60,31 @@ defmodule Curves.RegressionTest do
       curve = Curves.define_catmull_rom(@spline_points)
       assert length(Curves.take!(curve, 7)) == 7
     end
+
+    test "n must be a positive integer" do
+      spline = Curves.define_catmull_rom(@spline_points)
+      bezier = Curves.define_bezier(:ease)
+
+      for curve <- [spline, bezier], n <- [0, -1, 2.0, nil] do
+        assert_raise ArgumentError, ~r/n must be a positive integer/, fn ->
+          Curves.take(curve, n)
+        end
+
+        assert_raise ArgumentError, ~r/n must be a positive integer/, fn ->
+          Curves.take!(curve, n)
+        end
+      end
+    end
+
+    test "a one-knot spline is a single point" do
+      for curve <- [
+            Curves.define_catmull_rom([{1, 2}]),
+            Curves.define_bezier_spline([[{1, 2}]])
+          ] do
+        assert Curves.max_u(curve) == 1.0
+        assert Curves.take!(curve, 3) == [{1.0, 2.0}, {1.0, 2.0}, {1.0, 2.0}]
+      end
+    end
   end
 
   describe "force_percent" do
@@ -301,10 +326,39 @@ defmodule Curves.RegressionTest do
         Curves.Spline.TypeIndex.get(:wavy)
       end
     end
+
+    test "every type key maps to its module, and a {:module, mod} passes straight through" do
+      assert Curves.Spline.Type.list() == [:b_spline, :bezier_spline, :catmull_rom, :hermite]
+
+      for key <- Curves.Spline.Type.list() do
+        mod = Curves.Spline.Type.get_mod(key)
+        assert [[_, _, _, _], [_, _, _, _], [_, _, _, _], [_, _, _, _]] = mod.blending_function()
+      end
+
+      assert Curves.Spline.TypeIndex.get({:module, Curves.Spline.Type.Hermite}) ==
+               Curves.Spline.Type.Hermite
+    end
+
+    test "too few points raise an ArgumentError, not a crash deep inside" do
+      assert_raise ArgumentError, ~r/at least 1 point/, fn -> Curves.define_catmull_rom([]) end
+      assert_raise ArgumentError, ~r/at least 1 point/, fn -> Curves.define_bezier_spline([]) end
+      assert_raise ArgumentError, ~r/at least 2 points/, fn -> Curves.define_hermite([]) end
+      assert_raise ArgumentError, ~r/at least one point/, fn -> Curves.define_bezier([]) end
+
+      for n <- 0..3 do
+        points = Enum.take([{0, 0}, {1, 1}, {2, 0}], n)
+
+        assert_raise ArgumentError, "a B-spline needs at least 4 points, got #{n}", fn ->
+          Curves.define_b_spline(points)
+        end
+      end
+
+      assert Curves.max_u(Curves.define_b_spline([{0, 0}, {1, 1}, {2, 0}, {3, 1}])) == 1.0
+    end
   end
 
   describe "bezier point count" do
-    test "more than 4 points returns an error instead of tensors" do
+    test "more than 4 points returns an error instead of crashing" do
       curve = Curves.define_bezier([{0, 0}, {1, 1}, {2, 0}, {3, 1}, {4, 0}])
       assert Curves.solve(curve, 0.5) == {:error, {:too_many_points, 5, 4}}
       assert Curves.take(curve, 3) == {:error, {:too_many_points, 5, 4}}

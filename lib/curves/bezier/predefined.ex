@@ -114,6 +114,12 @@ defmodule Curves.Bezier.Predefined do
   ## Examples
       iex> [:linear | _] = Curves.Bezier.Predefined.list(1)
       iex> [:quadratic_down | _] = Curves.Bezier.Predefined.list(2)
+      iex> Curves.Bezier.Predefined.list(:cubic) == Curves.Bezier.Predefined.list(3)
+      true
+      iex> Curves.Bezier.Predefined.list(:linear) == Curves.Bezier.Predefined.list(1)
+      true
+      iex> Curves.Bezier.Predefined.list(:quad) == Curves.Bezier.Predefined.list(2)
+      true
   """
   @spec list(T.order() | :linear | :quad | :cubic) :: curve_keys()
   def list(order) do

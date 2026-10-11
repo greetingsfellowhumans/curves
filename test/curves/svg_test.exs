@@ -131,6 +131,13 @@ defmodule Curves.SvgTest do
       assert Svg.save!(Curves.define_bezier(:linear), path, samples: 3) == path
       assert path |> File.read!() |> line_points() |> length() == 4
     end
+
+    test "save!/2 uses the default options" do
+      path = Path.join(System.tmp_dir!(), "curves_svg_save_default_test.svg")
+      curve = Curves.define_bezier(:linear)
+      assert Svg.save!(curve, path) == path
+      assert File.read!(path) == Svg.render(curve)
+    end
   end
 
   # How many times `part` appears in `text`.
