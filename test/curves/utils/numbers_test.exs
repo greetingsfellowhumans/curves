@@ -30,7 +30,8 @@ defmodule Curves.Utils.NumbersTest do
     end
 
     property "split_float/1 returns any float between 0 and 1 unchanged as the fraction" do
-      check all(f <- StreamData.float(min: 0.0, max: 1.0), f > 0.0 and f < 1.0) do
+      # Bounds just inside 0 and 1, so no values need filtering out (that made this flaky).
+      check all(f <- StreamData.float(min: 1.0e-300, max: 0.9999999999999999)) do
         assert split_float(f) === {0, f}
       end
     end
