@@ -151,33 +151,26 @@ defmodule Curves.Spline.Curve do
 
   # n evenly spaced points by u, ending at max_u (u = 0 is not included).
   @doc false
-  @spec take(t(), pos_integer(), T.opts()) ::
-          {:ok, T.point_list()} | {:error, {:out_of_bounds, number()}}
+  # Every u it asks for is within 0..max_u, so solving never fails and it always returns {:ok, _}.
+  @spec take(t(), pos_integer(), T.opts()) :: {:ok, T.point_list()}
   def take(%{segments: segments} = curve, n, opts \\ []) do
     seg_count = length(segments)
     opts = resolve_opts(curve, opts)
 
-    Enum.reduce_while(1..n, [], fn step, acc ->
-      # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
-      i = step * seg_count / n
+    points =
+      Enum.map(1..n, fn step ->
+        # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
+        {:ok, point} = solve_resolved(curve, step * seg_count / n, opts)
+        point
+      end)
 
-      case solve_resolved(curve, i, opts) do
-        {:ok, point} -> {:cont, [point | acc]}
-        {:error, term} -> {:halt, term}
-      end
-    end)
-    |> case do
-      li when is_list(li) -> {:ok, Enum.reverse(li)}
-      err -> {:error, err}
-    end
+    {:ok, points}
   end
 
   @doc false
   @spec take!(t(), pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do
-    case take(curve, n, opts) do
-      {:ok, points} -> points
-      {:error, {:out_of_bounds, u}} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: u
-    end
+    {:ok, points} = take(curve, n, opts)
+    points
   end
 end

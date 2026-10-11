@@ -255,21 +255,22 @@ defmodule Curves do
 
   The samples are at `t = 1/n, 2/n, ... 1.0` for a bezier (or the same steps up to
   `max_u/1` for a spline). The start, `t = 0`, is not included: call `solve/3` with `0.0` if you need it.
+  `n` must be a positive integer, otherwise it raises an `ArgumentError`.
 
   ## Examples
       iex> Curves.take(Curves.define_bezier(:linear), 4)
       {:ok, [{0.25, 0.25}, {0.5, 0.5}, {0.75, 0.75}, {1.0, 1.0}]}
       iex> Curves.take(Curves.define_bezier([{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}]), 2)
       {:error, {:too_many_points, 5, 4}}
+      iex> Curves.take(Curves.define_bezier(:linear), 0)
+      ** (ArgumentError) n must be a positive integer (the number of samples), got: 0
   """
   @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::
           {:ok, T.point_list()} | {:error, term()}
-  def take(curve, n, opts \\ []) do
-    case curve do
-      %Bezier{} -> Bezier.take(curve, n, opts)
-      %Spline{} -> Spline.take(curve, n, opts)
-    end
-  end
+  def take(curve, n, opts \\ [])
+  def take(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
+  def take(%Bezier{} = curve, n, opts), do: Bezier.take(curve, n, opts)
+  def take(%Spline{} = curve, n, opts), do: Spline.take(curve, n, opts)
 
   @doc ~s"""
   The raising version of `take/3`: returns the list of points, or raises one of the `Curves.Exceptions` errors.
@@ -279,10 +280,16 @@ defmodule Curves do
       [{1.0, 1.0}, {2.0, 0.0}]
   """
   @spec take!(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: T.point_list()
-  def take!(curve, n, opts \\ []) do
-    case curve do
-      %Bezier{} -> Bezier.take!(curve, n, opts)
-      %Spline{} -> Spline.take!(curve, n, opts)
-    end
+  def take!(curve, n, opts \\ [])
+  def take!(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
+  def take!(%Bezier{} = curve, n, opts), do: Bezier.take!(curve, n, opts)
+  def take!(%Spline{} = curve, n, opts), do: Spline.take!(curve, n, opts)
+
+  # take/3 and take!/3 divide by n, and 1..n counts down when n < 1, so anything but a
+  # positive integer is rejected up front.
+  @spec raise_bad_count(term()) :: no_return()
+  defp raise_bad_count(n) do
+    raise ArgumentError,
+          "n must be a positive integer (the number of samples), got: #{inspect(n)}"
   end
 end
