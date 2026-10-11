@@ -29,7 +29,8 @@ defmodule Curves.Bezier.Cubic do
   #    c2_multiple = tsq * remainder * 3
   #    end_multiple = tsq * t
   #
-  #    start_point * start_multiple + control_point1 * c1_multiple + control_point2 * c2_multiple + end_point * end_multiple
+  #    start_point * start_multiple + control_point1 * c1_multiple +
+  #      control_point2 * c2_multiple + end_point * end_multiple
   #  end
 
   defn get_cubic_point(points, t) do

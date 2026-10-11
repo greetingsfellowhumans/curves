@@ -4,7 +4,8 @@ defmodule Curves.Spline do
   #import Curves.Utils.{Points, Numbers}
 
   #@doc """
-  #Returns two tensors of points. The hd has exactly 4, the tl has the remainder, but also includes (at idx 0) the last point from hd.
+  #Returns two tensors of points. The hd has exactly 4, the tl has the remainder,
+  #but also includes (at idx 0) the last point from hd.
   #If there are 3 or less points, then no tail is returned. only `[hd]`
   #"""
   #@spec split_points(points :: Nx.Tensor.t()) :: list(Nx.Tensor.t())

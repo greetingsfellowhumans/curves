@@ -55,7 +55,10 @@ defmodule Curves.Transform.TransformTest do
 
   describe "rotation of 0" do
     test "rotating back to 0 or 0.0 matches never rotating" do
-      for define <- [&Curves.define_bezier([{0.1, 0.3}, {0.7, 1.9}, {2.3, 0.05}], &1), &Curves.define_hermite(@spline_points, &1)] do
+      bezier = &Curves.define_bezier([{0.1, 0.3}, {0.7, 1.9}, {2.3, 0.05}], &1)
+      hermite = &Curves.define_hermite(@spline_points, &1)
+
+      for define <- [bezier, hermite] do
         curve = define.(origin: {10, 1000})
         for zero <- [0, 0.0] do
           rotated_back = curve |> Transform.set_rotation(37) |> Transform.set_rotation(zero)

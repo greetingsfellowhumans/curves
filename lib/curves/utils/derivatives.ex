@@ -70,7 +70,11 @@ defmodule Curves.Utils.Derivatives do
     %{curve | segments: segments}
   end
 
-  #defp apply_derivatives_to_segment({[[x0, x1, x2, x3], [y0, y1, y2, y3]], segment_idx}, %{type: :hermite} = curve, [d0, d1, d2, d3]) do
+  #defp apply_derivatives_to_segment(
+  #  {[[x0, x1, x2, x3], [y0, y1, y2, y3]], segment_idx},
+  #  %{type: :hermite} = curve,
+  #  [d0, d1, d2, d3]
+  #) do
   #  u = segment_idx * 1.0
   #  {dx, dy} = get_derivative(curve, u, :tuple)
   #  {dx1, dy1} = get_derivative(curve, u + 1, :tuple)
