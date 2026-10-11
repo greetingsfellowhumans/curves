@@ -33,7 +33,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   alias Curves.Utils.{Segment, Vec}
 
   # A segment, [p0, p1, p2, p3], paired with its index.
-  @type indexed_segment :: {Segment.t(), non_neg_integer()}
+  @typep indexed_segment :: {Segment.t(), non_neg_integer()}
 
   @doc false
   @impl true
