@@ -58,6 +58,13 @@ defmodule Curves do
   | `:float_dtype` | `32` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
   | `:force_percent` | `false` | If true, `take` and `solve` rescale each coordinate to show where it sits between the lowest and highest point on that axis: the lowest becomes `0.0`, the highest becomes `1.0`, and halfway between them becomes `0.5`. The lowest and highest points are measured after any moves, scaling or rotation, including the `:origin` option. Curves that overshoot their points (e.g. Hermite) can return values slightly outside 0..1. If every point has the same value on an axis (a flat curve), that axis can't be rescaled, so it returns that value as-is. Rotating a flat curve adds tiny rounding errors, so that axis may no longer count as flat and can return values from `0.0` to `1.0`. |
 
+  `:float_dtype` and `:force_percent` can also be set for the whole app, e.g. `config :curves, force_percent: true`.
+  Opts passed to a function always win over the app config.
+
+  If you change `:force_percent` in the app config while running (e.g. with `Application.put_env/3`),
+  bezier curves pick up the change on their next `solve` or `take`. Splines don't: they read it when they are
+  defined or transformed, so define the spline again to pick up the change.
+
   """
 
 

@@ -113,6 +113,20 @@ defmodule Curves.RegressionTest do
       assert Curves.take!(curve, 2, force_percent: false) == [{25.0, 250.0}, {40.0, 400.0}]
     end
 
+    # Splines read the config when defined or transformed, unlike beziers. Documented in the Curves moduledoc.
+    test "spline only picks up a config change when defined or transformed again" do
+      points = [{0, 0}, {10, 100}, {20, 0}, {30, 100}]
+      curve = Curves.define_catmull_rom(points)
+      Application.put_env(:curves, :force_percent, true)
+      assert Curves.solve!(curve, curve.max_u) == {30.0, 100.0}
+
+      redefined = Curves.define_catmull_rom(points)
+      assert Curves.solve!(redefined, redefined.max_u) == {1.0, 1.0}
+
+      transformed = Curves.Transform.set_position(curve, {0, 0})
+      assert Curves.solve!(transformed, transformed.max_u) == {1.0, 1.0}
+    end
+
     test "opts passed to define beat the config" do
       curve = Curves.define_bezier([{10, 100}, {40, 400}], force_percent: false)
       Application.put_env(:curves, :force_percent, true)
