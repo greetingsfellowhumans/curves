@@ -134,6 +134,34 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  # Transforms apply in scale, rotate, move order, so a curve stays at its position.
+  property "a moved, scaled and rotated point is position + rotate(scale * point)" do
+    check all(
+            curve <- curve(),
+            {px, py} <- point(),
+            k <- StreamData.float(min: -3.0, max: 3.0),
+            deg <- StreamData.float(min: -360.0, max: 360.0),
+            f <- fraction()
+          ) do
+      u = f * Curves.max_u(curve)
+      {x, y} = Curves.solve!(curve, u)
+      a = deg * :math.pi() / 180
+      sx = x * k
+      sy = y * k
+
+      expected =
+        {px + sx * :math.cos(a) - sy * :math.sin(a), py + sx * :math.sin(a) + sy * :math.cos(a)}
+
+      transformed =
+        curve
+        |> Transform.set_position({px, py})
+        |> Transform.set_scale(k)
+        |> Transform.set_rotation(deg)
+
+      assert_near(Curves.solve!(transformed, u), expected, 1.0e-6)
+    end
+  end
+
   property "set_rotation keeps every point's distance from the origin" do
     check all(curve <- curve(), deg <- StreamData.float(min: -360.0, max: 360.0), f <- fraction()) do
       u = f * Curves.max_u(curve)

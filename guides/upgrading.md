@@ -209,6 +209,30 @@ Curves.define_bezier_spline([
 `Curves.Svg` now draws the dashed lines of beziers and bezier splines from each control point to the knot it
 pulls on, instead of one line through all the points.
 
+## 11. Scaling no longer moves a curve
+
+Transforms now apply in the usual scale, rotate, move order (like SVG's
+`transform="translate(…) rotate(…) scale(…)"`): the curve is scaled and rotated around its own `{0, 0}`, then moved to
+its position. Before, the position was scaled too, so scaling a moved curve also moved it, and a rotation then turned it
+around a point that was no longer on the curve. Curves that are moved (`:origin`, `set_position/2`, `inc_position/2`,
+`inc_x/2`, `inc_y/2`) *and* scaled give different results; others are unchanged.
+
+```elixir
+curve = Curves.define_bezier([{0, 0}, {4, 0}]) |> Curves.Transform.set_position({10, 10})
+curve = Curves.Transform.set_scale(curve, 2)
+
+# 1.0.0-rc.1: the position was scaled too
+{20.0, 20.0} = Curves.solve!(curve, 0.0)
+
+# 1.0.0-rc.2: the curve stays where it was put
+{10.0, 10.0} = Curves.solve!(curve, 0.0)
+```
+
+To get an old result back, change the position you set. For a position `{x, y}` and a scale `s`:
+
+- Without rotation, use `{x * s, y * s}`.
+- With a rotation too, use `{x, y}` plus the point `{x * s - x, y * s - y}` rotated by the same angle around `{0, 0}`.
+
 ## Everything else
 
 Everything else is either new or a bug fix that doesn't need code changes. See the [changelog](changelog.html) for the full list.
