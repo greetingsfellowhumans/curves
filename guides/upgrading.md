@@ -46,8 +46,8 @@ curve
 # 1.0
 curve = Curves.define_bezier(:ease_in_out)
 
-Curves.Svg.render(curve, samples: 300, title: "Ease in-out")
-|> Curves.Svg.save!(Path.join(System.tmp_dir!(), "ease_in_out.svg"))
+path = Path.join(System.tmp_dir!(), "ease_in_out.svg")
+Curves.Svg.save!(curve, path, samples: 300, title: "Ease in-out")
 ```
 
 In Livebook, show it with Kino: `curve |> Curves.Svg.render() |> Kino.Image.new(:svg)`.
