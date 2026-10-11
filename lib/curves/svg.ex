@@ -38,6 +38,7 @@ defmodule Curves.Svg do
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
+  alias Curves.Utils.Errors
 
   @defaults [
     samples: 100,
@@ -129,6 +130,7 @@ defmodule Curves.Svg do
     cond do
       is_struct(curve, Bezier) -> Bezier.transformed_points(curve)
       is_struct(curve, Spline) -> Spline.transformed_points(curve)
+      true -> Errors.raise_not_a_curve(curve)
     end
     |> Enum.dedup()
   end

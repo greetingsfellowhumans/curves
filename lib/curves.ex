@@ -3,6 +3,7 @@ defmodule Curves do
   alias Curves.Bezier.Predefined
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
+  alias Curves.Utils.Errors
 
   @moduledoc """
   ## Usage
@@ -218,6 +219,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.solve(curve, t, opts)
       is_struct(curve, Spline) -> Spline.solve(curve, t, opts)
+      true -> Errors.raise_not_a_curve(curve)
     end
   end
 
@@ -234,6 +236,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.solve!(curve, t, opts)
       is_struct(curve, Spline) -> Spline.solve!(curve, t, opts)
+      true -> Errors.raise_not_a_curve(curve)
     end
   end
 
@@ -277,6 +280,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.take(curve, n, opts)
       is_struct(curve, Spline) -> Spline.take(curve, n, opts)
+      true -> Errors.raise_not_a_curve(curve)
     end
   end
 
@@ -295,6 +299,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.take!(curve, n, opts)
       is_struct(curve, Spline) -> Spline.take!(curve, n, opts)
+      true -> Errors.raise_not_a_curve(curve)
     end
   end
 

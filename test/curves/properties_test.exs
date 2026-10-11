@@ -157,4 +157,20 @@ defmodule Curves.PropertiesTest do
       end
     end
   end
+
+  property "anything that isn't a curve raises an ArgumentError" do
+    check all(bad <- StreamData.term()) do
+      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
+        Curves.solve(bad, 0.5)
+      end
+
+      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
+        Curves.take!(bad, 3)
+      end
+
+      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
+        Curves.Transform.inc_x(bad, 1)
+      end
+    end
+  end
 end

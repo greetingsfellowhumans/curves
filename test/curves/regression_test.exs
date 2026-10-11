@@ -372,4 +372,56 @@ defmodule Curves.RegressionTest do
       assert_raise Curves.Exceptions.TooFewPoints, fn -> Curves.solve!(curve, 0.5) end
     end
   end
+
+  describe "not a curve" do
+    # A struct of another type, and a plain map with the fields a curve has.
+    @not_curves [
+      :nope,
+      nil,
+      [{0, 0}, {1, 1}],
+      %{},
+      %{origin: {0.0, 0.0}, scale: 1.0, rotation: 0.0},
+      URI.parse("https://example.com")
+    ]
+
+    # Every public function that takes a curve, called with `bad` in its place.
+    @spec calls(term()) :: list((-> term()))
+    defp calls(bad) do
+      [
+        fn -> Curves.solve(bad, 0.5) end,
+        fn -> Curves.solve!(bad, 0.5) end,
+        fn -> Curves.take(bad, 3) end,
+        fn -> Curves.take!(bad, 3) end,
+        fn -> Curves.Transform.set_position(bad, {1, 1}) end,
+        fn -> Curves.Transform.inc_position(bad, {1, 1}) end,
+        fn -> Curves.Transform.inc_x(bad, 1) end,
+        fn -> Curves.Transform.inc_y(bad, 1) end,
+        fn -> Curves.Transform.set_scale(bad, 2) end,
+        fn -> Curves.Transform.inc_scale(bad, 2) end,
+        fn -> Curves.Transform.set_rotation(bad, 90) end,
+        fn -> Curves.Transform.inc_rotation(bad, 90) end,
+        fn -> Curves.Svg.render(bad) end,
+        fn -> Curves.Svg.render(bad, show_points: true, samples: 3) end
+      ]
+    end
+
+    test "raises an ArgumentError naming both curve types and the bad value" do
+      for bad <- @not_curves, call <- calls(bad) do
+        error = assert_raise ArgumentError, call
+
+        assert error.message ==
+                 "expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: #{inspect(bad)}"
+      end
+    end
+
+    test "take/3 checks n before the curve" do
+      assert_raise ArgumentError, ~r/n must be a positive integer/, fn ->
+        Curves.take(:nope, 0)
+      end
+
+      assert_raise ArgumentError, ~r/n must be a positive integer/, fn ->
+        Curves.take!(:nope, 0)
+      end
+    end
+  end
 end

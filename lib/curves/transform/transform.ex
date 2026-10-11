@@ -6,6 +6,7 @@ defmodule Curves.Transform do
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Transform.{Move, Rotate, Scale}
   alias Curves.Types, as: T
+  alias Curves.Utils.Errors
   alias Curves.Utils.Vec
 
   # Replays the transformations list, then moves, scales and rotates a copy of the points
@@ -74,6 +75,7 @@ defmodule Curves.Transform do
     cond do
       is_struct(curve, Bezier) -> Bezier.add_transformation(curve, transformation, field)
       is_struct(curve, Spline) -> Spline.add_transformation(curve, transformation, field)
+      true -> Errors.raise_not_a_curve(curve)
     end
   end
 
