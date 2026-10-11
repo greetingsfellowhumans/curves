@@ -9,7 +9,11 @@ defmodule Curves.Utils.NumbersTest do
       assert split_float(5.25) == {5, 0.25}
       assert split_float(5.0) == {5, 0.0}
       assert split_float(0.5) == {0, 0.5}
-      assert split_float(1234.56789) == {1234, 0.56789}
+      assert split_float(2.1) == {2, 0.10000000000000009}
+    end
+
+    test "split_float/1 handles floats too big to print without an exponent" do
+      assert split_float(1.5e20) == {150_000_000_000_000_000_000, 0.0}
     end
 
     # Elixir prints floats below 0.0001 in scientific notation (e.g. "1.0e-5").
@@ -27,6 +31,15 @@ defmodule Curves.Utils.NumbersTest do
     test "split_float/1 turns -0.0 into +0.0" do
       assert {0, fraction} = split_float(-0.0)
       assert fraction === +0.0
+    end
+
+    property "split_float/1 is exact: the whole part plus the fraction is the float" do
+      check all(f <- StreamData.float(min: -1.0e6, max: 1.0e6)) do
+        {whole, fraction} = split_float(f)
+        assert whole + fraction == f
+        assert abs(fraction) < 1.0
+        assert whole == trunc(f)
+      end
     end
 
     property "split_float/1 returns any float between 0 and 1 unchanged as the fraction" do
