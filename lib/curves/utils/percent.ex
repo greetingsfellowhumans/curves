@@ -31,12 +31,14 @@ defmodule Curves.Utils.Percent do
   def get_bounds_after_transforms(%{scale: scale, rotation: rotation} = curve, get_points)
       when scale == 1 and rotation == 0,
       do: get_bounds_at_origin(Nx.to_flat_list(curve.origin), curve, get_points)
+
   def get_bounds_after_transforms(_curve, get_points), do: get_bounds(get_points.())
 
   # Stored bounds when the origin is {0, 0}, otherwise the bounds of the transformed points.
   @spec get_bounds_at_origin(list(number()), T.curve_struct(), (-> T.points())) :: bounded()
   defp get_bounds_at_origin([x, y], curve, _get_points) when x == 0 and y == 0,
     do: Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
+
   defp get_bounds_at_origin(_origin, _curve, get_points), do: get_bounds(get_points.())
 
   # Normalizes the point only when `:force_percent` is set in opts.

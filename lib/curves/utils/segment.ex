@@ -5,8 +5,10 @@ defmodule Curves.Utils.Segment do
   # such that [knot0, cp0, cp1, knot1]
   alias Curves.Utils.Types, as: T
   @type map_format() :: %{knot: T.point_tuple(), c0: T.point_tuple(), c1: T.point_tuple()}
-  @type loose_list() :: list(T.point_tuple()) # Any length
-  @type tight_list() :: list(T.point_tuple()) # Lenght == 4
+  # Any length
+  @type loose_list() :: list(T.point_tuple())
+  # Lenght == 4
+  @type tight_list() :: list(T.point_tuple())
 
   alias Curves.Utils.Points
 
@@ -15,23 +17,26 @@ defmodule Curves.Utils.Segment do
 
   def new_segments(lists, opts \\ []) do
     lists
-      |> Enum.map(&to_map_format(&1))
-      |> normalize_length()
-      |> Enum.reverse()
-      |> Enum.map(&Points.new_points(&1, opts))
-      |> Nx.stack(name: :segment)
+    |> Enum.map(&to_map_format(&1))
+    |> normalize_length()
+    |> Enum.reverse()
+    |> Enum.map(&Points.new_points(&1, opts))
+    |> Nx.stack(name: :segment)
   end
 
   defp normalize_length(coords) do
     coords
-      |> normalize_length([])
+    |> normalize_length([])
   end
+
   defp normalize_length([hd], acc) do
     [[hd.c0, hd.knot, hd.knot, hd.c1] | acc]
   end
+
   defp normalize_length([hd, next], acc) do
     [[hd.knot, hd.c1, next.c0, next.knot] | acc]
   end
+
   defp normalize_length([hd, next | tl], acc) do
     acc = [[hd.knot, hd.c1, next.c0, next.knot] | acc]
     normalize_length([next | tl], acc)
@@ -42,16 +47,15 @@ defmodule Curves.Utils.Segment do
   defp to_map_format([knot, c0, c1]), do: %{knot: knot, c0: c0, c1: c1}
 
   def split_u(%{segments: segments}, u), do: split_u(segments, u)
+
   def split_u(segments, u) do
     {segment_idx, t} = Curves.Utils.Numbers.split_float(u)
 
     case {segment_idx, t} do
       # absolute 0%. Works as normal.
       {0, +0.0} -> {segments[segment_idx], 0.0}
-
       # at 1.0, we actually want segment: 0, and t: 1.0. NOT seg: 1, t: 0.0
       {_, +0.0} -> {segments[segment_idx - 1], 1.0}
-
       # Everything else works as normal
       {_, _t} -> {segments[segment_idx], t}
     end
@@ -60,12 +64,15 @@ defmodule Curves.Utils.Segment do
   def get_knot0(segment) do
     Nx.slice(segment, [0, 0], [2, 1])
   end
+
   def get_control_point0(segment) do
     Nx.slice(segment, [0, 1], [2, 1])
   end
+
   def get_control_point1(segment) do
     Nx.slice(segment, [0, 2], [2, 1])
   end
+
   def get_knot1(segment) do
     Nx.slice(segment, [0, 3], [2, 1])
   end

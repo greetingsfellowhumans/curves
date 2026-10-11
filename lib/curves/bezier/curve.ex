@@ -36,40 +36,43 @@ defmodule Curves.Bezier.Curve do
   | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
-    points: Nx.Tensor.t(),
-    xmax: T.coord(),
-    xmin: T.coord(),
-    ymax: T.coord(),
-    ymin: T.coord(),
-    scale: float(),
-    rotation: float(),
-    transformations: list(),
-    compressed: (t :: float(), opts :: T.opts() -> T.point_tuple()),
-    opts: T.opts(),
-    origin: Nx.Tensor.t()
-  }
+          points: Nx.Tensor.t(),
+          xmax: T.coord(),
+          xmin: T.coord(),
+          ymax: T.coord(),
+          ymin: T.coord(),
+          scale: float(),
+          rotation: float(),
+          transformations: list(),
+          compressed: (t :: float(), opts :: T.opts() -> T.point_tuple()),
+          opts: T.opts(),
+          origin: Nx.Tensor.t()
+        }
 
   @doc false
   def define(points, opts \\ []) do
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
-    points = case points do
-      k when is_atom(k) -> Predefined.get(k, opts)
-      _ -> points
-    end
+
+    points =
+      case points do
+        k when is_atom(k) -> Predefined.get(k, opts)
+        _ -> points
+      end
       |> Points.new_points(opts)
 
-    curve = struct(__MODULE__, %{
-      points: points,
-      ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
-      ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
-      xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
-      xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
-      transformations: [],
-      scale: 1.0,
-      rotation: 0.0,
-      origin: Point.new_point({originx, originy}, opts),
-      opts: opts
-    })
+    curve =
+      struct(__MODULE__, %{
+        points: points,
+        ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
+        ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
+        xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
+        xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
+        transformations: [],
+        scale: 1.0,
+        rotation: 0.0,
+        origin: Point.new_point({originx, originy}, opts),
+        opts: opts
+      })
 
     {:ok, cb} = compress(curve, opts)
     Map.put(curve, :compressed, cb)
@@ -89,21 +92,41 @@ defmodule Curves.Bezier.Curve do
 
     case size do
       # Errors are deferred to solve-time so that define/2 and transforms never crash on a bad point count.
-      n when n < 2 -> {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
+      n when n < 2 ->
+        {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
 
       2 ->
         bounds = get_bounds(curve)
-        {:ok, fn t, solve_opts -> Linear.get_linear_interpolation_point(points, t) |> to_result(bounds, solve_opts) end}
+
+        {:ok,
+         fn t, solve_opts ->
+           Linear.get_linear_interpolation_point(points, t) |> to_result(bounds, solve_opts)
+         end}
 
       3 ->
         bounds = get_bounds(curve)
-        {:ok, fn t, solve_opts -> Quadratic.get_quadratic_point(points, t) |> to_result(bounds, solve_opts) end}
+
+        {:ok,
+         fn t, solve_opts ->
+           Quadratic.get_quadratic_point(points, t) |> to_result(bounds, solve_opts)
+         end}
 
       4 ->
         bounds = get_bounds(curve)
-        {:ok, fn t, solve_opts -> Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> to_result(bounds, solve_opts) end}
 
-      n when n > 4 -> {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
+        {:ok,
+         fn t, solve_opts ->
+           Curves.Formula.run(
+             Curves.Formula.CubicBezier,
+             points,
+             t,
+             Keyword.merge(opts, solve_opts)
+           )
+           |> to_result(bounds, solve_opts)
+         end}
+
+      n when n > 4 ->
+        {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
     end
   end
 
@@ -116,7 +139,8 @@ defmodule Curves.Bezier.Curve do
 
   # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
   # once for every point instead of once per point.
-  @spec solve_resolved(__MODULE__.t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
+  @spec solve_resolved(__MODULE__.t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, tuple()}
   defp solve_resolved(_curve, t, _opts) when t < 0.0 or t > 1.0, do: {:error, {:out_of_bounds, t}}
   defp solve_resolved(%{compressed: compressed}, t, opts), do: compressed.(t, opts)
 
@@ -165,10 +189,10 @@ defmodule Curves.Bezier.Curve do
         {:error, term} -> {:halt, term}
       end
     end)
-      |> case do
-        li when is_list(li) -> {:ok, Enum.reverse(li)}
-        err -> {:error, err}
-      end
+    |> case do
+      li when is_list(li) -> {:ok, Enum.reverse(li)}
+      err -> {:error, err}
+    end
   end
 
   @doc false
@@ -179,7 +203,11 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
-  defp raise_error({:too_few_points, n, min}), do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
-  defp raise_error({:too_many_points, n, max}), do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
+  defp raise_error({:too_few_points, n, min}),
+    do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
+
+  defp raise_error({:too_many_points, n, max}),
+    do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
+
   defp raise_error({:out_of_bounds, t}), do: raise(Curves.Exceptions.OutOfBoundT, t: t)
 end

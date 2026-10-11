@@ -14,6 +14,7 @@ defmodule Curves.Exceptions.TooManyPoints do
 
     For longer paths, use a spline instead, such as `Curves.define_bezier_spline/2`.
     """
+
     %__MODULE__{message: msg}
   end
 end

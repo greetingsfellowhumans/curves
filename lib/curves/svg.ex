@@ -111,7 +111,8 @@ defmodule Curves.Svg do
 
   # The curve's own points that will be drawn, so the image is only sized around what is visible.
   @spec shown_points(T.point_list(), keyword()) :: T.point_list()
-  defp shown_points(points, opts), do: points_if_shown(opts[:show_points] or opts[:show_polygon], points)
+  defp shown_points(points, opts),
+    do: points_if_shown(opts[:show_points] or opts[:show_polygon], points)
 
   @spec points_if_shown(boolean(), T.point_list()) :: T.point_list()
   defp points_if_shown(false, _points), do: []
@@ -124,6 +125,7 @@ defmodule Curves.Svg do
     %{points: points} = Curves.Transform.apply_all_transformations(curve)
     to_tuples(points)
   end
+
   defp control_points(%Spline{points: points} = curve) do
     curve
     |> Curves.Transform.apply_all_transformations()
@@ -151,7 +153,9 @@ defmodule Curves.Svg do
     offset_x = opts[:padding] + (inner_w - (xmax - xmin) * scale) / 2
     offset_y = opts[:padding] + (inner_h - (ymax - ymin) * scale) / 2
 
-    fn {x, y} -> {offset_x + (x - xmin) * scale, opts[:height] - offset_y - (y - ymin) * scale} end
+    fn {x, y} ->
+      {offset_x + (x - xmin) * scale, opts[:height] - offset_y - (y - ymin) * scale}
+    end
   end
 
   # Pixels per unit along one axis. A flat axis (span 0) doesn't limit the scale.
@@ -175,24 +179,32 @@ defmodule Curves.Svg do
   defp background(nil), do: []
   defp background(color), do: ~s(  <rect width="100%" height="100%" fill="#{escape(color)}"/>\n)
 
-  @spec polygon(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) :: iodata()
+  @spec polygon(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
+          iodata()
   defp polygon(false, _points, _to_pixels, _opts), do: []
-  defp polygon(_show, points, to_pixels, opts),
-    do: ~s(  <polyline points="#{polyline(points, to_pixels)}" fill="none" stroke="#{escape(opts[:polygon_color])}" stroke-width="1.5" stroke-dasharray="6 4"/>\n)
 
-  @spec dots(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) :: iodata()
+  defp polygon(_show, points, to_pixels, opts),
+    do:
+      ~s(  <polyline points="#{polyline(points, to_pixels)}" fill="none" stroke="#{escape(opts[:polygon_color])}" stroke-width="1.5" stroke-dasharray="6 4"/>\n)
+
+  @spec dots(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
+          iodata()
   defp dots(false, _points, _to_pixels, _opts), do: []
+
   defp dots(_show, points, to_pixels, opts) do
     for point <- points do
       {x, y} = to_pixels.(point)
+
       ~s(  <circle cx="#{format(x)}" cy="#{format(y)}" r="#{opts[:point_radius]}" fill="#{escape(opts[:point_color])}"/>\n)
     end
   end
 
   @spec title(String.t() | nil, keyword()) :: iodata()
   defp title(nil, _opts), do: []
+
   defp title(text, opts),
-    do: ~s(  <text x="#{opts[:padding]}" y="#{div(opts[:padding], 2) + 8}" font-family="sans-serif" font-size="16" fill="#212529">#{escape(text)}</text>\n)
+    do:
+      ~s(  <text x="#{opts[:padding]}" y="#{div(opts[:padding], 2) + 8}" font-family="sans-serif" font-size="16" fill="#212529">#{escape(text)}</text>\n)
 
   # Makes user text safe to put inside SVG.
   @spec escape(term()) :: String.t()

@@ -14,7 +14,7 @@ defmodule Curves.MixProject do
       package: package(),
       deps: deps(),
       aliases: aliases(),
-      docs: docs(),
+      docs: docs()
     ]
   end
 
@@ -25,12 +25,12 @@ defmodule Curves.MixProject do
         "CHANGELOG.md",
         "README.md",
         "guides/bezier_curves.livemd",
-        "guides/splines.livemd",
+        "guides/splines.livemd"
       ],
       nest_modules_by_prefix: [
         Curves.Spline.Type
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"]
     ]
   end
 
@@ -71,7 +71,7 @@ defmodule Curves.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
-      {:benchee, "~> 1.3", only: :dev},
+      {:benchee, "~> 1.3", only: :dev}
     ]
   end
 

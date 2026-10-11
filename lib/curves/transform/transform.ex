@@ -9,16 +9,19 @@ defmodule Curves.Transform do
 
   @doc false
   def apply_all_transformations(curve) do
-    Enum.reduce(curve.transformations, curve, fn {mod, func, args, _prev}, curve -> apply(mod, func, [curve | args]) end)
-      |> apply_origin_offset()
-      |> apply_scale()
-      |> apply_rotation()
+    Enum.reduce(curve.transformations, curve, fn {mod, func, args, _prev}, curve ->
+      apply(mod, func, [curve | args])
+    end)
+    |> apply_origin_offset()
+    |> apply_scale()
+    |> apply_rotation()
   end
 
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve) do
     points = Nx.add(points, origin)
     Map.put(curve, :points, points)
   end
+
   defp apply_origin_offset(%Spline{segments: segments, origin: origin} = curve) do
     segments = Nx.add(segments, origin)
     Map.put(curve, :segments, segments)
@@ -28,6 +31,7 @@ defmodule Curves.Transform do
     points = Nx.multiply(points, Nx.tensor([[scale]]))
     Map.put(curve, :points, points)
   end
+
   defp apply_scale(%Spline{segments: segments, scale: scale, origin: _origin} = curve) do
     segments = Nx.multiply(segments, Nx.tensor([[[scale]]]))
     Map.put(curve, :segments, segments)
@@ -36,10 +40,12 @@ defmodule Curves.Transform do
   @doc false
   # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
+
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do
     points = Rotate.rotate_points(points, angle, origin)
     Map.put(curve, :points, points)
   end
+
   def apply_rotation(%Spline{segments: segments, rotation: angle, origin: origin} = curve) do
     segments = Rotate.rotate_points(segments, angle, origin)
     Map.put(curve, :segments, segments)
@@ -61,7 +67,9 @@ defmodule Curves.Transform do
   # Matches apply_rotation/1: a rotation of 0 or 0.0 is skipped.
   @spec rotate_points(points :: T.points(), curve :: T.curve_struct()) :: T.points()
   defp rotate_points(points, %{rotation: rotation}) when rotation == 0, do: points
-  defp rotate_points(points, %{rotation: angle, origin: origin}), do: Rotate.rotate_points(points, angle, origin)
+
+  defp rotate_points(points, %{rotation: angle, origin: origin}),
+    do: Rotate.rotate_points(points, angle, origin)
 
   # Put a new transformation in the :transformations list, then recompress.
   defp add(%Bezier{} = curve, transformation) do
@@ -69,6 +77,7 @@ defmodule Curves.Transform do
     {:ok, cb} = Bezier.compress(curve)
     Map.put(curve, :compressed, cb)
   end
+
   defp add(%Spline{} = curve, transformation) do
     curve = Map.update!(curve, :transformations, &(&1 ++ [transformation]))
     {:ok, cb} = Spline.compress(curve)
@@ -206,7 +215,8 @@ defmodule Curves.Transform do
       0.70711
   """
   @spec inc_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def inc_rotation(curve, amount), do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
+  def inc_rotation(curve, amount),
+    do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
 
   @doc ~s"""
   Rotate the curve counter-clockwise around the origin (Origin defaults to {0.0, 0.0}).
@@ -226,5 +236,6 @@ defmodule Curves.Transform do
       1.0
   """
   @spec set_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def set_rotation(curve, amount), do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
+  def set_rotation(curve, amount),
+    do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
 end

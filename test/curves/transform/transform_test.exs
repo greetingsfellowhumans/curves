@@ -60,6 +60,7 @@ defmodule Curves.Transform.TransformTest do
 
       for define <- [bezier, hermite] do
         curve = define.(origin: {10, 1000})
+
         for zero <- [0, 0.0] do
           rotated_back = curve |> Transform.set_rotation(37) |> Transform.set_rotation(zero)
           assert Curves.take!(rotated_back, 10) == Curves.take!(curve, 10)

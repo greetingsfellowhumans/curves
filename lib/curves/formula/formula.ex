@@ -29,10 +29,18 @@ defmodule Curves.Formula do
         [1, t, t ** 2, t ** 3]
         |> Nx.tensor()
         |> Nx.divide(2)
-      0 -> [1, t, t ** 2, t ** 3] |> Nx.tensor()
-      1 -> [0, 1, 2 * t, 3 * (t ** 2)] |> Nx.tensor()
-      2 -> [0, 0, 2, 6 * t] |> Nx.tensor()
-      3 -> [0, 0, 0, 6] |> Nx.tensor()
+
+      0 ->
+        [1, t, t ** 2, t ** 3] |> Nx.tensor()
+
+      1 ->
+        [0, 1, 2 * t, 3 * t ** 2] |> Nx.tensor()
+
+      2 ->
+        [0, 0, 2, 6 * t] |> Nx.tensor()
+
+      3 ->
+        [0, 0, 0, 6] |> Nx.tensor()
     end
   end
 
@@ -50,13 +58,12 @@ defmodule Curves.Formula do
       def required_opts(), do: []
       defoverridable required_opts: 0
 
-      #@impl true
-      #def points_function(points) do
+      # @impl true
+      # def points_function(points) do
       #  {dimensions, size} = Nx.shape(points)
       #  Nx.slice(points, [0, 0], [dimensions, size])
-      #end
-      #defoverridable points_function: 1
-
+      # end
+      # defoverridable points_function: 1
     end
   end
 end

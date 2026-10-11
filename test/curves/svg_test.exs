@@ -19,18 +19,31 @@ defmodule Curves.SvgTest do
   describe "render/3" do
     test "draws samples + 1 points, starting at the start of the curve" do
       svg = Svg.render(Curves.define_bezier(:linear), 4, width: 100, height: 100, padding: 0)
-      assert line_points(svg) == [{0.0, 100.0}, {25.0, 75.0}, {50.0, 50.0}, {75.0, 25.0}, {100.0, 0.0}]
+
+      assert line_points(svg) == [
+               {0.0, 100.0},
+               {25.0, 75.0},
+               {50.0, 50.0},
+               {75.0, 25.0},
+               {100.0, 0.0}
+             ]
     end
 
     test "works for every spline type" do
-      for define <- [&Curves.define_b_spline/1, &Curves.define_catmull_rom/1, &Curves.define_hermite/1] do
+      for define <- [
+            &Curves.define_b_spline/1,
+            &Curves.define_catmull_rom/1,
+            &Curves.define_hermite/1
+          ] do
         svg = Svg.render(define.(@b_spline), 50)
         assert length(line_points(svg)) == 51
       end
     end
 
     test "keeps everything inside the image" do
-      svg = Svg.render(Curves.define_b_spline(@b_spline), 100, width: 300, height: 200, padding: 10)
+      svg =
+        Svg.render(Curves.define_b_spline(@b_spline), 100, width: 300, height: 200, padding: 10)
+
       for {x, y} <- line_points(svg) do
         assert x >= 10.0 and x <= 290.0
         assert y >= 10.0 and y <= 190.0
@@ -44,14 +57,22 @@ defmodule Curves.SvgTest do
     end
 
     test "dots follow the curve when it is moved" do
-      curve = Curves.define_bezier([{0, 0}, {10, 10}]) |> Curves.Transform.set_position({100, 100})
+      curve =
+        Curves.define_bezier([{0, 0}, {10, 10}]) |> Curves.Transform.set_position({100, 100})
+
       svg = Svg.render(curve, 2, width: 100, height: 100, padding: 0)
       assert svg =~ ~s(<circle cx="0.00" cy="100.00")
       assert svg =~ ~s(<circle cx="100.00" cy="0.00")
     end
 
     test "a flat curve doesn't divide by zero" do
-      svg = Svg.render(Curves.define_bezier(:linear_horizontal), 2, width: 100, height: 100, padding: 0)
+      svg =
+        Svg.render(Curves.define_bezier(:linear_horizontal), 2,
+          width: 100,
+          height: 100,
+          padding: 0
+        )
+
       assert line_points(svg) == [{0.0, 50.0}, {50.0, 50.0}, {100.0, 50.0}]
     end
 
@@ -65,7 +86,16 @@ defmodule Curves.SvgTest do
 
     test "passes solve_opts through" do
       curve = Curves.define_bezier([{10, 100}, {40, 400}])
-      svg = Svg.render(curve, 2, solve_opts: [force_percent: true], show_points: false, width: 100, height: 100, padding: 0)
+
+      svg =
+        Svg.render(curve, 2,
+          solve_opts: [force_percent: true],
+          show_points: false,
+          width: 100,
+          height: 100,
+          padding: 0
+        )
+
       assert line_points(svg) == [{0.0, 100.0}, {50.0, 50.0}, {100.0, 0.0}]
     end
 

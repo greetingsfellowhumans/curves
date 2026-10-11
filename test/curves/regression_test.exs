@@ -136,7 +136,9 @@ defmodule Curves.RegressionTest do
 
   # Puts the :force_percent app env back to how it was before the test.
   @spec restore_force_percent({:ok, term()} | :error) :: :ok
-  defp restore_force_percent({:ok, value}), do: Application.put_env(:curves, :force_percent, value)
+  defp restore_force_percent({:ok, value}),
+    do: Application.put_env(:curves, :force_percent, value)
+
   defp restore_force_percent(:error), do: Application.delete_env(:curves, :force_percent)
 
   describe "force_percent on transformed splines" do
@@ -144,7 +146,12 @@ defmodule Curves.RegressionTest do
 
     # Solves the start, middle and end of a spline with force_percent on.
     @spec ends(Curves.Spline.Curve.t()) :: list(T.point_tuple())
-    defp ends(curve), do: Enum.map([0.0, curve.max_u / 2, curve.max_u], &Curves.solve!(curve, &1, force_percent: true))
+    defp ends(curve),
+      do:
+        Enum.map(
+          [0.0, curve.max_u / 2, curve.max_u],
+          &Curves.solve!(curve, &1, force_percent: true)
+        )
 
     test "scaled spline uses transformed bounds" do
       curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_scale(2.0)
@@ -173,7 +180,9 @@ defmodule Curves.RegressionTest do
     end
 
     test "take! on a moved spline stays within 0..1" do
-      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_position({100, 100})
+      curve =
+        Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_position({100, 100})
+
       for {x, y} <- Curves.take!(curve, 20, force_percent: true) do
         assert x >= 0.0 and x <= 1.0
         assert y >= 0.0 and y <= 1.0
@@ -182,7 +191,10 @@ defmodule Curves.RegressionTest do
 
     test "moved away and back gives the same result as never moving" do
       curve = Curves.define_catmull_rom(@catmull_points)
-      moved_back = curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
+
+      moved_back =
+        curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
+
       assert ends(moved_back) == ends(curve)
     end
 
@@ -223,7 +235,10 @@ defmodule Curves.RegressionTest do
     end
 
     test "take! on a moved cubic stays within 0..1" do
-      curve = Curves.define_bezier([{0, 0}, {1, 3}, {2, -1}, {3, 1}]) |> Curves.Transform.set_position({50, 50})
+      curve =
+        Curves.define_bezier([{0, 0}, {1, 3}, {2, -1}, {3, 1}])
+        |> Curves.Transform.set_position({50, 50})
+
       for {x, y} <- Curves.take!(curve, 20, force_percent: true) do
         assert x >= 0.0 and x <= 1.0
         assert y >= 0.0 and y <= 1.0
@@ -232,8 +247,12 @@ defmodule Curves.RegressionTest do
 
     test "moved away and back gives the same result as never moving" do
       curve = Curves.define_bezier(@line)
-      moved_back = curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
-      assert Curves.solve!(moved_back, 0.25, force_percent: true) == Curves.solve!(curve, 0.25, force_percent: true)
+
+      moved_back =
+        curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
+
+      assert Curves.solve!(moved_back, 0.25, force_percent: true) ==
+               Curves.solve!(curve, 0.25, force_percent: true)
     end
 
     test "transforming a bezier with too few points still defers the error to solve" do

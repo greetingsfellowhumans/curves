@@ -12,7 +12,7 @@ defmodule Curves.Exceptions.TooFewPoints do
     msg = ~s"""
     Cannot solve curve with only #{n} points. Need at least #{min}.
     """
+
     %__MODULE__{message: msg}
   end
-
 end

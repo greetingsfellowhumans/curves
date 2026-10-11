@@ -113,11 +113,11 @@ defmodule Curves.Utils.Points do
   """
   def get_slope(point0, point1) do
     Nx.subtract(point1, point0)
-      |> Point.to_tuple()
-      |> case do
-        {+0.0, _y} -> {1_000_000.0, 1}
-        {x, y} -> {y , x}
-      end
+    |> Point.to_tuple()
+    |> case do
+      {+0.0, _y} -> {1_000_000.0, 1}
+      {x, y} -> {y, x}
+    end
   end
 
   @doc ~s"""
@@ -127,8 +127,8 @@ defmodule Curves.Utils.Points do
   """
   def update_point_at(points, idx, cb) do
     tuples = to_tuples(points)
-    List.update_at(tuples, idx, cb)
-      |> new_points()
-  end
 
+    List.update_at(tuples, idx, cb)
+    |> new_points()
+  end
 end

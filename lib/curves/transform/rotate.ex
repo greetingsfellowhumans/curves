@@ -6,30 +6,35 @@ defmodule Curves.Transform.Rotate do
     sin = Nx.sin(radians) |> Nx.to_number()
     neg_sin = Nx.sin(radians) |> Nx.negate() |> Nx.to_number()
 
-     Nx.tensor([
-      [cos, neg_sin],
-      [sin, cos]
-    ], names: [:dimension, :point])
+    Nx.tensor(
+      [
+        [cos, neg_sin],
+        [sin, cos]
+      ],
+      names: [:dimension, :point]
+    )
   end
 
   def rotate_points(point, radians, origin) do
     matrix = rotation_matrix(radians)
     rotate_points(point, radians, origin, matrix)
   end
+
   def rotate_points(point, radians, origin, matrix) do
     case Nx.shape(point) do
       {size, _dimention, _point} ->
-        for i <- 0..size - 1 do
+        for i <- 0..(size - 1) do
           point[i]
           |> rotate_points(radians, origin, matrix)
         end
-          |> Nx.stack()
-          |> Nx.rename([:segment, :dimension, :point])
+        |> Nx.stack()
+        |> Nx.rename([:segment, :dimension, :point])
 
       {_dimention, _point} ->
         point = Nx.subtract(point, origin)
+
         Nx.dot(matrix, point)
-          |> Nx.add(origin)
+        |> Nx.add(origin)
     end
   end
 
@@ -38,10 +43,10 @@ defmodule Curves.Transform.Rotate do
   end
 
   def inc_rotation(curve, amount) do
-    transform(curve, fn old ->  old + degrees_to_radians(amount) end)
+    transform(curve, fn old -> old + degrees_to_radians(amount) end)
   end
 
-  #@impl true
+  # @impl true
   defp transform(curve, cb) do
     Map.update!(curve, :rotation, cb)
   end
@@ -51,5 +56,4 @@ defmodule Curves.Transform.Rotate do
     |> Nx.multiply(deg)
     |> Nx.to_number()
   end
-
 end

@@ -14,5 +14,4 @@ defmodule Curves.Formula.CubicBezier do
 
   @impl true
   def blending_function(), do: @matrix
-
 end

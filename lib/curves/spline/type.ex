@@ -6,31 +6,32 @@ defmodule Curves.Spline.TypeIndex do
     bezier_spline: T.BezierSpline,
     b_spline: T.BSpline,
     catmull_rom: T.CatmullRom,
-    hermite: T.Hermite,
+    hermite: T.Hermite
   }
 
   def list(), do: Map.keys(@all)
 
   def get({:module, mod}), do: mod
+
   def get(key) do
     case Map.get(@all, key) do
-      nil -> raise "Unknown spline_type: #{inspect key}"
+      nil -> raise "Unknown spline_type: #{inspect(key)}"
       mod -> mod
     end
   end
 end
 
 defmodule Curves.Spline.Type do
-  #@moduledoc ~s"""
-  #Turns a module into a spline type.
+  # @moduledoc ~s"""
+  # Turns a module into a spline type.
 
-  #```elixir
-  #defmodule My.Spline do
+  # ```elixir
+  # defmodule My.Spline do
   #  use Curves.Spline.Type,
   #    derivatives: [0, 1, 1, 0]
-  #end
-  #```
-  #"""
+  # end
+  # ```
+  # """
   @moduledoc false
 
   @callback power_series(t :: float()) :: Nx.Tensor.t()
@@ -77,10 +78,10 @@ defmodule Curves.Spline.Type do
       import Curves.Spline.Type, only: [d: 2]
       @behaviour Curves.Spline.Type
       @derivatives Keyword.get(unquote(opts), :derivatives, [0, 0, 0, 0])
-      @derivative  Keyword.get(unquote(opts), :derivative, 0)
+      @derivative Keyword.get(unquote(opts), :derivative, 0)
 
       @doc false
-      @override_segment_parsing  Keyword.get(unquote(opts), :override_segment_parsing, false)
+      @override_segment_parsing Keyword.get(unquote(opts), :override_segment_parsing, false)
       def override_segment_parsing(), do: @override_segment_parsing
 
       @doc false
@@ -95,8 +96,6 @@ defmodule Curves.Spline.Type do
       @impl true
       def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2
-
     end
   end
-
 end

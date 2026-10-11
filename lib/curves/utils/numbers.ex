@@ -6,5 +6,4 @@ defmodule Curves.Utils.Numbers do
     {t, _} = Float.parse("0." <> str)
     {trunc(float), t}
   end
-
 end

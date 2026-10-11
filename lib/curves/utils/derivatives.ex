@@ -7,16 +7,20 @@ defmodule Curves.Utils.Derivatives do
   Given a point on a curve, find the derivative
   """
   def get_derivative(curve, t, format) do
-    coord = case t do
-      0 -> 0.0
-      _ -> t - @small_num
-    end
+    coord =
+      case t do
+        0 -> 0.0
+        _ -> t - @small_num
+      end
+
     {x0, y0} = Curves.solve!(curve, t)
     {x1, y1} = Curves.solve!(curve, coord)
-    slope = case {y1 - y0, x1 - x0} do
-      {_, +0.0} -> {1_000_000, 1}
-      {y, x} -> {y, x}
-    end
+
+    slope =
+      case {y1 - y0, x1 - x0} do
+        {_, +0.0} -> {1_000_000, 1}
+        {y, x} -> {y, x}
+      end
 
     case format do
       :tuple -> slope
@@ -56,23 +60,26 @@ defmodule Curves.Utils.Derivatives do
   end
 
   def apply_derivatives(%Curves.Spline.Curve{segments: segments, type: type} = curve) do
-    segments = case type do
-      :bezier_spline -> curve.segments
+    segments =
+      case type do
+        :bezier_spline ->
+          curve.segments
 
-      _ ->
-        Nx.to_list(segments)
+        _ ->
+          Nx.to_list(segments)
           |> Enum.with_index()
           |> curve.mod.map_segments(curve)
           |> Nx.tensor(names: [:segment, :dimension, :point], type: Nx.type(segments))
-    end
+      end
+
     %{curve | segments: segments}
   end
 
-  #defp apply_derivatives_to_segment(
+  # defp apply_derivatives_to_segment(
   #  {[[x0, x1, x2, x3], [y0, y1, y2, y3]], segment_idx},
   #  %{type: :hermite} = curve,
   #  [d0, d1, d2, d3]
-  #) do
+  # ) do
   #  u = segment_idx * 1.0
   #  {dx, dy} = get_derivative(curve, u, :tuple)
   #  {dx1, dy1} = get_derivative(curve, u + 1, :tuple)
@@ -85,8 +92,8 @@ defmodule Curves.Utils.Derivatives do
   #    [x0, x0 + dx / 3, x3 - dx1 / 3, x3],
   #    [y0, y0 + dy / 3, y3 - dy1 / 3, y3]
   #  ]
-  #end
-  #defp apply_derivatives_to_segment({[[x0, x1, x2, x3], [y0, y1, y2, y3]], segment_idx}, curve, [d0, d1, d2, d3]) do
+  # end
+  # defp apply_derivatives_to_segment({[[x0, x1, x2, x3], [y0, y1, y2, y3]], segment_idx}, curve, [d0, d1, d2, d3]) do
   #  u = segment_idx * 1.0
   #  {x0, y0} = case d0 do
   #    0 -> {x0, y0}
@@ -108,5 +115,5 @@ defmodule Curves.Utils.Derivatives do
   #    [x0, x1, x2, x3],
   #    [y0, y1, y2, y3]
   #  ]
-  #end
+  # end
 end

@@ -18,7 +18,7 @@ defmodule Curves.Exceptions.OutOfBoundU do
       `u = 0.5` would be 50% through segment 0
       `u = 2.5` would be 50% through segment 2
     """
+
     %__MODULE__{message: msg}
   end
-
 end

@@ -11,7 +11,7 @@ defmodule Curves.Exceptions.OutOfBoundT do
 
     Perhaps you were trying to pass in an x-coordinate? Think of `t` like a percentage of progress from the beginning to the end of the curve, rather than an actual coordinate.
     """
+
     %__MODULE__{message: msg}
   end
-
 end

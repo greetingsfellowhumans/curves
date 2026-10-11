@@ -59,10 +59,12 @@ defmodule Curves.Spline.Type.BSpline do
   @doc false
   @impl true
   def define(points, opts \\ []) do
-    points = rebuild_points(points, opts)
-            |> auto_last([])
+    points =
+      rebuild_points(points, opts)
+      |> auto_last([])
+
     points
-      |> Curves.define_spline(:b_spline, opts)
+    |> Curves.define_spline(:b_spline, opts)
   end
 
   defp auto_last([[p0, p1, p2], [p3 | _] = next_segment | segments], acc) do
@@ -70,6 +72,7 @@ defmodule Curves.Spline.Type.BSpline do
     segments = [next_segment | segments]
     auto_last(segments, acc)
   end
+
   # acc is built back to front, so flip it to keep the segments in curve order.
   defp auto_last(_, acc), do: Enum.reverse(acc)
 
@@ -77,6 +80,7 @@ defmodule Curves.Spline.Type.BSpline do
   def rebuild_points(points, opts) do
     rebuild_points(points, opts, [])
   end
+
   @doc false
   def rebuild_points([p0, p1, p2 | all_points], opts, acc) do
     [_m0, m1] = split_points(p0, p1, 2)
@@ -86,16 +90,18 @@ defmodule Curves.Spline.Type.BSpline do
     acc = [segment | acc]
     rebuild_points([p1, p2 | all_points], opts, acc)
   end
+
   def rebuild_points(_, _opts, acc), do: Enum.reverse(acc)
 
   @doc false
   def split_points(point_a, point_b, midpoints) do
     {ax, ay} = point_a
-    {my, mx} =  get_slope(point_a, point_b)
+    {my, mx} = get_slope(point_a, point_b)
     xmid = mx / (midpoints + 1)
     ymid = my / (midpoints + 1)
+
     for i <- 1..midpoints do
-      {ax + (i * xmid), ay + (i * ymid)}
+      {ax + i * xmid, ay + i * ymid}
     end
   end
 
@@ -104,5 +110,4 @@ defmodule Curves.Spline.Type.BSpline do
     y = y1 - y0
     {y, x}
   end
-
 end

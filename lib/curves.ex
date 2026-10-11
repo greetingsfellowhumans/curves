@@ -78,7 +78,8 @@ defmodule Curves do
       true
 
   """
-  @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.define_opts()) :: Bezier.t()
+  @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.define_opts()) ::
+          Bezier.t()
   defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
   # For internal use, not part of the public facing API.
@@ -122,8 +123,11 @@ defmodule Curves do
   {x, y} = Curves.solve!(curves, 0.518)
   ```
   """
-  @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) :: Spline.t()
-  defdelegate define_bezier_spline(points, opts \\ []), to: Curves.Spline.Type.BezierSpline, as: :define
+  @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) ::
+          Spline.t()
+  defdelegate define_bezier_spline(points, opts \\ []),
+    to: Curves.Spline.Type.BezierSpline,
+    as: :define
 
   @doc ~s"""
   Define a spline struct of type: `Curves.Spline.Type.BSpline`.
@@ -194,7 +198,9 @@ defmodule Curves do
   ```
   """
   @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
-  defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom, as: :define
+  defdelegate define_catmull_rom(points, opts \\ []),
+    to: Curves.Spline.Type.CatmullRom,
+    as: :define
 
   @doc ~s"""
   Given a `Curves.Bezier.Curve` or `Curves.Spline.Curve` struct, and `t`, find the point along the curve.
@@ -216,7 +222,8 @@ defmodule Curves do
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
 
   """
-  @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) :: {:ok, T.point_tuple()} | {:error, term()}
+  @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, term()}
   def solve(curve, t, opts \\ []) do
     case curve do
       %Bezier{} -> Bezier.solve(curve, t, opts)
@@ -238,7 +245,8 @@ defmodule Curves do
   @doc ~s"""
   Take `n` samples, evenly spaced, from the curve.
   """
-  @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: {:ok, T.point_list()} | {:error, term()}
+  @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::
+          {:ok, T.point_list()} | {:error, term()}
   def take(curve, n, opts \\ []) do
     case curve do
       %Bezier{} -> Bezier.take(curve, n, opts)
@@ -256,5 +264,4 @@ defmodule Curves do
       %Spline{} -> Spline.take!(curve, n, opts)
     end
   end
-
 end

@@ -64,5 +64,4 @@ defmodule Curves.Spline.Type.BezierSpline do
   @doc false
   @impl true
   def blending_function(), do: @matrix
-
 end

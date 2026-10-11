@@ -41,8 +41,9 @@ defmodule Curves.Spline.Type.Hermite do
   @impl true
   def define(points, opts \\ []) do
     points = Enum.map(points, fn p -> [p] end)
+
     points
-      |> Curves.define_spline(:hermite, opts)
+    |> Curves.define_spline(:hermite, opts)
   end
 
   @doc false
@@ -72,5 +73,4 @@ defmodule Curves.Spline.Type.Hermite do
       [y0, y0 + dy / 3, y3 - dy1 / 3, y3]
     ]
   end
-
 end

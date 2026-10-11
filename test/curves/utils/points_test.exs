@@ -47,12 +47,13 @@ defmodule Curves.Utils.PointsTest do
       points = new_points(coords, [])
 
       maps = to_maps(points)
+
       assert maps == [
-        %{x: 1.0, y: 10.0},
-        %{x: 2.0, y: 20.0},
-        %{x: 3.0, y: 30.0},
-        %{x: 4.0, y: 40.0},
-      ]
+               %{x: 1.0, y: 10.0},
+               %{x: 2.0, y: 20.0},
+               %{x: 3.0, y: 30.0},
+               %{x: 4.0, y: 40.0}
+             ]
     end
 
     test "get_slope" do
@@ -64,10 +65,12 @@ defmodule Curves.Utils.PointsTest do
     end
 
     property "get_slope is always correct" do
-      check all x0 <- integer(),
-                x1 <- integer(),
-                y0 <- integer(),
-                y1 <- integer() do
+      check all(
+              x0 <- integer(),
+              x1 <- integer(),
+              y0 <- integer(),
+              y1 <- integer()
+            ) do
         point0 = Curves.Utils.Point.new_point({x0, y0})
         point1 = Curves.Utils.Point.new_point({x1, y1})
         {rise, run} = get_slope(point0, point1)
@@ -86,16 +89,18 @@ defmodule Curves.Utils.PointsTest do
       ]
 
       points = new_points(coords, [])
-      points = update_point_at(points, 1, fn {x, y} ->
-        {x * 10, y * 10}
-      end)
+
+      points =
+        update_point_at(points, 1, fn {x, y} ->
+          {x * 10, y * 10}
+        end)
 
       assert to_tuples(points) == [
-        {1, 10},
-        {20, 200},
-        {3, 30},
-        {4, 40}
-      ]
+               {1, 10},
+               {20, 200},
+               {3, 30},
+               {4, 40}
+             ]
     end
   end
 end

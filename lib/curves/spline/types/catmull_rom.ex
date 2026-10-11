@@ -30,8 +30,8 @@ defmodule Curves.Spline.Type.CatmullRom do
   @doc false
   @impl true
   def define(points, opts \\ []) do
-    Enum.map(points, &([&1]))
-      |> Curves.define_spline(:catmull_rom, opts)
+    Enum.map(points, &[&1])
+    |> Curves.define_spline(:catmull_rom, opts)
   end
 
   # Pk-1 == x0/y0
@@ -74,15 +74,16 @@ defmodule Curves.Spline.Type.CatmullRom do
 
   @doc false
   def map_segment([[x0, x1, x2, x3], [y0, y1, y2, y3]]) do
-  [
+    [
       [x0, x1, x2, x3],
       [y0, y1, y2, y3]
-  ]
+    ]
   end
 
   @doc false
   def get_prev_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
     prev_idx = segment_idx - 1
+
     if prev_idx >= 0 do
       prev_seg = Enum.at(all_segments, segment_idx - 1)
       {[[x0, _, _, _x1], [y0, _, _, _y1]], _idx} = prev_seg
@@ -97,8 +98,10 @@ defmodule Curves.Spline.Type.CatmullRom do
   @doc false
   def get_next_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
     next_seg = Enum.at(all_segments, segment_idx + 1)
+
     case next_seg do
-      {[[_, _, _, x3], [_, _, _, y3]], _idx} -> {x3, y3}
+      {[[_, _, _, x3], [_, _, _, y3]], _idx} ->
+        {x3, y3}
 
       # Just mirror the slope from here to the next point
       nil ->
@@ -107,5 +110,4 @@ defmodule Curves.Spline.Type.CatmullRom do
         {x, y}
     end
   end
-
 end
