@@ -51,7 +51,14 @@ defmodule Curves.Spline.Type.BSpline do
 
   @doc false
   @impl true
-  def define(points, opts \\ []) do
+  def define(points, opts \\ [])
+
+  # Fewer than 4 points make no segments; see "How it is built" above.
+  def define(points, _opts) when length(points) < 4 do
+    raise ArgumentError, "a B-spline needs at least 4 points, got #{length(points)}"
+  end
+
+  def define(points, opts) do
     points =
       rebuild_points(points, opts)
       |> auto_last([])

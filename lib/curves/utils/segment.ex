@@ -30,6 +30,9 @@ defmodule Curves.Utils.Segment do
   end
 
   @spec normalize_length(list(map_format()), list(t())) :: list(t())
+  defp normalize_length([], _acc),
+    do: raise(ArgumentError, "a spline needs at least 1 point, got none")
+
   defp normalize_length([hd], acc) do
     [[hd.c0, hd.knot, hd.knot, hd.c1] | acc]
   end

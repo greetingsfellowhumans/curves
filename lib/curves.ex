@@ -99,6 +99,7 @@ defmodule Curves do
   See [available opts](#module-options)
 
   Each point is a list: its knot, then up to two control points (`[knot]`, `[knot, c]` or `[knot, c0, c1]`).
+  Any other shape, or an empty list, raises an `ArgumentError`.
 
   ## Examples
       iex> curve = Curves.define_bezier_spline([
@@ -112,6 +113,8 @@ defmodule Curves do
       4.0
       iex> Curves.solve!(curve, 1.0)
       {10.0, 5.0}
+      iex> Curves.define_bezier_spline([])
+      ** (ArgumentError) a spline needs at least 1 point, got none
   """
   @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) ::
           Spline.t()
@@ -123,6 +126,7 @@ defmodule Curves do
   Define a spline struct of type: `Curves.Spline.Type.BSpline`.
 
   Only the knots need to be defined, the control points are calculated automatically.
+  Needs at least 4 points; `n` points give `n - 3` segments. Fewer raise an `ArgumentError`.
 
   ## Options
   See [available opts](#module-options)
@@ -134,6 +138,8 @@ defmodule Curves do
       iex> {x, y} = Curves.solve!(curve, 0.0)
       iex> {Float.round(x, 4), Float.round(y, 4)}
       {0.8333, 0.1667}
+      iex> Curves.define_b_spline([{0, 0}, {1, 0}, {1, 1}])
+      ** (ArgumentError) a B-spline needs at least 4 points, got 3
   """
   @spec define_b_spline(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
@@ -162,6 +168,7 @@ defmodule Curves do
 
   @doc ~s"""
   Define a new `Curves.Spline.Type.CatmullRom`. Only the joins need to be defined, the control points are calculated automatically.
+  An empty list raises an `ArgumentError`.
 
   ## Options
   See [available opts](#module-options)
@@ -172,6 +179,8 @@ defmodule Curves do
       {1.0, 0.0}
       iex> Curves.solve!(curve, 0.5)
       {0.5625, -0.0625}
+      iex> Curves.define_catmull_rom([])
+      ** (ArgumentError) a spline needs at least 1 point, got none
   """
   @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []),
