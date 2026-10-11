@@ -1,5 +1,7 @@
 defmodule Curves.Utils.Point do
   @moduledoc false
+  alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.Utils.Types, as: T
 
   _comment = ~s"""
   stores every point as a {2, 1} tensor.
@@ -23,10 +25,15 @@ defmodule Curves.Utils.Point do
       >
   """
 
+  @spec new_point(T.point_tuple() | [T.coord()]) :: TensorT.point()
   def new_point(coords), do: new_point(coords, [])
+
+  @spec new_point(T.point_tuple() | [T.coord()], T.opts()) :: TensorT.point()
   def new_point({x, y}, opts), do: new_point(x, y, opts)
   def new_point([x, y], opts), do: new_point(x, y, opts)
 
+  # The tensor's float type comes from the :float_dtype option (or app config).
+  @spec new_point(T.coord(), T.coord(), T.opts()) :: TensorT.point()
   def new_point(x, y, opts) do
     opts = Curves.Utils.Opts.merge_opts(opts)
 
@@ -44,16 +51,20 @@ defmodule Curves.Utils.Point do
     )
   end
 
+  @spec get_x(TensorT.point()) :: float()
   def get_x(p) do
     p[dimension: 0, point: 0]
     |> Nx.to_number()
   end
 
+  @spec get_y(TensorT.point()) :: float()
   def get_y(p) do
     p[dimension: 1, point: 0]
     |> Nx.to_number()
   end
 
+  # Accepts a tuple (returned as-is), a point, or a flat point, so callers don't need to check which.
+  @spec to_tuple(T.point_tuple() | TensorT.point() | TensorT.flat_point()) :: T.point_tuple()
   def to_tuple({x, y}), do: {x, y}
 
   def to_tuple(point) when is_point(point) do

@@ -1,6 +1,8 @@
 defmodule Curves.Utils.Points do
   @moduledoc false
   alias Curves.Utils.{Coord, Point}
+  alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.Utils.Types, as: T
 
   defguard is_points(p)
            when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) >= 0
@@ -20,8 +22,11 @@ defmodule Curves.Utils.Points do
       >
   """
 
+  @spec new_points(T.point_list() | TensorT.points()) :: TensorT.points()
   def new_points(coords), do: new_points(coords, [])
 
+  # A tensor that is already a points tensor is returned unchanged, so this is safe to call twice.
+  @spec new_points(T.point_list() | TensorT.points(), T.opts()) :: TensorT.points()
   def new_points(points, _opts) when is_points(points), do: points
 
   def new_points(coords, opts) do
@@ -44,6 +49,7 @@ defmodule Curves.Utils.Points do
       {3.0, 30.0}
   """
 
+  @spec tuple_at(TensorT.points(), non_neg_integer()) :: T.point_tuple()
   def tuple_at(points, index) do
     p = points[point: index]
     # {Nx.to_number(p[dimension: 0]), Nx.to_number(p[dimension: 1])}
@@ -57,6 +63,7 @@ defmodule Curves.Utils.Points do
       Curves.Utils.Point.new_point({3, 30})
   """
 
+  @spec point_at(TensorT.points(), non_neg_integer()) :: TensorT.point()
   def point_at(points, index) do
     p = points[point: index]
     Nx.reshape(p, {2, 1}, names: [:dimension, :point])
@@ -75,8 +82,12 @@ defmodule Curves.Utils.Points do
       >
   """
 
+  @spec put_point(TensorT.points(), T.point_tuple() | TensorT.point()) :: TensorT.points()
   def put_point(points, coords), do: put_point(points, coords, [])
 
+  # Appends one point to the end. Takes either a point tensor or {x, y} coordinates.
+  @spec put_point(TensorT.points(), T.point_tuple() | TensorT.point(), T.opts()) ::
+          TensorT.points()
   def put_point(points, new_point, _opts) when is_struct(new_point, Nx.Tensor) do
     {2, size} = Nx.shape(points)
 
@@ -92,6 +103,7 @@ defmodule Curves.Utils.Points do
   @doc ~s"""
   Given a tensor of points, return a list like `[%{x: float, y: float}, %{...}]`
   """
+  @spec to_maps(TensorT.points()) :: list(%{x: float(), y: float()})
   def to_maps(points) when is_points(points) do
     xs = Nx.to_list(points[dimension: 0])
     ys = Nx.to_list(points[dimension: 1])
@@ -101,6 +113,7 @@ defmodule Curves.Utils.Points do
   @doc ~s"""
   Given a tensor of points, return a list like `[ {x1, y1}, {x2, y2}, ... ]`
   """
+  @spec to_tuples(TensorT.points()) :: T.point_list()
   def to_tuples(points) when is_points(points) do
     xs = Nx.to_list(points[dimension: 0])
     ys = Nx.to_list(points[dimension: 1])
@@ -108,9 +121,10 @@ defmodule Curves.Utils.Points do
   end
 
   @doc ~s"""
-  Given two points what is the slope between them
-
+  Given two points what is the slope between them, as `{rise, run}`.
+  A vertical line (run of 0.0) returns `{1_000_000.0, 1}` instead of dividing by zero later.
   """
+  @spec get_slope(p, p) :: {number(), number()} when p: TensorT.point() | TensorT.flat_point()
   def get_slope(point0, point1) do
     Nx.subtract(point1, point0)
     |> Point.to_tuple()
@@ -125,6 +139,8 @@ defmodule Curves.Utils.Points do
 
   takes a cb function of type `({x, y}) => {x, y}`
   """
+  @spec update_point_at(TensorT.points(), non_neg_integer(), (T.point_tuple() -> T.point_tuple())) ::
+          TensorT.points()
   def update_point_at(points, idx, cb) do
     tuples = to_tuples(points)
 

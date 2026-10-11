@@ -18,9 +18,10 @@ defmodule Curves.Bezier.Linear do
   end
 
   # Same as above, but with the two points passed separately.
+  # Works on points or flat points; the result has the same shape as the inputs.
   # Stays a `defn` because `Quadratic.get_quadratic_bezier_curve_old/4`, also a `defn`, calls it.
-  @spec get_linear_interpolation_point(TensorT.flat_point(), TensorT.flat_point(), number()) ::
-          TensorT.flat_point()
+  @spec get_linear_interpolation_point(p, p, number()) :: p
+        when p: TensorT.point() | TensorT.flat_point()
   defn get_linear_interpolation_point(start_point, end_point, t) do
     start_point + (end_point - start_point) * t
   end
