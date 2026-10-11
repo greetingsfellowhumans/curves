@@ -19,8 +19,7 @@ defmodule Curves.ReferenceResultsTest do
 
     test "#{name} matches the reference results", %{recorded: recorded, builders: builders} do
       expected = Map.fetch!(recorded, @name)
-      # Recorded with 64-bit floats. Once :float_dtype is removed, this option is simply ignored.
-      actual = ReferenceResults.record(Map.fetch!(builders, @name).(float_dtype: 64))
+      actual = ReferenceResults.record(Map.fetch!(builders, @name).([]))
       tolerance = ReferenceResults.tolerance(@name)
 
       for key <- [:solve, :solve_percent, :take, :take_percent] do

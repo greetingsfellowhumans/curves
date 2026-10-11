@@ -83,9 +83,9 @@ defmodule Curves.Support.ReferenceResults do
   end
 
   # The tolerance (relative, or absolute near zero) every recorded number must match within.
-  # The recording code was Nx-based: even with `float_dtype: 64`, it built `t`, its powers and the
-  # rotation angle as 32-bit floats, so recorded values carry rounding of about 1e-7. A real bug
-  # (a wrong matrix, a transform in the wrong order) is off by far more than 1e-6.
+  # Most cases were recorded by the old Nx-based code (with `float_dtype: 64`), which still built `t`,
+  # its powers and the rotation angle as 32-bit floats, so they carry rounding of about 1e-7.
+  # A real bug (a wrong matrix, a transform in the wrong order) is off by far more than 1e-6.
   # Rotated cases get 1e-5: the old rotation matrix was 32-bit too, about 6e-8 of each coordinate,
   # so up to ~6e-6 on a curve with coordinates near 100, even where the result itself is small.
   @spec tolerance(String.t()) :: float()
@@ -125,7 +125,7 @@ defmodule Curves.Support.ReferenceResults do
     }
   end
 
-  # Records every case with 64-bit floats and writes the fixture file. Pass a name fragment
+  # Records every case and writes the fixture file. Pass a name fragment
   # (e.g. "hermite") to re-record only the matching cases and keep everything else as it was.
   @spec write!(String.t() | nil) :: :ok
   def write!(only \\ nil) do
@@ -133,7 +133,7 @@ defmodule Curves.Support.ReferenceResults do
 
     results =
       for {name, build} <- cases(), only == nil or String.contains?(name, only), into: previous do
-        {name, record(build.(float_dtype: 64))}
+        {name, record(build.([]))}
       end
 
     File.mkdir_p!(Path.dirname(@path))

@@ -13,18 +13,21 @@ def deps do
 end
 ```
 
-## 1. Floats are 32-bit by default
+## 1. No more Nx: results are plain 64-bit floats
 
-The default `:float_dtype` is now `32` (it was `16`), so results are more precise and differ slightly from 0.2.x.
-To get the old values back, pass `float_dtype: 16`, or set it for the whole app:
+1.0 calculates with Elixir's own floats instead of Nx tensors, which makes it much faster and leaves
+Curves with no runtime dependencies. Results are 64-bit (0.2.x used 16-bit by default), so they're more
+precise and differ slightly from 0.2.x in their last digits.
+
+- Remove `:float_dtype` from your options and config. It no longer exists; passing it has no effect.
+- If you only added Nx for Curves, you can remove it from your dependencies.
+- Compare results with a small tolerance rather than exact equality: the exact last digits are not part of the API.
 
 ```elixir
-# config/config.exs
-import Config
-config :curves, float_dtype: 16
+# 1.0
+{x, y} = Curves.solve!(Curves.define_bezier(:linear), 0.5)
+true = is_float(x) and is_float(y)
 ```
-
-Compare results with a small tolerance rather than exact equality: the exact last digits are not part of the API.
 
 ## 2. Drawing curves: `Curves.Utils.Plotting` is gone
 
@@ -88,9 +91,9 @@ If your own `@spec`s use the library's types, update the module names:
 | 0.2.x | 1.0 |
 | --- | --- |
 | `Curves.Utils.Types.point_tuple()`, `.opts()`, … | `Curves.Types.point_tuple()`, `.opts()`, … |
-| `Curves.Utils.Types.point()` | `Curves.TensorTypes.point()` |
-| `Curves.Utils.Types.points()` | `Curves.TensorTypes.points()` |
-| `Curves.Utils.Types.point_names()` | `Curves.TensorTypes.point_names()` |
+| `Curves.Utils.Types.point()` (a tensor) | removed; points are `Curves.Types.point_tuple()` |
+| `Curves.Utils.Types.points()` (a tensor) | removed; use `Curves.Types.point_list()` |
+| `Curves.Utils.Types.point_names()` | removed (no more tensor axis names) |
 
 ## 6. `:force_percent` changes
 

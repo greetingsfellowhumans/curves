@@ -6,7 +6,7 @@ defmodule Curves.Utils.PercentTest do
 
   describe "get_bounds/1" do
     test "finds the lowest and highest x and y" do
-      points = Nx.tensor([[0.0, 10.0, 4.0], [5.0, 1.0, 3.0]], names: [:dimension, :point])
+      points = [{0.0, 5.0}, {10.0, 1.0}, {4.0, 3.0}]
       assert Percent.get_bounds(points) == %{xmin: 0.0, xmax: 10.0, ymin: 1.0, ymax: 5.0}
     end
 
@@ -16,7 +16,7 @@ defmodule Curves.Utils.PercentTest do
     end
 
     test "flat axis gives equal min and max" do
-      points = Nx.tensor([[0.0, 1.0], [7.0, 7.0]], names: [:dimension, :point])
+      points = [{0.0, 7.0}, {1.0, 7.0}]
       assert %{ymin: 7.0, ymax: 7.0} = Percent.get_bounds(points)
     end
   end

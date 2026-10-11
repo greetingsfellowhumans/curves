@@ -5,12 +5,17 @@ defmodule Curves.Utils.OptsTest do
   # doctest Mod
 
   describe "Opts" do
-    test "get the correct options" do
-      opts = merge_opts([])
-      assert Keyword.get(opts, :float_dtype) == 32
+    test "fills in :force_percent, and given opts win" do
+      assert Keyword.get(merge_opts([]), :force_percent) == false
+      assert Keyword.get(merge_opts(force_percent: true), :force_percent) == true
+    end
 
-      opts = merge_opts(float_dtype: 8)
-      assert Keyword.get(opts, :float_dtype) == 8
+    test "put_force_percent/2: call opts, then define opts, then the default" do
+      assert put_force_percent([force_percent: true], force_percent: false)[:force_percent] ==
+               false
+
+      assert put_force_percent([force_percent: true], [])[:force_percent] == true
+      assert put_force_percent([], [])[:force_percent] == false
     end
   end
 end

@@ -36,7 +36,7 @@ defmodule Curves.Transform do
     do: %{curve | segments: map_segment_points(segments, &Vec.scale(&1, scale))}
 
   @doc false
-  # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
+  # Rotating by 0 changes nothing, so skip it. `==` matches both 0 and 0.0 (new curves start at 0.0).
   @spec apply_rotation(T.curve_struct()) :: T.curve_struct()
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
 

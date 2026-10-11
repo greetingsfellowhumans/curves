@@ -40,7 +40,7 @@ defmodule Curves do
 
   ## Precision
 
-  Results are accurate to the float precision of the `:float_dtype` option (32-bit by default).
+  Results are 64-bit floats (Elixir's own floats), so they're accurate to about 15 significant digits.
   The exact last digits are not part of the API: they may change in a minor release,
   for example when a calculation is sped up, so compare results with a small tolerance.
 
@@ -60,10 +60,9 @@ defmodule Curves do
   | `key` | `default` | `description` |
   | --- | ---     | --- |
   | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
-  | `:float_dtype` | `32` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
   | `:force_percent` | `false` | If true, `take` and `solve` rescale each coordinate to show where it sits between the lowest and highest point on that axis: the lowest becomes `0.0`, the highest becomes `1.0`, and halfway between them becomes `0.5`. The lowest and highest points are measured after any moves, scaling or rotation, including the `:origin` option. Curves that bend outside their points (e.g. Catmull-Rom) can return values slightly outside 0..1. If every point has the same value on an axis (a flat curve), that axis can't be rescaled, so it returns `0.5`. Rotating a flat curve adds tiny rounding errors, so that axis may no longer count as flat and can return values from `0.0` to `1.0`. |
 
-  `:float_dtype` and `:force_percent` can also be set for the whole app, e.g. `config :curves, force_percent: true`.
+  `:force_percent` can also be set for the whole app, e.g. `config :curves, force_percent: true`.
   Opts passed to a function always win over the app config.
 
   `:force_percent` is read on every `solve` and `take`, so changing it in the app config while running
@@ -199,8 +198,7 @@ defmodule Curves do
       {:error, {:out_of_bounds, 1.5}}
 
   ## Options
-  * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
-
+  See [available opts](#module-options).
   """
   @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, term()}

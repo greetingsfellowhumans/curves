@@ -60,8 +60,6 @@ defmodule Curves.Bench.Helper do
   # Without one, every saved run for `name` is loaded and this run is compared against them.
   @spec run(String.t(), map(), keyword()) :: Benchee.Suite.t()
   def run(name, jobs, opts \\ []) do
-    IO.puts("Nx backend: #{inspect(Nx.default_backend())}\n")
-
     config =
       @config
       |> Keyword.merge(opts)
