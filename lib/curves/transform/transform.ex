@@ -35,7 +35,8 @@ defmodule Curves.Transform do
 
 
   @doc false
-  def apply_rotation(%{rotation: 0} = curve), do: curve
+  # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
+  def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do
     points = Rotate.rotate_points(points, angle, origin)
     Map.put(curve, :points, points)
@@ -58,9 +59,9 @@ defmodule Curves.Transform do
     |> rotate_points(curve)
   end
 
-  # Matches apply_rotation/1: only the integer 0 skips rotation.
+  # Matches apply_rotation/1: a rotation of 0 or 0.0 is skipped.
   @spec rotate_points(points :: T.points(), curve :: T.curve_struct()) :: T.points()
-  defp rotate_points(points, %{rotation: 0}), do: points
+  defp rotate_points(points, %{rotation: rotation}) when rotation == 0, do: points
   defp rotate_points(points, %{rotation: angle, origin: origin}), do: Rotate.rotate_points(points, angle, origin)
 
   # Put a new transformation in the :transformations list, then recompress.
