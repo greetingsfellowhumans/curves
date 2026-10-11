@@ -83,6 +83,48 @@ defmodule Curves.RegressionTest do
     end
   end
 
+  # Beziers read the app-wide :force_percent setting on every solve/take call, not at define time.
+  # This module is not async, so changing the app env here can't leak into other tests.
+  describe "force_percent app config" do
+    setup do
+      previous = Application.fetch_env(:curves, :force_percent)
+      on_exit(fn -> restore_force_percent(previous) end)
+    end
+
+    test "bezier picks up a config change made after define" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}])
+      Application.put_env(:curves, :force_percent, true)
+      assert Curves.solve!(curve, 1.0) == {1.0, 1.0}
+      assert Curves.take!(curve, 2) == [{0.5, 0.5}, {1.0, 1.0}]
+    end
+
+    test "bezier stops rescaling when the config is turned off after define" do
+      Application.put_env(:curves, :force_percent, true)
+      curve = Curves.define_bezier([{10, 100}, {40, 400}])
+      Application.put_env(:curves, :force_percent, false)
+      assert Curves.solve!(curve, 1.0) == {40.0, 400.0}
+      assert Curves.take!(curve, 2) == [{25.0, 250.0}, {40.0, 400.0}]
+    end
+
+    test "opts passed to solve and take beat the config" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}])
+      Application.put_env(:curves, :force_percent, true)
+      assert Curves.solve!(curve, 1.0, force_percent: false) == {40.0, 400.0}
+      assert Curves.take!(curve, 2, force_percent: false) == [{25.0, 250.0}, {40.0, 400.0}]
+    end
+
+    test "opts passed to define beat the config" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}], force_percent: false)
+      Application.put_env(:curves, :force_percent, true)
+      assert Curves.solve!(curve, 1.0) == {40.0, 400.0}
+    end
+  end
+
+  # Puts the :force_percent app env back to how it was before the test.
+  @spec restore_force_percent({:ok, term()} | :error) :: :ok
+  defp restore_force_percent({:ok, value}), do: Application.put_env(:curves, :force_percent, value)
+  defp restore_force_percent(:error), do: Application.delete_env(:curves, :force_percent)
+
   describe "force_percent on transformed splines" do
     @catmull_points [{0, 0}, {10, 100}, {20, 0}, {30, 100}]
 
