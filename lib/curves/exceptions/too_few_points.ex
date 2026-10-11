@@ -1,3 +1,5 @@
+# Public API name. Credo guesses an `Out` prefix rule from OutOfBoundT/OutOfBoundU, which does not apply here.
+# credo:disable-for-next-line Credo.Check.Consistency.ExceptionNames
 defmodule Curves.Exceptions.TooFewPoints do
   @moduledoc false
   defexception [:message, :n, :min]
