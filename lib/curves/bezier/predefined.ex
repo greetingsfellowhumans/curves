@@ -170,16 +170,16 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return the list of `{x, y}` points for a predefined curve, or `nil` for a name that isn't one.
+  Return the list of `{x, y}` points for a predefined curve. A name that isn't one raises an `ArgumentError`.
 
   ## Examples
       iex> Curves.Bezier.Predefined.get_coords(:linear_up_right)
       [{0.0, 0.0}, {1.0, 1.0}]
+      iex> Curves.Bezier.Predefined.get_coords(:nope)
+      ** (ArgumentError) unknown predefined curve: :nope. See Curves.Bezier.Predefined.list/0 for the names
   """
-  @spec get_coords(curve_key()) :: T.point_list() | nil
-  def get_coords(k) do
-    Map.get(@all, k)
-  end
+  @spec get_coords(curve_key()) :: T.point_list()
+  def get_coords(k), do: fetch!(k)
 
   @doc false
   @spec get(curve_key(), T.opts()) :: T.point_list()

@@ -463,8 +463,9 @@ defmodule Curves.RegressionTest do
         Curves.Bezier.Predefined.details(:nope)
       end
 
-      # Unchanged: it never raised, so it still returns nil.
-      assert Curves.Bezier.Predefined.get_coords(:nope) == nil
+      assert_raise ArgumentError, ~r/unknown predefined curve: :nope/, fn ->
+        Curves.Bezier.Predefined.get_coords(:nope)
+      end
     end
 
     test "a bad order for Predefined.list/1" do

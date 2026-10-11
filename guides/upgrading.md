@@ -233,6 +233,21 @@ To get an old result back, change the position you set. For a position `{x, y}` 
 - Without rotation, use `{x * s, y * s}`.
 - With a rotation too, use `{x, y}` plus the point `{x * s - x, y * s - y}` rotated by the same angle around `{0, 0}`.
 
+## 12. `Predefined.get_coords/1` raises for an unknown name
+
+`Curves.Bezier.Predefined.get_coords/1` used to return `nil` for a name that isn't a predefined curve. Now it raises an
+`ArgumentError`, like `details/1` and `define_bezier/2` do. If you checked for `nil`, check the name against
+`Curves.Bezier.Predefined.list/0` first instead.
+
+```elixir
+# 1.0.0-rc.1
+nil = Curves.Bezier.Predefined.get_coords(:nope)
+
+# 1.0.0-rc.2
+name = :nope
+if name in Curves.Bezier.Predefined.list(), do: Curves.Bezier.Predefined.get_coords(name)
+```
+
 ## Everything else
 
 Everything else is either new or a bug fix that doesn't need code changes. See the [changelog](changelog.html) for the full list.
