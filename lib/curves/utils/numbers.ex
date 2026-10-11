@@ -8,5 +8,4 @@ defmodule Curves.Utils.Numbers do
   end
 
 
-
 end

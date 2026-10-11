@@ -16,8 +16,6 @@ defmodule Curves.Bezier.Predefined do
   alias Curves.Utils.Types, as: T
 
 
-
-
   @order1 %{
     linear:              [{0, 0}, {1, 1}],
     linear_up_right:     [{0, 0}, {1, 1}],

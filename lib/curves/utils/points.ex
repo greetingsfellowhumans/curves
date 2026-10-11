@@ -122,7 +122,6 @@ defmodule Curves.Utils.Points do
   end
 
 
-
   @doc ~s"""
   Update in place a point at a specific idx
 

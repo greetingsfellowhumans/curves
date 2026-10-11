@@ -111,5 +111,4 @@ defmodule Curves.Spline.Type.CatmullRom do
   end
 
 
-
 end
