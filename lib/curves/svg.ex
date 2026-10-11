@@ -23,7 +23,7 @@ defmodule Curves.Svg do
   | `:show_points` | `true` | Draw the curve's own points as dots. |
   | `:point_color` | `"#d9480f"` | Colour of the dots. |
   | `:point_radius` | `5` | Size of the dots. |
-  | `:show_polygon` | `false` | Draw a dashed line joining the curve's own points in order. |
+  | `:show_polygon` | `true` | Draw a dashed line joining the curve's own points in order. |
   | `:polygon_color` | `"#adb5bd"` | Colour of that dashed line. |
   | `:title` | `nil` | Text drawn in the top-left corner. |
   | `:solve_opts` | `[]` | Options passed to `Curves.take!/3` and `Curves.solve!/3`. |
@@ -32,7 +32,7 @@ defmodule Curves.Svg do
   but B-splines store the control points they generate from yours.
 
   If `:solve_opts` turns on `:force_percent`, the curve is drawn in 0..1 but its points are not,
-  so set `show_points: false` (and leave `show_polygon: false`).
+  so set `show_points: false` and `show_polygon: false`.
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
@@ -49,7 +49,7 @@ defmodule Curves.Svg do
     show_points: true,
     point_color: "#d9480f",
     point_radius: 5,
-    show_polygon: false,
+    show_polygon: true,
     polygon_color: "#adb5bd",
     title: nil,
     solve_opts: []

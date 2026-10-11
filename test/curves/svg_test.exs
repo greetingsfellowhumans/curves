@@ -78,8 +78,8 @@ defmodule Curves.SvgTest do
 
     test "optional parts" do
       curve = Curves.define_bezier(:linear)
-      refute Svg.render(curve, 2) =~ "stroke-dasharray"
-      assert Svg.render(curve, 2, show_polygon: true) =~ "stroke-dasharray"
+      assert Svg.render(curve, 2) =~ "stroke-dasharray"
+      refute Svg.render(curve, 2, show_polygon: false) =~ "stroke-dasharray"
       refute Svg.render(curve, 2, background: nil) =~ "<rect"
       assert Svg.render(curve, 2, title: "a < b & \"c\"") =~ "a &lt; b &amp; &quot;c&quot;</text>"
     end
@@ -91,6 +91,7 @@ defmodule Curves.SvgTest do
         Svg.render(curve, 2,
           solve_opts: [force_percent: true],
           show_points: false,
+          show_polygon: false,
           width: 100,
           height: 100,
           padding: 0
