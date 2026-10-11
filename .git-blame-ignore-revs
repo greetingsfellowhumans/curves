@@ -1,0 +1,5 @@
+# Commits that only change formatting. `git blame` skips them and credits the commit that wrote each line.
+# Enable locally with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# style: run mix format
+40771c478c22d39537a6f1d36e67c31ca7b39f7f

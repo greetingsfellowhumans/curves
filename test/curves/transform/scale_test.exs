@@ -6,7 +6,6 @@ defmodule Curves.Transform.ScaleTest do
 
   setup [:with_curves]
 
-
   test "should scale a bezier spline", ctx do
     curve = ctx.curves.curve1
     {x, y} = Curves.solve!(curve, 0.0)

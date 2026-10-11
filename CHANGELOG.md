@@ -5,21 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.0] - 2026-10-09
+## [1.0.0-rc.1] - 2026-10-10
+
+The first release candidate for 1.0. Version 0.3.0 was never released; its changes ship here.
+Coming from 0.2.x? See the [upgrade guide](upgrading.html).
+
+### Added
+
+- `Curves.max_u/1` returns the highest `t`/`u` a curve accepts: `1.0` for beziers, the number of segments for splines.
+- `Curves.Svg` draws any Bezier or Spline curve as an SVG image, with no extra dependencies. `render/2` returns the SVG as a string and `save!/3` writes it to a file. Options control the number of samples (default 100), the size, colours, title, and whether the curve's points and the dashed line joining them are drawn.
 
 ### Changed
 
-- **Breaking:** The default `:float_dtype` is now `32` (was `16`). Results are more precise, so values will differ slightly from previous versions. Pass `float_dtype: 16` to restore the old behaviour.
+- **Breaking:** `define_hermite/2` now takes each point as `[knot, tangent]` (both `{x, y}`) and builds a true cubic Hermite spline: it passes exactly through every knot and leaves each one along its tangent. It used to take bare knots and compute its own slopes. For automatic tangents, use `define_catmull_rom/2`.
+- **Breaking:** The curve structs (`Curves.Bezier.Curve`, `Curves.Spline.Curve`) are now opaque: their fields are internal and may change in any 1.x release. Use `Curves.max_u/1` instead of reading `curve.max_u`.
+- **Breaking:** Splines now read the app-wide `:force_percent` setting on every `solve`/`take`, like beziers do. Previously they read it only when defined or transformed.
+- **Breaking:** With `:force_percent`, an axis where every point has the same value (a flat curve) now returns `0.5` instead of that raw value, so results are always numbers in `0.0..1.0`.
+- **Breaking:** Curves no longer uses Nx, and has no runtime dependencies. Points are plain `{x, y}` float tuples and results are 64-bit floats (0.2.x used 16-bit by default), so values differ slightly in their last digits. The `:float_dtype` option is gone; passing it has no effect.
+- **Breaking:** Removed `Curves.Utils.Plotting`, which the 0.2.x livebooks used with VegaLite and Tucan. Use `Curves.Svg.render/2` instead (in Livebook: `Kino.Image.new(svg, :svg)`).
+- **Breaking:** `Curves.Utils.Types` is now `Curves.Types`. Its Nx tensor types (`point/0`, `points/0` and `point_names/0`) are gone along with Nx; use `Curves.Types.point_tuple/0` and `point_list/0`.
 - **Breaking:** Spline out-of-bounds errors now include the offending `u`, matching the bezier error shape. `{:error, :out_of_bounds}` is now `{:error, {:out_of_bounds, u}}`.
+- Everything is much faster now that it runs on plain floats instead of Nx (measured against 0.2.x's code on the same machine): solving a point takes 0.15–0.26 µs instead of 9–34 µs (40–130×), `take!/3` of 100 points takes 14–17 µs instead of 2.8–3.5 ms (about 200×), defining a curve is 6–9× faster (Hermite: 9 µs instead of 778 µs), and `Curves.Svg.render/2` of a spline takes about 65 µs.
+- `take/3` and `take!/3` raise an `ArgumentError` when `n` isn't a positive integer. `n = 0` used to crash with an `ArithmeticError`, and a negative `n` returned a misleading `{:error, {:out_of_bounds, _}}`.
+- `define_b_spline/2` with fewer than 4 points, and `define_catmull_rom/2` or `define_bezier_spline/2` with an empty list, raise an `ArgumentError` saying how many points are needed, instead of an `Enum.EmptyError` or `FunctionClauseError` from deep inside the library.
+- `define_bezier_spline/2` raises an `ArgumentError` explaining the expected point format when a point isn't a list of 1 to 3 `{x, y}` tuples (e.g. a plain `{x, y}`), instead of a `FunctionClauseError` from deep inside the library.
 - Bezier curves with fewer than 2 points can now be defined and transformed. Solving them returns `{:error, {:too_few_points, n, 2}}` instead of crashing in `define_bezier/2`.
 
 ### Fixed
 
+- `Curves.Svg.render/2` no longer crashes (`0.0 * :infinity`) for a curve whose points are all the same; it draws it at the centre of the image.
+- Hermite splines missed their own knots (e.g. `{10.0017, 5.0033}` instead of `{10, 5}`), moved by the wrong amount when transformed, and could produce huge values near vertical slopes. The slope's axes were swapped, vertical slopes became `{1_000_000, 1}`, and Bezier-style control points were fed into the Hermite formula. Replaced by a correct cubic Hermite spline (see Changed).
+- The exceptions (`OutOfBoundT`, `OutOfBoundU`, `TooFewPoints`, `TooManyPoints`) now fill in their fields (`t`, `u`, `max`, `n`, `min`) instead of leaving them `nil`, and are documented.
 - Spline `solve/3` and `solve!/3` accept integer `u` values instead of raising `FunctionClauseError`.
 - Spline `take!/3` raises `Curves.Exceptions.OutOfBoundU` instead of a `MatchError`.
 - Spline `take/3` no longer fails when float rounding pushes the final sample past the last segment.
+- Splines solved at a `u` within 0.0001 of the start now return the right point instead of the start point. A small negative `u` (allowed down to -0.001) now extends slightly before the start, instead of being mirrored to just after it.
 - `:force_percent` passed to `solve/3` or `take/3` is now honoured for splines.
 - `:force_percent` passed to `define_bezier/2`, or set in application config, is now honoured for bezier curves.
+- `:force_percent` now rescales using the curve's position after moves, scaling, rotation and the `:origin` option, so transformed curves return values between `0.0` and `1.0`. Previously it used the points as defined, so transformed curves could return values far outside that range. Untransformed curves are unchanged. Rotating a flat curve can make that axis return values from `0.0` to `1.0`, because rotation adds tiny rounding errors.
+- B-spline segments were solved in reverse order, so as `u` increased the curve jumped between segments instead of running smoothly from start to end. They now run in order. `solve/3` and `take/3` return different points for the same `u` on B-splines, but the overall shape is unchanged.
 - Bezier curves with more than 4 points now return `{:error, {:too_many_points, n, 4}}` (or raise `Curves.Exceptions.TooManyPoints`) instead of returning raw tensors.
 
 ## [0.2.7] - 2026-09-21

@@ -1,7 +1,7 @@
 defmodule CurvesTest do
   use ExUnit.Case
-  # doctest Curves
-  #
+  doctest Curves
+
   describe "Curves" do
     test "take/3" do
       curve = Curves.define_bezier(:ease_in)
@@ -13,6 +13,7 @@ defmodule CurvesTest do
       {:ok, points_b} = Curves.take(curve, 3)
       assert points == points_b
     end
+
     test "force percent" do
       curve = Curves.define_bezier([{10, 100}, {20, 200}, {30, 300}, {40, 400}])
       points = Curves.take!(curve, 4)

@@ -3,10 +3,8 @@
 ```elixir
 Mix.install(
   [
-    {:curves, "~> 0.2.7"},
-    {:tucan, "~> 0.6.0"},
-    {:vega_lite, "~> 0.1.0"},
-    {:kino_vega_lite, "~> 0.1.0"},
+    {:curves, "~> 1.0.0-rc.1"},
+    {:kino, "~> 0.19"},
   ])
 ```
 
@@ -23,16 +21,14 @@ Curves.solve!(curve, 0.25)
 ```
 
 ```elixir
-# To visualize this, we use VegaLite and Tucan.
-# Below we are plotting 10 points, evenly spaced along the curve
-# (i.e. 10%, 20%, 30% ... 100%)
+# To visualize this, we use Curves.Svg. It solves the curve at 100 points,
+# evenly spaced along the curve (i.e. 1%, 2%, 3% ... 100%),
+# and joins them with straight lines so short the curve looks smooth.
 
-# Go ahead, experiment with increasing this number. The default is 1000
-count = 10
-
+# Go ahead and add `samples: 10` below to see it built from 10 straight pieces instead.
 Curves.define_bezier(:ease_in)
-|> Curves.Utils.Plotting.curve_to_scatterplot(count: count)
-|> Tucan.scatter("x", "y", width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
+|> Kino.Image.new(:svg)
 ```
 
 ```elixir
@@ -47,8 +43,8 @@ bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 # Now evaluate THIS code block to display a graph of the curve type you selected above.
 Kino.Input.read(bezier_type)
 |> Curves.define_bezier()
-|> Curves.Utils.Plotting.curve_to_scatterplot()
-|> Tucan.scatter("x", "y", width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
+|> Kino.Image.new(:svg)
 
 
 # Go ahead and play around with the select list to see the various predefined curves.
@@ -57,7 +53,7 @@ Kino.Input.read(bezier_type)
 ```elixir
 ## Advanced Usage
 
-# We can define our own curves manualy. 
+# We can define our own curves manualy.
 # At a minimum, you can supply 2 points to get a linear 'curve'
 curve = Curves.define_bezier([
   {0, 0},
@@ -65,8 +61,8 @@ curve = Curves.define_bezier([
 ])
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot()
-|> Tucan.scatter("x", "y", width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
+|> Kino.Image.new(:svg)
 ```
 
 ```elixir
@@ -78,8 +74,8 @@ stop = {100, 0}
 curve = Curves.define_bezier([start, control_point, stop])
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot()
-|> Tucan.scatter("x", "y", width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
+|> Kino.Image.new(:svg)
 ```
 
 ```elixir
@@ -92,6 +88,6 @@ curve = Curves.define_bezier([
 ])
 
 curve
-|> Curves.Utils.Plotting.curve_to_scatterplot()
-|> Tucan.scatter("x", "y", width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
+|> Kino.Image.new(:svg)
 ```

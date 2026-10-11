@@ -4,7 +4,7 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "0.3.0",
+      version: "1.0.0-rc.1",
       elixir: "~> 1.17",
       description: description(),
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -13,7 +13,8 @@ defmodule Curves.MixProject do
       source_url: "https://github.com/greetingsfellowhumans/curves",
       package: package(),
       deps: deps(),
-      docs: docs(),
+      aliases: aliases(),
+      docs: docs()
     ]
   end
 
@@ -23,13 +24,14 @@ defmodule Curves.MixProject do
       extras: [
         "CHANGELOG.md",
         "README.md",
+        "guides/upgrading.md",
         "guides/bezier_curves.livemd",
-        "guides/splines.livemd",
+        "guides/splines.livemd"
       ],
       nest_modules_by_prefix: [
         Curves.Spline.Type
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"],
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"]
     ]
   end
 
@@ -62,14 +64,25 @@ defmodule Curves.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # Required
-      {:nx, "~> 0.8"},
-
-      # dev/test only.
+      # No runtime dependencies. Everything below is for development and tests only.
       {:stream_data, "~> 1.0", only: [:test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mix_test_interactive, "~> 5.1", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
+      {:benchee, "~> 1.3", only: :dev}
     ]
+  end
+
+  defp aliases() do
+    [bench: &bench/1]
+  end
+
+  # Runs every benchmark script. Any args (e.g. a tag to save the run under) are passed through.
+  # `mix run` only runs once per invocation, so it has to be re-enabled for each script.
+  @spec bench(list(String.t())) :: :ok
+  defp bench(args) do
+    Enum.each(["bench/solve.exs", "bench/take.exs", "bench/define.exs"], fn script ->
+      Mix.Task.rerun("run", [script | args])
+    end)
   end
 end

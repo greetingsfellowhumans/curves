@@ -7,17 +7,28 @@ Curves aims to be the best elixir framework for calculating bezier curves and sp
 ```elixir
 curve = Curves.define_bezier(:ease_out)
         |> Curves.Transform.set_scale(1.5)
-        |> Curves.Transform.inc_position(10)
+        |> Curves.Transform.inc_position({10, 10})
         |> Curves.Transform.set_rotation(90)
 
-
+# x and y are floats
 {x, y} = Curves.solve!(curve, 0.25)
-assert is_float(x)
-assert is_float(y)
+```
+
+## Installation
+
+Add `curves` to your dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:curves, "~> 1.0.0-rc.1"}
+  ]
+end
 ```
 
 ## Directory
 
+- [Upgrading from 0.2.x to 1.0](https://github.com/greetingsfellowhumans/curves/blob/main/guides/upgrading.md)
 - [Bezier Curves Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/bezier_curves.livemd)
 - [Splines Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/splines.livemd)
 - [Hex docs](https://curves.hexdocs.pm/)
@@ -35,14 +46,16 @@ Full stack developer seeking new challenges. You can reach me at [hireme@aaronjp
 The simplest way to use Curves is with the predefined ones like `:ease_in_out`
 
 ```elixir
-curves = Curves.define_bezier(:ease_in_out)
-for i <- 0..1000 do
-  Curves.solve!(curve, i / 1000)
-end
-|> # render_vega_lite_chart(...)
+curve = Curves.define_bezier(:ease_in_out)
+
+# Find any point along the curve (t goes from 0.0 to 1.0)...
+Curves.solve!(curve, 0.25)
+
+# ...or draw the whole curve as an SVG image
+Curves.Svg.save!(curve, "ease_in_out.svg")
 ```
 
-![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.png)
+![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.svg)
 
 ### Quadratic Bezier
 
@@ -54,10 +67,10 @@ points = [
   {20, 50},
   {100, 0}
 ]
-curves = Curves.define_bezier(points)
+curve = Curves.define_bezier(points)
 ```
 
-![Quadratic](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/quadratic.png)
+![Quadratic](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/quadratic.svg)
 
 ### Custom 4-point Bezier
 
@@ -68,10 +81,10 @@ points = [
   {0.3, 2.2},
   {1, 1}
 ]
-curves = Curves.define_bezier(points)
+curve = Curves.define_bezier(points)
 ```
 
-![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.png)
+![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.svg)
 
 ## Spline examples
 
@@ -113,28 +126,28 @@ points = [
   [{30.0, 10.0}, # Knot
     {32.0, 5.0}] # control point 0
 ]
-curves = Curves.define_bezier_spline(points)
+curve = Curves.define_bezier_spline(points)
 ```
 
-![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)
+![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.svg)
 
 ### Cubic Hermite Spline
 
-Sometimes we don't want to manually define every control point.
-The Hermite spline automatically calculates it based on the first derivative at the start and end point of each segment.
+A smooth curve through every knot. At each knot you give a tangent: the direction (and speed) the curve leaves it with.
 
 ```elixir
 curve = Curves.define_hermite([
-  {5, 10},
-  {10, 5},
-  {15, 10},
-  {20, 10},
-  {25, 5},
-  {30, 15},
+  # [knot, tangent]
+  [{5, 10}, {5, -5}],
+  [{10, 5}, {5, 0}],
+  [{15, 10}, {5, 5}],
+  [{20, 10}, {5, -3}],
+  [{25, 5}, {5, 5}],
+  [{30, 15}, {5, 10}]
 ])
 ```
 
-![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.png)
+![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.svg)
 
 ### Catmull-Rom Spline
 
@@ -151,7 +164,7 @@ curve = Curves.define_catmull_rom([
 ])
 ```
 
-![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.png)
+![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.svg)
 
 ### B-Spline
 
@@ -169,4 +182,21 @@ curve = Curves.define_b_spline([
 ])
 ```
 
-![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.png)
+![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.svg)
+
+## Benchmarks
+
+Benchmarks live in `bench/` and use [Benchee](https://github.com/bencheeorg/benchee). Run them all with:
+
+```sh
+mix bench
+```
+
+To check a change for slowdowns, save a run before the change, then run again afterwards. A run without a tag is compared against every saved run.
+
+```sh
+mix bench baseline           # save this run under the tag "baseline"
+mix run bench/solve.exs      # later: run one script and compare it to the saved runs
+```
+
+Saved runs go in `bench/results/`, which is not committed. Only compare runs from the same machine.

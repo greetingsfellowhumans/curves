@@ -2,10 +2,16 @@ defmodule Curves.Bezier.Curve do
   @moduledoc ~s"""
   Struct representing a bezier curve.
   """
-  alias Curves.Utils.{Point, Points}
-  alias Curves.Utils.Types, as: T
-  alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
+  alias Curves.Types, as: T
+  alias Curves.Utils.{Percent, Poly, Vec}
+
+  # Blending matrices for 2, 3 and 4 points (linear, quadratic and cubic Bernstein polynomials).
+  @matrices %{
+    2 => [[1, 0], [-1, 1]],
+    3 => [[1, 0, 0], [-2, 2, 0], [1, -2, 1]],
+    4 => [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
+  }
 
   defstruct [
     :points,
@@ -18,110 +24,108 @@ defmodule Curves.Bezier.Curve do
     :rotation,
     :compressed,
     opts: [],
-    origin: Nx.tensor([0.0, 0.0])
+    origin: {0.0, 0.0}
   ]
 
   @typedoc ~s"""
-  | field  	| description                                    	|
-  |--------	|------------------------------------------------	|
-  | `:points` 	| A tensor representing 2D points                	|
-  | `:xmax`   	| the highest x coord in the tensor              	|
-  | `:xmin`   	| the lowest x coord in the tensor               	|
-  | `:ymin`   	| the lowest y coord in the tensor               	|
-  | `:ymax`   	| the highest y coord in the tensor              	|
-  | `:origin` 	| the origin of the graph.                       	|
-  | `:rotation` 	| the degrees by which the curve is rotated.   	|
-  | `:transformations` 	| The list of transformations applied to this curve.                       	|
-  | `:compressed` 	| A preprocessed function for fast solving.                       	|
-  | `:opts`   	| The keyword list of options                    	|
+  A bezier curve. Its fields are internal and may change in any 1.x release,
+  so use the functions in `Curves` (e.g. `Curves.solve/3`, `Curves.max_u/1`) instead of reading them.
   """
-  @type t :: %__MODULE__{
-    points: Nx.Tensor.t(),
-    xmax: T.coord(),
-    xmin: T.coord(),
-    ymax: T.coord(),
-    ymin: T.coord(),
-    scale: float(),
-    rotation: float(),
-    transformations: list(),
-    compressed: (t :: float(), opts :: T.opts() -> T.point_tuple()),
-    opts: T.opts(),
-    origin: Nx.Tensor.t()
-  }
+  @opaque t :: %__MODULE__{
+            points: T.point_list(),
+            xmax: T.coord(),
+            xmin: T.coord(),
+            ymax: T.coord(),
+            ymin: T.coord(),
+            scale: float(),
+            rotation: float(),
+            transformations: list(),
+            compressed: (t :: float(), opts :: T.opts() ->
+                           {:ok, T.point_tuple()} | {:error, tuple()}),
+            opts: T.opts(),
+            origin: T.point_tuple()
+          }
 
   @doc false
-  def define(points, opts \\ []) do
-    {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
-    points = case points do
-      k when is_atom(k) -> Predefined.get(k, opts)
-      _ -> points
-    end
-      |> Points.new_points(opts)
+  @spec define(T.point_list() | Predefined.curve_key(), T.opts()) :: t()
+  def define(points, opts \\ [])
 
-    curve = struct(__MODULE__, %{
-      points: points,
-      ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
-      ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
-      xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
-      xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
-      transformations: [],
-      scale: 1.0,
-      rotation: 0.0,
-      origin: Point.new_point({originx, originy}, opts),
-      opts: opts
-    })
+  def define([], _opts), do: raise(ArgumentError, "a bezier curve needs at least one point")
+
+  def define(points, opts) do
+    points =
+      case points do
+        k when is_atom(k) -> Predefined.get(k, opts)
+        _ -> Enum.map(points, &Vec.new/1)
+      end
+
+    curve =
+      struct(
+        __MODULE__,
+        Map.merge(Vec.bounds(points), %{
+          points: points,
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          origin: Vec.new(Keyword.get(opts, :origin, {0.0, 0.0})),
+          opts: opts
+        })
+      )
 
     {:ok, cb} = compress(curve, opts)
     Map.put(curve, :compressed, cb)
   end
 
+  @doc false
+  @spec compress(__MODULE__.t(), T.opts()) ::
+          {:ok, (t :: float(), opts :: T.opts() -> {:ok, T.point_tuple()} | {:error, tuple()})}
+          | {:error, atom()}
+  def compress(curve, _opts \\ []) do
+    %{points: points} = curve = Curves.Transform.apply_all_transformations(curve)
+    compress_points(curve, points, length(points))
+  end
 
-  @spec compress(__MODULE__.t(), T.opts()) :: {:ok, (t :: float(), opts :: T.opts() -> {:ok, T.point_tuple()} | {:error, tuple()})} | {:error, atom()}
-  def compress(%{opts: curve_opts} = curve, opts \\ []) do
-    opts = 
-      curve_opts
-      |> Keyword.merge(opts)
-      |> Curves.Utils.Opts.merge_opts()
+  # The solving closure for a curve with `n` points. Errors are deferred to solve time,
+  # so define/2 and transforms never crash on a bad point count.
+  @spec compress_points(__MODULE__.t(), T.point_list(), non_neg_integer()) ::
+          {:ok, (number(), T.opts() -> {:ok, T.point_tuple()} | {:error, tuple()})}
+  defp compress_points(_curve, _points, n) when n < 2,
+    do: {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
 
-    %{points: points} = Curves.Transform.apply_all_transformations(curve)
-    {_, size} = Nx.shape(points)
+  defp compress_points(_curve, _points, n) when n > 4,
+    do: {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
 
-    case size do
-      # Errors are deferred to solve-time so that define/2 and transforms never crash on a bad point count.
-      n when n < 2 -> {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
+  defp compress_points(curve, points, n) do
+    # Only the bounds and coefficients go into the closure, not the whole curve,
+    # so closures don't hold on to older closures.
+    bounds = Percent.get_bounds_after_transforms(curve, fn -> points end)
+    coefficients = Poly.coefficients(Map.fetch!(@matrices, n), points)
 
-      2 ->
-        {:ok, fn t, _opts -> {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()} end}
-
-      3 ->
-        {:ok, fn t, _opts -> {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()} end}
-
-      4 ->
-        {:ok, fn t, solve_opts -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> Point.to_tuple()} end}
-
-      n when n > 4 -> {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
-    end
+    {:ok,
+     fn t, solve_opts ->
+       {:ok, Percent.maybe_normalize(bounds, Poly.eval(coefficients, t), solve_opts)}
+     end}
   end
 
   @doc false
-  def solve(curve, t), do: solve(curve, t, [])
+  @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
+  def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
+    do: solve_resolved(curve, t, resolve_opts(curve, opts))
 
-  @doc false
-  def solve(%__MODULE__{compressed: compressed} = curve, t, opts) when is_number(t) do
-    cond do
-      (t < 0.0 or t > 1.0) -> {:error, {:out_of_bounds, t}}
-      true ->
-        case compressed.(t, opts) do
-          {:ok, point} -> {:ok, force_percent(curve, point, Keyword.merge(curve.opts, opts) |> Curves.Utils.Opts.merge_opts())}
-          err -> err
-        end
-  end
-  end
+  # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
+  # once for every point instead of once per point.
+  @spec solve_resolved(__MODULE__.t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, tuple()}
+  defp solve_resolved(_curve, t, _opts) when t < 0.0 or t > 1.0, do: {:error, {:out_of_bounds, t}}
+  defp solve_resolved(%{compressed: compressed}, t, opts), do: compressed.(t, opts)
 
-  @doc false
-  def solve!(curve, t), do: solve!(curve, t, [])
+  # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
+  @spec resolve_opts(__MODULE__.t(), T.opts()) :: T.opts()
+  defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
 
+  # Raises the matching Curves.Exceptions error instead of returning {:error, _}.
   @doc false
+  @spec solve!(t(), number(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
@@ -129,21 +133,26 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
+  # n evenly spaced points, at t = 1/n, 2/n, ... 1.0 (t = 0 is not included).
   @doc false
+  @spec take(t(), pos_integer(), T.opts()) :: {:ok, T.point_list()} | {:error, tuple()}
   def take(curve, n, opts \\ []) do
+    opts = resolve_opts(curve, opts)
+
     Enum.reduce_while(1..n, [], fn i, acc ->
-      case solve(curve, i * (1 / n), opts) do
+      case solve_resolved(curve, i * (1 / n), opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end
     end)
-      |> case do
-        li when is_list(li) -> {:ok, Enum.reverse(li)}
-        err -> {:error, err}
-      end
+    |> case do
+      li when is_list(li) -> {:ok, Enum.reverse(li)}
+      err -> {:error, err}
+    end
   end
 
   @doc false
+  @spec take!(t(), pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do
     case take(curve, n, opts) do
       {:ok, points} -> points
@@ -151,25 +160,13 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
-  defp raise_error({:too_few_points, n, min}), do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
-  defp raise_error({:too_many_points, n, max}), do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
+  # Turns an {:error, reason} from solve/take into the matching Curves.Exceptions error.
+  @spec raise_error(tuple()) :: no_return()
+  defp raise_error({:too_few_points, n, min}),
+    do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
+
+  defp raise_error({:too_many_points, n, max}),
+    do: raise(Curves.Exceptions.TooManyPoints, n: n, max: max)
+
   defp raise_error({:out_of_bounds, t}), do: raise(Curves.Exceptions.OutOfBoundT, t: t)
-
-  defp to_perc(curve, coord, dimension) when is_float(coord) do
-    {min, max} = case dimension do
-      :x -> {curve.xmin, curve.xmax}
-      :y -> {curve.ymin, curve.ymax}
-    end
-    denominator = max - min
-    if denominator == 0, do: max, else: (coord - min) / denominator
-  end
-
-  defp force_percent(curve, point, opts) do
-    if !Keyword.get(opts, :force_percent) do
-      point
-    else
-      {x, y} = point
-      {to_perc(curve, x, :x), to_perc(curve, y, :y)}
-    end
-  end
 end

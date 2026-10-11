@@ -31,26 +31,21 @@ defmodule Curves.Spline.Type.BezierSpline do
     [{30.0, 10.0}, # Knot
       {32.0, 5.0}] # control point 0
   ]
-  curves = Curves.define_bezier_spline(points)
+  curve = Curves.define_bezier_spline(points)
 
-  for i <- 0..1000 do
-    Curves.solve!(curve, i / 1000)
-  end
-  |> # render_vega_lite_chart(...)
+  # Find any point along the curve (u goes from 0.0 to Curves.max_u(curve))...
+  Curves.solve!(curve, 1.5)
+
+  # ...or draw the whole curve as an SVG image
+  Curves.Svg.save!(curve, "bezier_spline.svg")
   ```
 
-  ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)
+  ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.svg)
 
   """
   use Curves.Spline.Type
 
-
-  @matrix ~MAT<
-    1   0  0 0
-    -3  3  0 0
-    3  -6  3 0
-    -1  3 -3 1
-  >
+  @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
   @doc false
   @impl true
@@ -60,10 +55,5 @@ defmodule Curves.Spline.Type.BezierSpline do
 
   @doc false
   @impl true
-  def point_count(), do: 4
-
-  @doc false
-  @impl true
   def blending_function(), do: @matrix
-
 end

@@ -2,11 +2,10 @@ defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
   Struct representing a spline
   """
-  alias Curves.Utils.{Point, Points, Segment}
-  alias Curves.Utils.Types, as: T
-  alias Curves.Bezier.Predefined
+  alias Curves.Types, as: T
+  alias Curves.Utils.{Percent, Poly, Segment, Vec}
 
-  @minimum_u (0.0 - Curves.Utils.Constants.small_number())
+  @minimum_u 0.0 - Curves.Utils.Constants.small_number()
 
   defstruct [
     :points,
@@ -23,133 +22,118 @@ defmodule Curves.Spline.Curve do
     :scale,
     :rotation,
     opts: [],
-    origin: Nx.tensor([0.0, 0.0])
+    origin: {0.0, 0.0}
   ]
 
   @typedoc ~s"""
-  | field  	| description                                    	|
-  |--------	|------------------------------------------------	|
-  | `:points` 	| A tensor representing 2D points                	|
-  | `:xmax`   	| the highest x coord in the tensor              	|
-  | `:xmin`   	| the lowest x coord in the tensor               	|
-  | `:ymin`   	| the lowest y coord in the tensor               	|
-  | `:ymax`   	| the highest y coord in the tensor              	|
-  | `:max_u`   	| maximum allowable u value.              	|
-  | `:scale`   	| multiplier for resizing curve.              	|
-  | `:transformations` 	| list of transformations that have been applied |
-  | `:rotation` 	| the degrees by which the curve is rotated.   	|
-  | `:compressed` 	| A preprocessed function for fast solving |
-  | `:origin` 	| the origin of the graph.                       	|
-  | `:opts`   	| The keyword list of options                    	|
+  A spline. Its fields are internal and may change in any 1.x release,
+  so use the functions in `Curves` (e.g. `Curves.solve/3`, `Curves.max_u/1`) instead of reading them.
   """
-  @type t :: %__MODULE__{
-    points: Nx.Tensor.t(),
-    segments: list(),
-    transformations: list(),
-    compressed: (u :: float(), opts :: T.opts() -> T.point_tuple()),
-    max_u: float(),
-    type: atom(),
-    mod: module(),
-    xmax: T.coord(),
-    xmin: T.coord(),
-    ymax: T.coord(),
-    ymin: T.coord(),
-    scale: float(),
-    rotation: float(),
-    opts: T.opts(),
-    origin: Nx.Tensor.t()
-  }
+  @opaque t :: %__MODULE__{
+            points: T.point_list(),
+            segments: list(Segment.t()),
+            transformations: list(),
+            compressed: (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()}),
+            max_u: float(),
+            type: atom(),
+            mod: module(),
+            xmax: T.coord(),
+            xmin: T.coord(),
+            ymax: T.coord(),
+            ymin: T.coord(),
+            scale: float(),
+            rotation: float(),
+            opts: T.opts(),
+            origin: T.point_tuple()
+          }
 
+  # Each spline type's define/2 prepares `coords` first (e.g. wrapping each point in a list),
+  # so the shape of `coords` depends on the type.
   @doc false
+  @spec define(list(list(T.point_tuple())), atom(), T.opts()) :: t()
   def define(coords, spline_type, opts \\ []) do
     mod = Curves.Spline.Type.get_mod(spline_type)
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
-    coords = case coords do
-      k when is_atom(k) -> Predefined.get(k, opts)
-      _ -> coords
-    end
 
-    segments = if mod.override_segment_parsing() do
-      coords
-      |> Enum.map(&Points.new_points(&1, opts))
-      |> Nx.stack(name: :segment)
-    else
-      Segment.new_segments(coords, opts)
-    end
+    segments =
+      if mod.override_segment_parsing() do
+        Enum.map(coords, fn segment -> Enum.map(segment, &Vec.new/1) end)
+      else
+        Segment.new_segments(coords)
+      end
 
-    points = to_points(coords, opts)
+    points = coords |> List.flatten() |> Enum.map(&Vec.new/1)
 
-    # We use an intermediary bezier_spline in order to later calculate derivatives.
-    curve = struct(__MODULE__, %{
-      type: spline_type,
-      mod: mod,
-      points: points,
-      segments: segments,
-      transformations: [],
-      ymin: Nx.reduce_min(points[dimension: 1]) |> Nx.to_number(),
-      ymax: Nx.reduce_max(points[dimension: 1]) |> Nx.to_number(),
-      xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
-      xmax: Nx.reduce_max(points[dimension: 0]) |> Nx.to_number(),
-      scale: 1.0,
-      rotation: 0.0,
-      max_u: get_max_u(segments),
-      origin: Point.new_point({originx, originy}, opts),
-      opts: opts
-    })
+    curve =
+      struct(
+        __MODULE__,
+        Map.merge(Vec.bounds(points), %{
+          type: spline_type,
+          mod: mod,
+          points: points,
+          segments: segments,
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          max_u: length(segments) * 1.0,
+          origin: Vec.new({originx, originy}),
+          opts: opts
+        })
+      )
 
-    {:ok, compressed} = compress(curve, opts)
-    curve = Map.put(curve, :compressed, compressed)
-    curve = Curves.Utils.Derivatives.apply_derivatives(curve)
+    # Each spline type can rebuild its segments first (e.g. Catmull-Rom adds the neighbouring knots).
+    curve = %{curve | segments: segments |> Enum.with_index() |> mod.map_segments(curve)}
 
     {:ok, compressed} = compress(curve, opts)
     Map.put(curve, :compressed, compressed)
   end
 
-  @spec compress(__MODULE__.t(), opts :: list()) :: {:ok, (u :: float(), opts :: T.opts() -> T.point_tuple())} | {:error, any()}
-  def compress(%__MODULE__{opts: curve_opts, mod: mod} = curve, opts \\ []) do
-    opts = 
-      curve_opts
-      |> Keyword.merge(opts)
-      |> Curves.Utils.Opts.merge_opts()
-
+  @doc false
+  @spec compress(__MODULE__.t(), opts :: list()) ::
+          {:ok, (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()})} | {:error, any()}
+  def compress(%__MODULE__{mod: mod} = curve, _opts \\ []) do
     curve = Curves.Transform.apply_all_transformations(curve)
+    # Bounds of a transformed copy of the original points. `curve.points` itself is never changed.
+    bounds =
+      Percent.get_bounds_after_transforms(curve, fn ->
+        Curves.Transform.transform_points(curve, curve.points)
+      end)
 
-    {:ok, fn u, solve_opts ->
-      {points, t} = Segment.split_u(curve, u)
-      tuple = Curves.Formula.run(mod, points, t, Keyword.merge(opts, solve_opts))
-              |> Point.to_tuple()
+    # Each segment's polynomial coefficients, worked out once; a tuple so solving can pick one by index.
+    coefficients =
+      curve.segments
+      |> Enum.map(&Poly.coefficients(mod.blending_function(), &1, mod.blending_factor()))
+      |> List.to_tuple()
 
-      {:ok, force_percent(curve, tuple, Keyword.merge(opts, solve_opts))}
-    end}
-  end
-
-  defp get_max_u(segments) do
-    {s, _d, _p} = Nx.shape(segments)
-    s * 1.0
-  end
-
-
-  defp to_points(segments, opts) do
-    List.flatten(segments)
-      |> Points.new_points(opts)
-  end
-
-
-  @doc false
-  def solve(curve, t), do: solve(curve, t, [])
-
-  @doc false
-  def solve(%__MODULE__{max_u: max, compressed: cb}, u, opts) when is_number(u) do
-    cond do
-      (u > max or u < @minimum_u) -> {:error, {:out_of_bounds, u}}
-      true -> cb.(u * 1.0, opts)
-    end
+    {:ok,
+     fn u, solve_opts ->
+       {index, t} = Segment.split_u(u)
+       point = coefficients |> elem(index) |> Poly.eval(t)
+       {:ok, Percent.maybe_normalize(bounds, point, solve_opts)}
+     end}
   end
 
   @doc false
-  def solve!(curve, t), do: solve!(curve, t, [])
+  @spec solve(t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
+  def solve(%__MODULE__{} = curve, u, opts) when is_number(u),
+    do: solve_resolved(curve, u, resolve_opts(curve, opts))
+
+  # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
+  # once for every point instead of once per point.
+  @spec solve_resolved(t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
+  defp solve_resolved(%{max_u: max}, u, _opts) when u > max or u < @minimum_u,
+    do: {:error, {:out_of_bounds, u}}
+
+  defp solve_resolved(%{compressed: cb}, u, opts), do: cb.(u * 1.0, opts)
+
+  # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
+  @spec resolve_opts(t(), T.opts()) :: T.opts()
+  defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
 
   @doc false
+  @spec solve!(t(), number(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
@@ -157,48 +141,28 @@ defmodule Curves.Spline.Curve do
     end
   end
 
+  # n evenly spaced points by u, ending at max_u (u = 0 is not included).
   @doc false
+  # Every u it asks for is within 0..max_u, so solving never fails and it always returns {:ok, _}.
+  @spec take(t(), pos_integer(), T.opts()) :: {:ok, T.point_list()}
   def take(%{segments: segments} = curve, n, opts \\ []) do
-    seg_count = Nx.axis_size(segments, :segment)
+    seg_count = length(segments)
+    opts = resolve_opts(curve, opts)
 
-    Enum.reduce_while(1..n, [], fn step, acc ->
-      # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
-      i = step * seg_count / n
-      case solve(curve, i, opts) do
-        {:ok, point} -> {:cont, [point | acc]}
-        {:error, term} -> {:halt, term}
-      end
-    end)
-      |> case do
-        li when is_list(li) -> {:ok, Enum.reverse(li)}
-        err -> {:error, err}
-      end
+    points =
+      Enum.map(1..n, fn step ->
+        # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
+        {:ok, point} = solve_resolved(curve, step * seg_count / n, opts)
+        point
+      end)
+
+    {:ok, points}
   end
 
   @doc false
+  @spec take!(t(), pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do
-    case take(curve, n, opts) do
-      {:ok, points} -> points
-      {:error, {:out_of_bounds, u}} -> raise Curves.Exceptions.OutOfBoundU, max: curve.max_u, u: u
-    end
-  end
-
-  defp to_perc(curve, coord, dimension) when is_float(coord) do
-    {min, max} = case dimension do
-      :x -> {curve.xmin, curve.xmax}
-      :y -> {curve.ymin, curve.ymax}
-    end
-    denominator = max - min
-    if denominator == 0, do: max, else: (coord - min) / denominator
-  end
-
-  defp force_percent(curve, point, opts) do
-    if !Keyword.get(opts, :force_percent) do
-      point
-    else
-      {x, y} = point
-      {to_perc(curve, x, :x), to_perc(curve, y, :y)}
-    end
+    {:ok, points} = take(curve, n, opts)
+    points
   end
 end
-

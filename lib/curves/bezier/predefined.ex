@@ -6,17 +6,13 @@ defmodule Curves.Bezier.Predefined do
   ```elixir
       iex> alias Curves.Bezier.Predefined
       iex> Predefined.get_coords(:linear_up_right)
-      [{0, 0}, {1, 1}]
+      [{0.0, 0.0}, {1.0, 1.0}]
       iex> [:ease | _] = Predefined.list()
       iex> Predefined.get_coords(:ease_in_out_cubic)
       [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
   ```
   """
-  import Curves.Utils.Points, only: [new_points: 2]
-  alias Curves.Utils.Types, as: T
-
-
-
+  alias Curves.Types, as: T
 
   @order1 %{
     linear:              [{0, 0}, {1, 1}],
@@ -63,11 +59,10 @@ defmodule Curves.Bezier.Predefined do
     ease_in_out_quart:   [{0.75, 0}, {0.25, 1}],
     ease_in_out_quint:   [{0.87, 0}, {0.07, 1}],
     ease_in_out_sine:    [{0.35, 0}, {0.60, 1}],
-  } |> Map.new(fn 
+  } |> Map.new(fn
       {k, [p1, p2]} -> {k, [{0, 0}, p1, p2, {1, 1}]}
       {k, [_p0, _p1, _p2, _p3] = li} -> {k, li}
     end)
-
 
   @all @order1
        |> Map.merge(@order2)
@@ -78,13 +73,13 @@ defmodule Curves.Bezier.Predefined do
 
   @typedoc ~s"""
   ### Cubic
-  `#{Map.keys(@order3) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order3) |> Enum.map_join(", ", &(":#{&1}"))}`
 
   ### Quadratic
-  `#{Map.keys(@order2) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order2) |> Enum.map_join(", ", &(":#{&1}"))}`
 
   ### Linear
-  `#{Map.keys(@order1) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order1) |> Enum.map_join(", ", &(":#{&1}"))}`
   """
   @type curve_key :: atom()
 
@@ -119,6 +114,12 @@ defmodule Curves.Bezier.Predefined do
   ## Examples
       iex> [:linear | _] = Curves.Bezier.Predefined.list(1)
       iex> [:quadratic_down | _] = Curves.Bezier.Predefined.list(2)
+      iex> Curves.Bezier.Predefined.list(:cubic) == Curves.Bezier.Predefined.list(3)
+      true
+      iex> Curves.Bezier.Predefined.list(:linear) == Curves.Bezier.Predefined.list(1)
+      true
+      iex> Curves.Bezier.Predefined.list(:quad) == Curves.Bezier.Predefined.list(2)
+      true
   """
   @spec list(T.order() | :linear | :quad | :cubic) :: curve_keys()
   def list(order) do
@@ -141,7 +142,7 @@ defmodule Curves.Bezier.Predefined do
 
   ## Examples
       iex> Curves.Bezier.Predefined.details(:linear_up_right)
-      %{k: :linear_up_right, points: , order: 1}
+      %{key: :linear_up_right, order: 1, points: [{0.0, 0.0}, {1.0, 1.0}]}
   """
   @spec details(curve_key()) :: curve_type_info()
   def details(k) do
@@ -150,9 +151,13 @@ defmodule Curves.Bezier.Predefined do
     %{key: k, points: li, order: order}
   end
 
-
   @doc ~s"""
-  Return list of all details for all predefined curves
+  Return `details/1` for every predefined curve, sorted by key.
+
+  ## Examples
+      iex> [first | _] = Curves.Bezier.Predefined.list_details()
+      iex> first
+      %{key: :ease, order: 3, points: [{0.0, 0.0}, {0.3, 0.0}, {0.65, 0.0}, {1.0, 1.0}]}
   """
   @spec list_details() :: list(curve_type_info())
   def list_details() do
@@ -161,7 +166,11 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return coordinates list for a given key
+  Return the list of `{x, y}` points for a predefined curve.
+
+  ## Examples
+      iex> Curves.Bezier.Predefined.get_coords(:linear_up_right)
+      [{0.0, 0.0}, {1.0, 1.0}]
   """
   @spec get_coords(curve_key()) :: T.point_list()
   def get_coords(k) do
@@ -169,9 +178,9 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc false
-  @spec get(curve_key(), T.opts()) :: T.points()
-  def get(k, opts \\ []) do
-    Map.get(@all, k) |> new_points(opts)
+  @spec get(curve_key(), T.opts()) :: T.point_list()
+  def get(k, _opts \\ []) do
+    Map.get(@all, k) |> Enum.map(&Curves.Utils.Vec.new/1)
   end
 
 end

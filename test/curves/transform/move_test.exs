@@ -6,7 +6,6 @@ defmodule Curves.Transform.MoveTest do
 
   setup [:with_curves]
 
-
   test "should move a bezier spline", ctx do
     curve = ctx.curves.curve1
     {x, y} = Curves.solve!(curve, 0.0)
