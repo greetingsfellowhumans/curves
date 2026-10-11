@@ -20,6 +20,23 @@ defmodule Curves.Spline.Type.BSpline do
   ```
 
   ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.png)
+
+  ## How it is built
+
+  The B-spline is turned into a chain of cubic Bezier segments, one for every 3 points in a row,
+  and those are solved like a Bezier spline. Each segment starts at `(p0 + 4 * p1 + p2) / 6`,
+  which is where a B-spline crosses between segments. So `n` points give `n - 3` segments,
+  and `max_u` is `n - 3`.
+
+  ## Stored points
+
+  `curve.points` holds those generated Bezier points, not the points you passed in:
+  4 per segment, with each joint stored twice. For example, 6 points become 12.
+  This also affects:
+
+  * `:xmin`, `:xmax`, `:ymin` and `:ymax`, which are measured from the generated points.
+  * `:force_percent`, which rescales between those bounds instead of between your points.
+  * `Curves.Svg`, which draws the generated points as its dots.
   """
   use Curves.Spline.Type,
     override_segment_parsing: true
