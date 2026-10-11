@@ -109,20 +109,25 @@ defmodule Curves.Bezier.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{compressed: compressed} = curve, t, opts) when is_number(t) do
-    cond do
-      (t < 0.0 or t > 1.0) -> {:error, {:out_of_bounds, t}}
-      true -> compressed.(t, Keyword.put(opts, :force_percent, get_force_percent(curve, opts)))
-    end
-  end
+  def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
+    do: solve_resolved(curve, t, resolve_opts(curve, opts))
 
-  # Reads :force_percent on every call, so a change to the app config after define still applies.
+  # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
+  # once for every point instead of once per point.
+  @spec solve_resolved(__MODULE__.t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
+  defp solve_resolved(_curve, t, _opts) when t < 0.0 or t > 1.0, do: {:error, {:out_of_bounds, t}}
+  defp solve_resolved(%{compressed: compressed}, t, opts), do: compressed.(t, opts)
+
+  # Reads :force_percent once per solve or take call, so a change to the app config after define still applies.
   # Precedence: opts passed to solve, then opts passed to define, then app config, then the default.
-  @spec get_force_percent(__MODULE__.t(), T.opts()) :: term()
-  defp get_force_percent(curve, opts) do
-    Keyword.merge(curve.opts, opts)
-    |> Curves.Utils.Opts.merge_opts()
-    |> Keyword.get(:force_percent)
+  @spec resolve_opts(__MODULE__.t(), T.opts()) :: T.opts()
+  defp resolve_opts(curve, opts) do
+    force_percent =
+      Keyword.merge(curve.opts, opts)
+      |> Curves.Utils.Opts.merge_opts()
+      |> Keyword.get(:force_percent)
+
+    Keyword.put(opts, :force_percent, force_percent)
   end
 
   # Turns a solved point tensor into {:ok, {x, y}}, rescaled when :force_percent is on.
@@ -143,8 +148,10 @@ defmodule Curves.Bezier.Curve do
 
   @doc false
   def take(curve, n, opts \\ []) do
+    opts = resolve_opts(curve, opts)
+
     Enum.reduce_while(1..n, [], fn i, acc ->
-      case solve(curve, i * (1 / n), opts) do
+      case solve_resolved(curve, i * (1 / n), opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end
