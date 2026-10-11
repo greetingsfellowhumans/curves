@@ -7,13 +7,11 @@ Curves aims to be the best elixir framework for calculating bezier curves and sp
 ```elixir
 curve = Curves.define_bezier(:ease_out)
         |> Curves.Transform.set_scale(1.5)
-        |> Curves.Transform.inc_position(10)
+        |> Curves.Transform.inc_position({10, 10})
         |> Curves.Transform.set_rotation(90)
 
-
+# x and y are floats
 {x, y} = Curves.solve!(curve, 0.25)
-assert is_float(x)
-assert is_float(y)
 ```
 
 ## Directory
@@ -35,7 +33,7 @@ Full stack developer seeking new challenges. You can reach me at [hireme@aaronjp
 The simplest way to use Curves is with the predefined ones like `:ease_in_out`
 
 ```elixir
-curves = Curves.define_bezier(:ease_in_out)
+curve = Curves.define_bezier(:ease_in_out)
 for i <- 0..1000 do
   Curves.solve!(curve, i / 1000)
 end
@@ -54,7 +52,7 @@ points = [
   {20, 50},
   {100, 0}
 ]
-curves = Curves.define_bezier(points)
+curve = Curves.define_bezier(points)
 ```
 
 ![Quadratic](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/quadratic.png)
@@ -68,7 +66,7 @@ points = [
   {0.3, 2.2},
   {1, 1}
 ]
-curves = Curves.define_bezier(points)
+curve = Curves.define_bezier(points)
 ```
 
 ![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.png)
@@ -113,7 +111,7 @@ points = [
   [{30.0, 10.0}, # Knot
     {32.0, 5.0}] # control point 0
 ]
-curves = Curves.define_bezier_spline(points)
+curve = Curves.define_bezier_spline(points)
 ```
 
 ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)
