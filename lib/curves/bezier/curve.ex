@@ -85,19 +85,21 @@ defmodule Curves.Bezier.Curve do
 
     %{points: points} = Curves.Transform.apply_all_transformations(curve)
     {_, size} = Nx.shape(points)
+    # Only the bounds are kept, not the whole curve, so closures don't hold on to older closures.
+    bounds = Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
 
     case size do
       # Errors are deferred to solve-time so that define/2 and transforms never crash on a bad point count.
       n when n < 2 -> {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
 
       2 ->
-        {:ok, fn t, _opts -> {:ok, Linear.get_linear_interpolation_point(points, t) |> Point.to_tuple()} end}
+        {:ok, fn t, solve_opts -> Linear.get_linear_interpolation_point(points, t) |> to_result(bounds, solve_opts) end}
 
       3 ->
-        {:ok, fn t, _opts -> {:ok, Quadratic.get_quadratic_point(points, t) |> Point.to_tuple()} end}
+        {:ok, fn t, solve_opts -> Quadratic.get_quadratic_point(points, t) |> to_result(bounds, solve_opts) end}
 
       4 ->
-        {:ok, fn t, solve_opts -> {:ok, Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> Point.to_tuple()} end}
+        {:ok, fn t, solve_opts -> Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> to_result(bounds, solve_opts) end}
 
       n when n > 4 -> {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
     end
@@ -110,13 +112,23 @@ defmodule Curves.Bezier.Curve do
   def solve(%__MODULE__{compressed: compressed} = curve, t, opts) when is_number(t) do
     cond do
       (t < 0.0 or t > 1.0) -> {:error, {:out_of_bounds, t}}
-      true ->
-        case compressed.(t, opts) do
-          {:ok, point} -> {:ok, Percent.maybe_normalize(curve, point, Keyword.merge(curve.opts, opts) |> Curves.Utils.Opts.merge_opts())}
-          err -> err
-        end
+      true -> compressed.(t, Keyword.put(opts, :force_percent, get_force_percent(curve, opts)))
+    end
   end
+
+  # Reads :force_percent on every call, so a change to the app config after define still applies.
+  # Precedence: opts passed to solve, then opts passed to define, then app config, then the default.
+  @spec get_force_percent(__MODULE__.t(), T.opts()) :: term()
+  defp get_force_percent(curve, opts) do
+    Keyword.merge(curve.opts, opts)
+    |> Curves.Utils.Opts.merge_opts()
+    |> Keyword.get(:force_percent)
   end
+
+  # Turns a solved point tensor into {:ok, {x, y}}, rescaled when :force_percent is on.
+  @spec to_result(T.point(), Percent.bounded(), T.opts()) :: {:ok, T.point_tuple()}
+  defp to_result(point, bounds, solve_opts),
+    do: {:ok, Percent.maybe_normalize(bounds, Point.to_tuple(point), solve_opts)}
 
   @doc false
   def solve!(curve, t), do: solve!(curve, t, [])
