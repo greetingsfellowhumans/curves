@@ -1,0 +1,99 @@
+# Bezier Curves (local development)
+
+```elixir
+# Local development copy: uses this repository instead of the Hex package.
+Mix.install(
+  [
+    {:curves, path: Path.join(__DIR__, "../../"), env: :dev},
+    {:kino, "~> 0.19"},
+  ],
+  config_path: :curves,
+  lockfile: :curves
+)
+```
+
+## Curves (Bezier) tutorial
+
+```elixir
+# The usual workflow is very simple:
+
+# 1. Define a curve
+curve = Curves.define_bezier(:ease_in)
+
+# 2. Find the {x, y} coordinates for a given percentage along the curve
+Curves.solve!(curve, 0.25)
+```
+
+```elixir
+# To visualize this, we use Curves.Svg. It solves the curve `count` times,
+# evenly spaced along the curve (i.e. 10%, 20%, 30% ... 100%),
+# and joins those points with straight lines.
+
+# With 10 you can see the 10 straight pieces. Go ahead and raise it for a smoother curve.
+count = 10
+
+Curves.define_bezier(:ease_in)
+|> Curves.Svg.render(count, width: 400, height: 400)
+|> Kino.Image.new(:svg)
+```
+
+```elixir
+# There are many more curve types you can use. Let's turn them into a select box.
+types = Curves.Bezier.Predefined.list()
+        |> Enum.map(&{&1, &1})
+
+bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
+```
+
+```elixir
+# Now evaluate THIS code block to display a graph of the curve type you selected above.
+Kino.Input.read(bezier_type)
+|> Curves.define_bezier()
+|> Curves.Svg.render(300, width: 400, height: 400)
+|> Kino.Image.new(:svg)
+
+
+# Go ahead and play around with the select list to see the various predefined curves.
+```
+
+```elixir
+## Advanced Usage
+
+# We can define our own curves manualy.
+# At a minimum, you can supply 2 points to get a linear 'curve'
+curve = Curves.define_bezier([
+  {0, 0},
+  {100, 100}
+])
+
+curve
+|> Curves.Svg.render(300, width: 400, height: 400)
+|> Kino.Image.new(:svg)
+```
+
+```elixir
+# With 3 points, we get a quadratic curve
+start = {0, 0}
+control_point = {20, 50}
+stop = {100, 0}
+
+curve = Curves.define_bezier([start, control_point, stop])
+
+curve
+|> Curves.Svg.render(300, width: 400, height: 400)
+|> Kino.Image.new(:svg)
+```
+
+```elixir
+# And finally the one most people think of when they hear "bezier curve"; The cubic bezier.
+curve = Curves.define_bezier([
+  {0, 0},
+  {0.8, 0},
+  {0.3, 1.2},
+  {1, 1}
+])
+
+curve
+|> Curves.Svg.render(300, width: 400, height: 400)
+|> Kino.Image.new(:svg)
+```
