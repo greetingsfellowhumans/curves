@@ -83,22 +83,23 @@ defmodule Curves.Bezier.Curve do
       |> Keyword.merge(opts)
       |> Curves.Utils.Opts.merge_opts()
 
-    %{points: points} = Curves.Transform.apply_all_transformations(curve)
+    %{points: points} = curve = Curves.Transform.apply_all_transformations(curve)
     {_, size} = Nx.shape(points)
-    # Only the bounds are kept, not the whole curve, so closures don't hold on to older closures.
-    bounds = Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
 
     case size do
       # Errors are deferred to solve-time so that define/2 and transforms never crash on a bad point count.
       n when n < 2 -> {:ok, fn _t, _opts -> {:error, {:too_few_points, n, 2}} end}
 
       2 ->
+        bounds = get_bounds(curve)
         {:ok, fn t, solve_opts -> Linear.get_linear_interpolation_point(points, t) |> to_result(bounds, solve_opts) end}
 
       3 ->
+        bounds = get_bounds(curve)
         {:ok, fn t, solve_opts -> Quadratic.get_quadratic_point(points, t) |> to_result(bounds, solve_opts) end}
 
       4 ->
+        bounds = get_bounds(curve)
         {:ok, fn t, solve_opts -> Curves.Formula.run(Curves.Formula.CubicBezier, points, t, Keyword.merge(opts, solve_opts)) |> to_result(bounds, solve_opts) end}
 
       n when n > 4 -> {:ok, fn _t, _opts -> {:error, {:too_many_points, n, 4}} end}
@@ -129,6 +130,13 @@ defmodule Curves.Bezier.Curve do
 
     Keyword.put(opts, :force_percent, force_percent)
   end
+
+  # Bounds of the transformed points, for :force_percent. Only the 2-, 3- and 4-point branches call it,
+  # so curves with a bad point count never crash at define. Only the bounds go into the closures,
+  # not the whole curve, so closures don't hold on to older closures.
+  @spec get_bounds(__MODULE__.t()) :: Percent.bounded()
+  defp get_bounds(%{points: points} = curve),
+    do: Percent.get_bounds_after_transforms(curve, fn -> points end)
 
   # Turns a solved point tensor into {:ok, {x, y}}, rescaled when :force_percent is on.
   @spec to_result(T.point(), Percent.bounded(), T.opts()) :: {:ok, T.point_tuple()}

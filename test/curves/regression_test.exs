@@ -179,12 +179,64 @@ defmodule Curves.RegressionTest do
     end
   end
 
-  # Pins down current outputs, including known oddities (stale bezier bounds after transforms,
-  # flat ranges returning max), so refactors can't change them silently.
+  describe "force_percent on transformed beziers" do
+    @line [{10, 100}, {40, 400}]
+
+    test "moved bezier uses transformed bounds" do
+      curve = Curves.define_bezier(@line) |> Curves.Transform.set_position({5, 5})
+      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.5, 0.5}
+    end
+
+    test "origin option uses transformed bounds" do
+      curve = Curves.define_bezier([{0, 0}, {1, 1}], origin: {10, 10})
+      assert Curves.solve!(curve, 1.0, force_percent: true) == {1.0, 1.0}
+    end
+
+    test "rotated bezier uses transformed bounds" do
+      curve = Curves.define_bezier(:linear_up_right) |> Curves.Transform.set_rotation(90)
+      assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 1.0}
+    end
+
+    test "inc_scale uses transformed bounds" do
+      curve = Curves.define_bezier(@line) |> Curves.Transform.inc_scale(1.0)
+      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.5, 0.5}
+    end
+
+    test "negative scale flips the percentages" do
+      curve = Curves.define_bezier(@line) |> Curves.Transform.set_scale(-2.0)
+      assert Curves.solve!(curve, 0.0, force_percent: true) == {1.0, 1.0}
+      assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 0.0}
+    end
+
+    test "take! on a moved cubic stays within 0..1" do
+      curve = Curves.define_bezier([{0, 0}, {1, 3}, {2, -1}, {3, 1}]) |> Curves.Transform.set_position({50, 50})
+      for {x, y} <- Curves.take!(curve, 20, force_percent: true) do
+        assert x >= 0.0 and x <= 1.0
+        assert y >= 0.0 and y <= 1.0
+      end
+    end
+
+    test "moved away and back gives the same result as never moving" do
+      curve = Curves.define_bezier(@line)
+      moved_back = curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
+      assert Curves.solve!(moved_back, 0.25, force_percent: true) == Curves.solve!(curve, 0.25, force_percent: true)
+    end
+
+    test "transforming a bezier with too few points still defers the error to solve" do
+      curve = Curves.define_bezier([{1, 1}]) |> Curves.Transform.set_position({5, 5})
+      assert Curves.solve(curve, 0.5, force_percent: true) == {:error, {:too_few_points, 1, 2}}
+    end
+  end
+
+  # Pins down current outputs, including known oddities (flat ranges returning max,
+  # rotation noise on flat curves), so refactors can't change them silently.
   describe "force_percent characterization" do
-    test "moved bezier still uses define-time bounds" do
-      curve = Curves.define_bezier([{10, 100}, {40, 400}]) |> Curves.Transform.set_position({5, 5})
-      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.6666666666666666, 0.5166666666666667}
+    # Rotating adds float noise (y becomes -1.0 and -1.0000001), so the flat y axis is no
+    # longer flat and gets rescaled over 0..1. Left as-is on purpose: see the :force_percent docs.
+    test "rotated flat curve rescales its float noise" do
+      curve = Curves.define_bezier(:linear_horizontal) |> Curves.Transform.set_rotation(180)
+      assert Curves.solve!(curve, 0.0, force_percent: true) == {1.0, 1.0}
+      assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 0.0}
     end
 
     test "flat range returns max" do
