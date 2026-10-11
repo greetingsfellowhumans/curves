@@ -84,7 +84,7 @@ defmodule Curves do
 
   # For internal use, not part of the public facing API.
   @doc false
-  @spec define_spline(list(list(T.point_tuple())) | atom(), atom(), T.opts()) :: Spline.t()
+  @spec define_spline(list(list(T.point_tuple())), atom(), T.opts()) :: Spline.t()
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
 
   @doc ~s"""

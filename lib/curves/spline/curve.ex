@@ -2,7 +2,6 @@ defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
   Struct representing a spline
   """
-  alias Curves.Bezier.Predefined
   alias Curves.Utils.{Percent, Point, Points, Segment}
   alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
@@ -64,16 +63,10 @@ defmodule Curves.Spline.Curve do
   # Each spline type's define/2 prepares `coords` first (e.g. wrapping each point in a list),
   # so the shape of `coords` depends on the type.
   @doc false
-  @spec define(list(list(T.point_tuple())) | atom(), atom(), T.opts()) :: t()
+  @spec define(list(list(T.point_tuple())), atom(), T.opts()) :: t()
   def define(coords, spline_type, opts \\ []) do
     mod = Curves.Spline.Type.get_mod(spline_type)
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
-
-    coords =
-      case coords do
-        k when is_atom(k) -> Predefined.get(k, opts)
-        _ -> coords
-      end
 
     segments =
       if mod.override_segment_parsing() do
