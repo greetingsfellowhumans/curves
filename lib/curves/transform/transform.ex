@@ -5,6 +5,7 @@ defmodule Curves.Transform do
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Transform.{Move, Rotate, Scale}
+  alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
 
   @doc false
@@ -56,7 +57,8 @@ defmodule Curves.Transform do
   # apply_all_transformations/1. The curve itself is not changed, so a spline's
   # original `:points` stay as the user gave them.
   @doc false
-  @spec transform_points(curve :: T.curve_struct(), points :: T.points()) :: T.points()
+  @spec transform_points(curve :: T.curve_struct(), points :: TensorT.points()) ::
+          TensorT.points()
   def transform_points(%{origin: origin, scale: scale} = curve, points) do
     points
     |> Nx.add(origin)
@@ -65,7 +67,7 @@ defmodule Curves.Transform do
   end
 
   # Matches apply_rotation/1: a rotation of 0 or 0.0 is skipped.
-  @spec rotate_points(points :: T.points(), curve :: T.curve_struct()) :: T.points()
+  @spec rotate_points(points :: TensorT.points(), curve :: T.curve_struct()) :: TensorT.points()
   defp rotate_points(points, %{rotation: rotation}) when rotation == 0, do: points
 
   defp rotate_points(points, %{rotation: angle, origin: origin}),

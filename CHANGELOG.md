@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** The default `:float_dtype` is now `32` (was `16`). Results are more precise, so values will differ slightly from previous versions. Pass `float_dtype: 16` to restore the old behaviour.
+- **Breaking:** The tensor types `point/0`, `points/0` and `point_names/0` moved from `Curves.Utils.Types` to the new `Curves.Utils.TensorTypes`, which holds every `Nx` tensor type (including `cubic_segment/0` and `cubic_segments/0`). Update any specs that use `Curves.Utils.Types.points()` and similar.
 - **Breaking:** Spline out-of-bounds errors now include the offending `u`, matching the bezier error shape. `{:error, :out_of_bounds}` is now `{:error, {:out_of_bounds, u}}`.
 - Solving linear (2-point) and quadratic (3-point) bezier curves is about 2.4× faster and uses about a third of the memory. Results are unchanged.
 - Defining curves is about 2–3× faster for beziers, B-splines, bezier splines and Catmull-Rom splines, and about 20% faster for Hermite splines. A rotation of `0.0`, which every new curve starts with, is now skipped instead of computed. Results are unchanged. Moving or scaling an unrotated curve gets the same speedup.

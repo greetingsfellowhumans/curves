@@ -5,6 +5,7 @@ defmodule Curves.Bezier.Curve do
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
   alias Curves.Utils.{Percent, Point, Points}
+  alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
 
   defstruct [
@@ -164,7 +165,7 @@ defmodule Curves.Bezier.Curve do
     do: Percent.get_bounds_after_transforms(curve, fn -> points end)
 
   # Turns a solved point tensor into {:ok, {x, y}}, rescaled when :force_percent is on.
-  @spec to_result(T.point(), Percent.bounded(), T.opts()) :: {:ok, T.point_tuple()}
+  @spec to_result(TensorT.point(), Percent.bounded(), T.opts()) :: {:ok, T.point_tuple()}
   defp to_result(point, bounds, solve_opts),
     do: {:ok, Percent.maybe_normalize(bounds, Point.to_tuple(point), solve_opts)}
 

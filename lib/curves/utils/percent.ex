@@ -3,6 +3,7 @@ defmodule Curves.Utils.Percent do
   # Turns solved points into percentages of a curve's bounding box,
   # for the `:force_percent` option.
 
+  alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
 
   # Anything with min/max bounds, such as a Bezier or Spline curve.
@@ -12,7 +13,7 @@ defmodule Curves.Utils.Percent do
   # Example: points (0, 5) and (10, 1) give xmin 0.0, xmax 10.0, ymin 1.0, ymax 5.0.
   # Rotating a curve adds tiny float noise, so a flat axis can come back
   # very slightly not flat (e.g. -1.0 and -1.0000001). That is left as-is.
-  @spec get_bounds(points :: T.points()) :: bounded()
+  @spec get_bounds(points :: TensorT.points()) :: bounded()
   def get_bounds(points) do
     %{
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),
@@ -27,7 +28,7 @@ defmodule Curves.Utils.Percent do
   # `get_points` returns the transformed points, and is only called when needed:
   # an untransformed curve (scale 1, rotation 0, origin {0, 0}) reuses the bounds stored at
   # define time. They are exactly what transforming would give, and skipping it keeps define fast.
-  @spec get_bounds_after_transforms(T.curve_struct(), (-> T.points())) :: bounded()
+  @spec get_bounds_after_transforms(T.curve_struct(), (-> TensorT.points())) :: bounded()
   def get_bounds_after_transforms(%{scale: scale, rotation: rotation} = curve, get_points)
       when scale == 1 and rotation == 0,
       do: get_bounds_at_origin(Nx.to_flat_list(curve.origin), curve, get_points)
@@ -35,7 +36,7 @@ defmodule Curves.Utils.Percent do
   def get_bounds_after_transforms(_curve, get_points), do: get_bounds(get_points.())
 
   # Stored bounds when the origin is {0, 0}, otherwise the bounds of the transformed points.
-  @spec get_bounds_at_origin(list(number()), T.curve_struct(), (-> T.points())) :: bounded()
+  @spec get_bounds_at_origin(list(number()), T.curve_struct(), (-> TensorT.points())) :: bounded()
   defp get_bounds_at_origin([x, y], curve, _get_points) when x == 0 and y == 0,
     do: Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
 
