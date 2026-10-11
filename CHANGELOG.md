@@ -11,6 +11,7 @@ The second release candidate. It has three breaking changes, listed under Change
 
 ### Added
 
+- A new tutorial for new users, in four chapters: your first curve, Bezier curves, splines, and transforms and drawing. The hexdocs version is full of pictures drawn with `Curves.Svg`, and its simplified first page is now the docs' landing page. Each chapter is also an interactive Livebook with sliders, animations and an easing race. They replace the two old livebooks.
 - `Curves.Svg` has a `:view` option, `{{x1, y1}, {x2, y2}}`, that draws a fixed area instead of fitting the picture to the curve, so several pictures or animation frames share the same scale.
 - `Curves.Svg` has a `:markers` option that highlights extra `{x, y}` points, e.g. `markers: [Curves.solve!(curve, 0.5)]` to show where `t = 0.5` lands. `:marker_color` and `:marker_radius` style them.
 - `Curves.Svg` has a `:show_axes` option that draws a grid with the x and y values along the bottom and left edges, like a ruler, so you can see a curve's real size and position. The x = 0 and y = 0 lines are darker. `:axis_color` sets its colour. It is on by default; `show_axes: false` gives the old look.

@@ -28,9 +28,13 @@ end
 
 ## Directory
 
+- [Tutorial, with lots of pictures](https://hexdocs.pm/curves/introduction.html)
+- Interactive tutorial in Livebook (sliders, animations and races):
+  1. [Your first curve](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F01_first_curve.livemd)
+  2. [Bezier curves](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F02_bezier_curves.livemd)
+  3. [Splines](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F03_splines.livemd)
+  4. [Transforms and drawing](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F04_transforms.livemd)
 - [Upgrading from 0.2.x to 1.0](https://github.com/greetingsfellowhumans/curves/blob/main/guides/upgrading.md)
-- [Bezier Curves Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/bezier_curves.livemd)
-- [Splines Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/splines.livemd)
 - [Hex docs](https://curves.hexdocs.pm/)
 - [Hex package](https://hex.pm/packages/curves)
 - [Github Repo](https://github.com/greetingsfellowhumans/curves)

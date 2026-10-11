@@ -45,10 +45,14 @@ defmodule Curves do
   The exact last digits are not part of the API: they may change in a minor release,
   for example when a calculation is sped up, so compare results with a small tolerance.
 
-  ## Interactive tutorial
-  Be sure to check out the livebooks to see these points turn into graphs.
-  1. [Bezier Curves](bezier_curves.html).
-  2. [Splines](splines.html).
+  ## Tutorial
+
+  New to curves? The tutorial has lots of pictures, and each chapter is also an interactive Livebook:
+
+  1. [Your first curve](first_curve.html): `t`, `solve`, `take`, and the ready-made curves.
+  2. [Bezier curves](bezier_curves.html): how control points shape a curve.
+  3. [Splines](splines.html): the four kinds, and when to use each.
+  4. [Transforms and drawing](transforms.html): moving, scaling and rotating, and `Curves.Svg`.
 
 
   ## Transform

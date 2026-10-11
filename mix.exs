@@ -20,18 +20,31 @@ defmodule Curves.MixProject do
 
   defp docs() do
     [
-      main: "Curves",
+      main: "introduction",
       extras: [
-        "CHANGELOG.md",
-        "README.md",
+        "guides/introduction.md",
+        "guides/tutorial/first_curve.md",
+        "guides/tutorial/bezier_curves.md",
+        "guides/tutorial/splines.md",
+        "guides/tutorial/transforms.md",
+        "guides/livebooks/01_first_curve.livemd",
+        "guides/livebooks/02_bezier_curves.livemd",
+        "guides/livebooks/03_splines.livemd",
+        "guides/livebooks/04_transforms.livemd",
         "guides/upgrading.md",
-        "guides/bezier_curves.livemd",
-        "guides/splines.livemd"
+        "CHANGELOG.md"
       ],
+      groups_for_extras: [
+        Tutorial: ~r"guides/tutorial/",
+        "Interactive tutorial (Livebook)": ~r"guides/livebooks/",
+        "Upgrading and changes": ["guides/upgrading.md", "CHANGELOG.md"]
+      ],
+      # The tutorial's pictures, drawn by guides/images/generate.exs.
+      assets: %{"guides/images" => "images"},
       nest_modules_by_prefix: [
         Curves.Spline.Type
       ],
-      skip_undefined_reference_warnings_on: ["CHANGELOG.md", "README.md"]
+      skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
   end
 
@@ -74,7 +87,11 @@ defmodule Curves.MixProject do
   end
 
   defp aliases() do
-    [bench: &bench/1]
+    [
+      bench: &bench/1,
+      # Redraw the guides' pictures first, so they always match the code.
+      docs: ["run guides/images/generate.exs", "docs"]
+    ]
   end
 
   # Runs every benchmark script. Any args (e.g. a tag to save the run under) are passed through.
