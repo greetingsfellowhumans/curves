@@ -1,12 +1,16 @@
 defmodule Curves.Utils.Derivatives do
   alias Curves.Utils.Point
   alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.Utils.Types, as: T
   @moduledoc false
   @small_num Curves.Utils.Constants.small_number()
 
   @doc ~s"""
-  Given a point on a curve, find the derivative
+  Given a point on a curve, find the derivative, as `{rise, run}` (`:tuple`) or a point tensor (`:point`).
+  It's estimated from a second point a small step before `t`. A vertical slope gives `{1_000_000, 1}`.
   """
+  @spec get_derivative(T.curve_struct(), number(), :tuple) :: {number(), number()}
+  @spec get_derivative(T.curve_struct(), number(), :point) :: TensorT.point()
   def get_derivative(curve, t, format) do
     coord =
       case t do
@@ -60,6 +64,9 @@ defmodule Curves.Utils.Derivatives do
     end
   end
 
+  # Fills in each segment's control points from the spline type's derivatives (via mod.map_segments/2).
+  # Bezier splines already have their control points, so they're returned unchanged.
+  @spec apply_derivatives(Curves.Spline.Curve.t()) :: Curves.Spline.Curve.t()
   def apply_derivatives(%Curves.Spline.Curve{segments: segments, type: type} = curve) do
     segments =
       case type do

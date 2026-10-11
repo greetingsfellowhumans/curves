@@ -3,6 +3,7 @@ defmodule Curves.Utils.Segment do
   # A segment is a tensor of shape {2, 4} holding two knots and two control points.
   # This is the format that can easily be passed into a matrix formula to solve a curve.
   # such that [knot0, cp0, cp1, knot1]
+  alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
   @type map_format() :: %{knot: T.point_tuple(), c0: T.point_tuple(), c1: T.point_tuple()}
   # Any length
@@ -15,6 +16,8 @@ defmodule Curves.Utils.Segment do
   defguard is_segment(p)
            when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) == 4
 
+  # Builds cubic segments from a bezier spline's points, each given as [knot], [knot, c] or [knot, c0, c1].
+  @spec new_segments(list(list(T.point_tuple())), T.opts()) :: TensorT.cubic_segments()
   def new_segments(lists, opts \\ []) do
     lists
     |> Enum.map(&to_map_format(&1))
@@ -54,6 +57,11 @@ defmodule Curves.Utils.Segment do
             "Got: #{inspect(other)}. See Curves.define_bezier_spline/2."
   end
 
+  # Turns a spline's u (e.g. 2.25) into the segment it falls in and how far along it is: {segment 2, t 0.25}.
+  # A whole number u is the end of the previous segment (t = 1.0), except u = 0.
+  # u must be a float (Numbers.split_float/1 only takes floats); Spline.solve/3 converts it first.
+  @spec split_u(Curves.Spline.Curve.t() | TensorT.cubic_segments(), float()) ::
+          {TensorT.cubic_segment(), float()}
   def split_u(%{segments: segments}, u), do: split_u(segments, u)
 
   def split_u(segments, u) do
@@ -69,18 +77,22 @@ defmodule Curves.Utils.Segment do
     end
   end
 
+  @spec get_knot0(TensorT.cubic_segment()) :: TensorT.point()
   def get_knot0(segment) do
     Nx.slice(segment, [0, 0], [2, 1])
   end
 
+  @spec get_control_point0(TensorT.cubic_segment()) :: TensorT.point()
   def get_control_point0(segment) do
     Nx.slice(segment, [0, 1], [2, 1])
   end
 
+  @spec get_control_point1(TensorT.cubic_segment()) :: TensorT.point()
   def get_control_point1(segment) do
     Nx.slice(segment, [0, 2], [2, 1])
   end
 
+  @spec get_knot1(TensorT.cubic_segment()) :: TensorT.point()
   def get_knot1(segment) do
     Nx.slice(segment, [0, 3], [2, 1])
   end
