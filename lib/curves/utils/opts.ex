@@ -7,7 +7,7 @@ defmodule Curves.Utils.Opts do
     force_percent: %{
       default: false,
       doc:
-        "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0, measured after any moves, scaling or rotation. A flat axis, where every point has the same value, returns that value as-is. Beziers read this config on every `solve`/`take`; splines read it when they are defined or transformed.",
+        "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0, measured after any moves, scaling or rotation. A flat axis, where every point has the same value, returns 0.5. Beziers read this config on every `solve`/`take`; splines read it when they are defined or transformed.",
       one_of: [true, false]
     }
   ]

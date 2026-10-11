@@ -37,9 +37,9 @@ defmodule Curves.Utils.PercentTest do
   end
 
   describe "normalize/2" do
-    test "flat range returns max" do
+    test "flat range returns 0.5" do
       flat = %{@box | ymin: 7, ymax: 7}
-      assert Percent.normalize(flat, {5.0, 7.0}) == {0.5, 7}
+      assert Percent.normalize(flat, {5.0, 7.0}) == {0.5, 0.5}
     end
 
     test "integer coordinates raise" do

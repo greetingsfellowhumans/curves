@@ -277,7 +277,7 @@ defmodule Curves.RegressionTest do
     end
   end
 
-  # Pins down current outputs, including known oddities (flat ranges returning max,
+  # Pins down current outputs, including known oddities (flat ranges returning 0.5,
   # rotation noise on flat curves), so refactors can't change them silently.
   describe "force_percent characterization" do
     # Rotating adds float noise (y becomes -1.0 and -1.0000001), so the flat y axis is no
@@ -288,9 +288,9 @@ defmodule Curves.RegressionTest do
       assert Curves.solve!(curve, 1.0, force_percent: true) == {0.0, 0.0}
     end
 
-    test "flat range returns max" do
+    test "flat range returns 0.5" do
       curve = Curves.define_bezier(:linear_horizontal)
-      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.5, 1.0}
+      assert Curves.solve!(curve, 0.5, force_percent: true) == {0.5, 0.5}
     end
 
     test "any truthy value turns it on" do

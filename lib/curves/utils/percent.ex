@@ -60,9 +60,9 @@ defmodule Curves.Utils.Percent do
   defp normalize_when(_flag, curve, point), do: normalize(curve, point)
 
   # Where `coord` sits between `min` and `max`, as a fraction.
-  # A flat range (min == max) would divide by zero, so it returns `max` instead.
-  # Returning `max` (not 0.0 or 1.0) is deliberate: changing it would break existing users.
-  @spec scale(float(), T.coord(), T.coord()) :: number()
-  defp scale(coord, min, max) when is_float(coord) and min == max, do: max
+  # A flat range (min == max) would divide by zero, so it returns 0.5: the middle of 0..1,
+  # which is where a horizontal or vertical line naturally sits.
+  @spec scale(float(), T.coord(), T.coord()) :: float()
+  defp scale(coord, min, max) when is_float(coord) and min == max, do: 0.5
   defp scale(coord, min, max) when is_float(coord), do: (coord - min) / (max - min)
 end
