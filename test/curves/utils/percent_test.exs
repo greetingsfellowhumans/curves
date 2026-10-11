@@ -4,6 +4,23 @@ defmodule Curves.Utils.PercentTest do
 
   @box %{xmin: 0.0, xmax: 10.0, ymin: 0.0, ymax: 100.0}
 
+  describe "get_bounds/1" do
+    test "finds the lowest and highest x and y" do
+      points = Nx.tensor([[0.0, 10.0, 4.0], [5.0, 1.0, 3.0]], names: [:dimension, :point])
+      assert Percent.get_bounds(points) == %{xmin: 0.0, xmax: 10.0, ymin: 1.0, ymax: 5.0}
+    end
+
+    test "matches the bounds stored by define" do
+      curve = Curves.define_bezier([{10, 100}, {40, 400}, {25, -3}])
+      assert Percent.get_bounds(curve.points) == Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
+    end
+
+    test "flat axis gives equal min and max" do
+      points = Nx.tensor([[0.0, 1.0], [7.0, 7.0]], names: [:dimension, :point])
+      assert %{ymin: 7.0, ymax: 7.0} = Percent.get_bounds(points)
+    end
+  end
+
   describe "maybe_normalize/3" do
     test "returns the point unchanged when off or missing" do
       assert Percent.maybe_normalize(@box, {5.0, 25.0}, force_percent: false) == {5.0, 25.0}
