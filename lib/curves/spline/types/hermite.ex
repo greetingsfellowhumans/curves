@@ -28,7 +28,6 @@ defmodule Curves.Spline.Type.Hermite do
 
   """
   use Curves.Spline.Type,
-    derivatives: [0, {:derivative, :p0, 1}, {:point, 1}, {:derivative, :p1, 1}],
     derivative: 0
 
   @matrix_new ~MAT<

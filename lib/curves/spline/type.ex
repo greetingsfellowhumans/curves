@@ -31,7 +31,7 @@ defmodule Curves.Spline.Type do
   # ```elixir
   # defmodule My.Spline do
   #  use Curves.Spline.Type,
-  #    derivatives: [0, 1, 1, 0]
+  #    derivative: 0
   # end
   # ```
   # """
