@@ -30,10 +30,10 @@ defmodule Curves.Spline.Curve do
   | field  	| description                                    	|
   |--------	|------------------------------------------------	|
   | `:points` 	| A tensor representing 2D points                	|
-  | `:xmax`   	| the highest x coord in the tensor              	|
-  | `:xmin`   	| the lowest x coord in the tensor               	|
-  | `:ymin`   	| the lowest y coord in the tensor               	|
-  | `:ymax`   	| the highest y coord in the tensor              	|
+  | `:xmax`   	| the highest x coord in the tensor, before any transforms	|
+  | `:xmin`   	| the lowest x coord in the tensor, before any transforms	|
+  | `:ymin`   	| the lowest y coord in the tensor, before any transforms	|
+  | `:ymax`   	| the highest y coord in the tensor, before any transforms	|
   | `:max_u`   	| maximum allowable u value.              	|
   | `:scale`   	| multiplier for resizing curve.              	|
   | `:transformations` 	| list of transformations that have been applied |

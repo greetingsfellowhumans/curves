@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Spline `take/3` no longer fails when float rounding pushes the final sample past the last segment.
 - `:force_percent` passed to `solve/3` or `take/3` is now honoured for splines.
 - `:force_percent` passed to `define_bezier/2`, or set in application config, is now honoured for bezier curves.
+- `:force_percent` now rescales using the curve's position after moves, scaling, rotation and the `:origin` option, so transformed curves return values between `0.0` and `1.0`. Previously it used the points as defined, so transformed curves could return values far outside that range. Untransformed curves are unchanged. Rotating a flat curve can make that axis return values from `0.0` to `1.0`, because rotation adds tiny rounding errors.
 - Bezier curves with more than 4 points now return `{:error, {:too_many_points, n, 4}}` (or raise `Curves.Exceptions.TooManyPoints`) instead of returning raw tensors.
 
 ## [0.2.7] - 2026-09-21

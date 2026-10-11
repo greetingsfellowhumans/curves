@@ -25,10 +25,10 @@ defmodule Curves.Bezier.Curve do
   | field  	| description                                    	|
   |--------	|------------------------------------------------	|
   | `:points` 	| A tensor representing 2D points                	|
-  | `:xmax`   	| the highest x coord in the tensor              	|
-  | `:xmin`   	| the lowest x coord in the tensor               	|
-  | `:ymin`   	| the lowest y coord in the tensor               	|
-  | `:ymax`   	| the highest y coord in the tensor              	|
+  | `:xmax`   	| the highest x coord in the tensor, before any transforms	|
+  | `:xmin`   	| the lowest x coord in the tensor, before any transforms	|
+  | `:ymin`   	| the lowest y coord in the tensor, before any transforms	|
+  | `:ymax`   	| the highest y coord in the tensor, before any transforms	|
   | `:origin` 	| the origin of the graph.                       	|
   | `:rotation` 	| the degrees by which the curve is rotated.   	|
   | `:transformations` 	| The list of transformations applied to this curve.                       	|

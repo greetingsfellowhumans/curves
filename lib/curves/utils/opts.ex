@@ -2,7 +2,7 @@ defmodule Curves.Utils.Opts do
   @moduledoc false
   @config_opts [
     float_dtype: %{default: 32, doc: "The default bitsize for floats.", one_of: [8, 16, 32, 64]},
-    force_percent: %{default: false, doc: "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0. A flat axis, where every point has the same value, returns that value as-is.", one_of: [true, false]}
+    force_percent: %{default: false, doc: "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0, measured after any moves, scaling or rotation. A flat axis, where every point has the same value, returns that value as-is.", one_of: [true, false]}
   ]
 
   _todo = ~s"""
