@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Passing something that isn't a curve to `Curves.solve/3`, `solve!/3`, `take/3`, `take!/3`, the `Curves.Transform` functions, or `Curves.Svg.render/2` and `save!/3` now always raises a `CondClauseError`. It used to raise a `CaseClauseError`, `FunctionClauseError`, `KeyError` or `UndefinedFunctionError`, depending on the function and the input.
+
+### Fixed
+
+- Dialyzer no longer warns about breaking the opaqueness of `Curves.Bezier.Curve.t()` and `Curves.Spline.Curve.t()` inside the library. Code outside the two curve modules no longer reads or matches their fields.
+
 ## [1.0.0-rc.1] - 2026-10-10
 
 The first release candidate for 1.0. Version 0.3.0 was never released; its changes ship here.
