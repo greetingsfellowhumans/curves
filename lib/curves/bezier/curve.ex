@@ -108,10 +108,6 @@ defmodule Curves.Bezier.Curve do
   end
 
   @doc false
-  @spec solve(t(), number()) :: {:ok, T.point_tuple()} | {:error, tuple()}
-  def solve(curve, t), do: solve(curve, t, [])
-
-  @doc false
   @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
     do: solve_resolved(curve, t, resolve_opts(curve, opts))
@@ -126,10 +122,6 @@ defmodule Curves.Bezier.Curve do
   # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
   @spec resolve_opts(__MODULE__.t(), T.opts()) :: T.opts()
   defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
-
-  @doc false
-  @spec solve!(t(), number()) :: T.point_tuple()
-  def solve!(curve, t), do: solve!(curve, t, [])
 
   # Raises the matching Curves.Exceptions error instead of returning {:error, _}.
   @doc false

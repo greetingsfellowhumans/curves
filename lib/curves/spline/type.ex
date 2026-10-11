@@ -9,8 +9,9 @@ defmodule Curves.Spline.TypeIndex do
     hermite: T.Hermite
   }
 
+  # Sorted, because Map.keys/1 has no guaranteed order.
   @spec list() :: list(atom())
-  def list(), do: Map.keys(@all)
+  def list(), do: @all |> Map.keys() |> Enum.sort()
 
   # A spline type's module from its key (e.g. :hermite). {:module, mod} passes a custom module through.
   @spec get(atom() | {:module, module()}) :: module()
@@ -25,17 +26,9 @@ defmodule Curves.Spline.TypeIndex do
 end
 
 defmodule Curves.Spline.Type do
-  # @moduledoc ~s"""
-  # Turns a module into a spline type.
-
-  # ```elixir
-  # defmodule My.Spline do
-  #  use Curves.Spline.Type,
-  #    derivative: 0
-  # end
-  # ```
-  # """
   @moduledoc false
+  # Turns a module into a spline type: `use Curves.Spline.Type` (optionally with
+  # `override_segment_parsing: true`), then implement the callbacks below.
 
   # The 4x4 blending matrix: row i holds the weights of the 4 control points for t^i.
   @callback blending_function() :: list(list(number()))
@@ -43,7 +36,8 @@ defmodule Curves.Spline.Type do
   @callback blending_factor() :: number()
 
   @doc ~s"""
-  Can be used to rearange the points in a segment. Apply derivatives here.
+  Can be used to rearrange the points in a segment, e.g. Catmull-Rom swaps in each segment's
+  neighbouring knots.
 
   ```elixir
   @impl true

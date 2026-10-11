@@ -114,10 +114,6 @@ defmodule Curves.Spline.Curve do
   end
 
   @doc false
-  @spec solve(t(), number()) :: {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
-  def solve(curve, t), do: solve(curve, t, [])
-
-  @doc false
   @spec solve(t(), number(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
   def solve(%__MODULE__{} = curve, u, opts) when is_number(u),
@@ -135,10 +131,6 @@ defmodule Curves.Spline.Curve do
   # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
   @spec resolve_opts(t(), T.opts()) :: T.opts()
   defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
-
-  @doc false
-  @spec solve!(t(), number()) :: T.point_tuple()
-  def solve!(curve, t), do: solve!(curve, t, [])
 
   @doc false
   @spec solve!(t(), number(), T.opts()) :: T.point_tuple()
