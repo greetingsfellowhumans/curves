@@ -21,6 +21,7 @@ defmodule Curves.Transform do
     |> apply_rotation()
   end
 
+  @spec apply_origin_offset(T.curve_struct()) :: T.curve_struct()
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve) do
     points = Nx.add(points, origin)
     Map.put(curve, :points, points)
@@ -31,6 +32,7 @@ defmodule Curves.Transform do
     Map.put(curve, :segments, segments)
   end
 
+  @spec apply_scale(T.curve_struct()) :: T.curve_struct()
   defp apply_scale(%Bezier{points: points, scale: scale, origin: _origin} = curve) do
     points = Nx.multiply(points, Nx.tensor([[scale]]))
     Map.put(curve, :points, points)
@@ -78,6 +80,7 @@ defmodule Curves.Transform do
     do: Rotate.rotate_points(points, angle, origin)
 
   # Put a new transformation in the :transformations list, then recompress.
+  @spec add(T.curve_struct(), {module(), atom(), list(), term()}) :: T.curve_struct()
   defp add(%Bezier{} = curve, transformation) do
     curve = Map.update!(curve, :transformations, &(&1 ++ [transformation]))
     {:ok, cb} = Bezier.compress(curve)

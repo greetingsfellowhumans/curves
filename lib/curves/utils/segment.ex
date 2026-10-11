@@ -27,11 +27,15 @@ defmodule Curves.Utils.Segment do
     |> Nx.stack(name: :segment)
   end
 
+  # Turns each pair of neighbouring points into a 4-point segment, [knot, c1, next c0, next knot].
+  # The result is built back to front, so new_segments/2 reverses it.
+  @spec normalize_length(list(map_format())) :: list(tight_list())
   defp normalize_length(coords) do
     coords
     |> normalize_length([])
   end
 
+  @spec normalize_length(list(map_format()), list(tight_list())) :: list(tight_list())
   defp normalize_length([hd], acc) do
     [[hd.c0, hd.knot, hd.knot, hd.c1] | acc]
   end
@@ -45,6 +49,8 @@ defmodule Curves.Utils.Segment do
     normalize_length([next | tl], acc)
   end
 
+  # A missing control point defaults to the one given, or to the knot itself.
+  @spec to_map_format(term()) :: map_format()
   defp to_map_format([knot]), do: %{knot: knot, c0: knot, c1: knot}
   defp to_map_format([knot, c]), do: %{knot: knot, c0: c, c1: c}
   defp to_map_format([knot, c0, c1]), do: %{knot: knot, c0: c0, c1: c1}

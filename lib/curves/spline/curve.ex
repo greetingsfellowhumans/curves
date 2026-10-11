@@ -140,11 +140,15 @@ defmodule Curves.Spline.Curve do
      end}
   end
 
+  # The highest u a spline accepts: one per segment.
+  @spec get_max_u(TensorT.cubic_segments()) :: float()
   defp get_max_u(segments) do
     {s, _d, _p} = Nx.shape(segments)
     s * 1.0
   end
 
+  # Flattens the define-time coords into one points tensor, for :points and the bounds.
+  @spec to_points(list(list(T.point_tuple())), T.opts()) :: TensorT.points()
   defp to_points(segments, opts) do
     List.flatten(segments)
     |> Points.new_points(opts)

@@ -69,6 +69,8 @@ defmodule Curves.Spline.Type.BSpline do
     |> Curves.define_spline(:b_spline, opts)
   end
 
+  # Completes each [cp0, m2, m3] with the next segment's cp0, so every segment has 4 points.
+  @spec auto_last(list(T.point_list()), list(T.point_list())) :: list(T.point_list())
   defp auto_last([[p0, p1, p2], [p3 | _] = next_segment | segments], acc) do
     acc = [[p0, p1, p2, p3] | acc]
     segments = [next_segment | segments]
@@ -112,6 +114,8 @@ defmodule Curves.Spline.Type.BSpline do
     end
   end
 
+  # {rise, run} from point_a to point_b.
+  @spec get_slope(T.point_tuple(), T.point_tuple()) :: {number(), number()}
   defp get_slope({x0, y0}, {x1, y1}) do
     x = x1 - x0
     y = y1 - y0

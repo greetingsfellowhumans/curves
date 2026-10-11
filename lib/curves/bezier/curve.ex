@@ -214,6 +214,8 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
+  # Turns an {:error, reason} from solve/take into the matching Curves.Exceptions error.
+  @spec raise_error(tuple()) :: no_return()
   defp raise_error({:too_few_points, n, min}),
     do: raise(Curves.Exceptions.TooFewPoints, n: n, min: min)
 
