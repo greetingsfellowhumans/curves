@@ -38,7 +38,7 @@ curve = Curves.define_b_spline([
 ])
 
 
-Curves.Svg.render(curve, 300, [show_polygon: true])
+Curves.Svg.render(curve, 300)
 |> Kino.Image.new(:svg)
 ```
 
