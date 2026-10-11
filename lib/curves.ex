@@ -216,7 +216,7 @@ defmodule Curves do
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> Curves.solve(c, 0.3)
-      {:ok, {0.3695499897003174, 0.727199912071228}}
+      {:ok, {0.36955001950263977, 0.7271999716758728}}
 
   ## Options
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)

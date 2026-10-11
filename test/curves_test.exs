@@ -1,7 +1,7 @@
 defmodule CurvesTest do
   use ExUnit.Case
-  # doctest Curves
-  #
+  doctest Curves
+
   describe "Curves" do
     test "take/3" do
       curve = Curves.define_bezier(:ease_in)
