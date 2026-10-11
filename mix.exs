@@ -24,6 +24,7 @@ defmodule Curves.MixProject do
       extras: [
         "CHANGELOG.md",
         "README.md",
+        "guides/upgrading.md",
         "guides/bezier_curves.livemd",
         "guides/splines.livemd"
       ],

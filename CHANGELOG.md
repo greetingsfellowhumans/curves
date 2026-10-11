@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0-rc.1] - 2026-10-10
 
 The first release candidate for 1.0. Version 0.3.0 was never released; its changes ship here.
+Coming from 0.2.x? See the [upgrade guide](upgrading.html).
 
 ### Added
 

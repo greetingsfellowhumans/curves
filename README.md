@@ -28,6 +28,7 @@ end
 
 ## Directory
 
+- [Upgrading from 0.2.x to 1.0](https://github.com/greetingsfellowhumans/curves/blob/main/guides/upgrading.md)
 - [Bezier Curves Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/bezier_curves.livemd)
 - [Splines Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/splines.livemd)
 - [Hex docs](https://curves.hexdocs.pm/)
