@@ -6,7 +6,7 @@ defmodule Curves.Bezier.Predefined do
   ```elixir
       iex> alias Curves.Bezier.Predefined
       iex> Predefined.get_coords(:linear_up_right)
-      [{0, 0}, {1, 1}]
+      [{0.0, 0.0}, {1.0, 1.0}]
       iex> [:ease | _] = Predefined.list()
       iex> Predefined.get_coords(:ease_in_out_cubic)
       [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
@@ -138,7 +138,7 @@ defmodule Curves.Bezier.Predefined do
 
   ## Examples
       iex> Curves.Bezier.Predefined.details(:linear_up_right)
-      %{k: :linear_up_right, points: , order: 1}
+      %{key: :linear_up_right, order: 1, points: [{0.0, 0.0}, {1.0, 1.0}]}
   """
   @spec details(curve_key()) :: curve_type_info()
   def details(k) do
@@ -148,7 +148,12 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return list of all details for all predefined curves
+  Return `details/1` for every predefined curve, sorted by key.
+
+  ## Examples
+      iex> [first | _] = Curves.Bezier.Predefined.list_details()
+      iex> first
+      %{key: :ease, order: 3, points: [{0.0, 0.0}, {0.3, 0.0}, {0.65, 0.0}, {1.0, 1.0}]}
   """
   @spec list_details() :: list(curve_type_info())
   def list_details() do
@@ -157,7 +162,11 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return coordinates list for a given key
+  Return the list of `{x, y}` points for a predefined curve.
+
+  ## Examples
+      iex> Curves.Bezier.Predefined.get_coords(:linear_up_right)
+      [{0.0, 0.0}, {1.0, 1.0}]
   """
   @spec get_coords(curve_key()) :: T.point_list()
   def get_coords(k) do

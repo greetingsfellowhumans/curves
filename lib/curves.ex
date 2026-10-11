@@ -99,35 +99,20 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options)
 
-  ```elixir
-  points = [
-    # P0
-    [{5.0, 10.0},  # Knot
-    {10.0, 10.0}], # control point 0
+  Each point is a list: its knot, then up to two control points (`[knot]`, `[knot, c]` or `[knot, c0, c1]`).
 
-    # P1
-    [{10.0, 5.0},  # Knot
-      {5.0, 5.0},  # control point 0
-      {15.0, 5.0}],# control point 1
-
-    # P2
-    [{15.0, 10.0}, # Knot
-    {15.0, 6.0},  # control point 0
-    {15.0, 14.0}  # control point 1
-    ],
-
-    # P3
-    [{20.0, 15.0}, # Knot
-    {18.0, 15.0}, # control point 0
-    {23.0, 15.0}],# control point 1
-
-    # P4
-    [{30.0, 10.0}, # Knot
-      {32.0, 5.0}] # control point 0
-  ]
-  curves = Curves.define_bezier_spline(points)
-  {x, y} = Curves.solve!(curves, 0.518)
-  ```
+  ## Examples
+      iex> curve = Curves.define_bezier_spline([
+      ...>   [{5.0, 10.0}, {10.0, 10.0}],
+      ...>   [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
+      ...>   [{15.0, 10.0}, {15.0, 6.0}, {15.0, 14.0}],
+      ...>   [{20.0, 15.0}, {18.0, 15.0}, {23.0, 15.0}],
+      ...>   [{30.0, 10.0}, {32.0, 5.0}]
+      ...> ])
+      iex> Curves.max_u(curve)
+      4.0
+      iex> Curves.solve!(curve, 1.0)
+      {10.0, 5.0}
   """
   @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) ::
           Spline.t()
@@ -143,18 +128,13 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options)
 
-  ```elixir
-  curve = Curves.define_b_spline([
-    {0, 0},
-    {1, 0},
-    {1, 1},
-    {0, 1},
-    {0, 2},
-    {1, 2},
-  ])
-
-  {x, y} = Curves.solve!(curve, 0.15)
-  ```
+  ## Examples
+      iex> curve = Curves.define_b_spline([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}])
+      iex> Curves.max_u(curve)
+      3.0
+      iex> {x, y} = Curves.solve!(curve, 0.0)
+      iex> {Float.round(x, 4), Float.round(y, 4)}
+      {0.8333, 0.1667}
   """
   @spec define_b_spline(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
@@ -166,20 +146,13 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options)
 
-  ## Example
-
-  ```elixir
-  curve = Curves.define_hermite([
-    {5, 10},
-    {10, 5},
-    {15, 10},
-    {20, 10},
-    {25, 5},
-    {30, 15},
-  ])
-
-  {x, y} = Curves.solve!(curve, 0.85)
-  ```
+  ## Examples
+      iex> curve = Curves.define_hermite([{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}])
+      iex> Curves.max_u(curve)
+      5.0
+      iex> {x, y} = Curves.solve!(curve, 0.85)
+      iex> is_float(x) and is_float(y)
+      true
   """
   @spec define_hermite(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
@@ -190,18 +163,12 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options)
 
-  ```elixir
-  curve = Curves.define_catmull_rom([
-    {0, 0},
-    {1, 0},
-    {1, 1},
-    {0, 1},
-    {0, 2},
-    {1, 2},
-  ])
-
-  {x, y} = Curves.solve!(curves, 0.5)
-  ```
+  ## Examples
+      iex> curve = Curves.define_catmull_rom([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}])
+      iex> Curves.solve!(curve, 1.0)
+      {1.0, 0.0}
+      iex> Curves.solve!(curve, 0.5)
+      {0.5625, -0.0625}
   """
   @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []),
@@ -221,8 +188,11 @@ defmodule Curves do
 
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
-      iex> Curves.solve(c, 0.3)
-      {:ok, {0.36955001950263977, 0.7271999716758728}}
+      iex> {:ok, {x, y}} = Curves.solve(c, 0.3)
+      iex> {Float.round(x, 4), Float.round(y, 4)}
+      {0.3696, 0.7272}
+      iex> Curves.solve(c, 1.5)
+      {:error, {:out_of_bounds, 1.5}}
 
   ## Options
   * `:float_dtype` (default: nil) | If set to an integer, passes results to Float.round(_, precision)
@@ -238,7 +208,12 @@ defmodule Curves do
   end
 
   @doc ~s"""
-  The raising version of `solve/3`
+  The raising version of `solve/3`: returns the `{x, y}` point, or raises one of the
+  `Curves.Exceptions` errors (e.g. `Curves.Exceptions.OutOfBoundT`).
+
+  ## Examples
+      iex> Curves.solve!(Curves.define_bezier(:linear), 0.5)
+      {0.5, 0.5}
   """
   @spec solve!(Bezier.t() | Spline.t(), T.t(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts \\ []) do
@@ -269,6 +244,12 @@ defmodule Curves do
 
   The samples are at `t = 1/n, 2/n, ... 1.0` for a bezier (or the same steps up to
   `max_u/1` for a spline). The start, `t = 0`, is not included: call `solve/3` with `0.0` if you need it.
+
+  ## Examples
+      iex> Curves.take(Curves.define_bezier(:linear), 4)
+      {:ok, [{0.25, 0.25}, {0.5, 0.5}, {0.75, 0.75}, {1.0, 1.0}]}
+      iex> Curves.take(Curves.define_bezier([{0, 0}, {1, 1}, {2, 2}, {3, 3}, {4, 4}]), 2)
+      {:error, {:too_many_points, 5, 4}}
   """
   @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::
           {:ok, T.point_list()} | {:error, term()}
@@ -280,7 +261,11 @@ defmodule Curves do
   end
 
   @doc ~s"""
-  The raising version of `take/3`
+  The raising version of `take/3`: returns the list of points, or raises one of the `Curves.Exceptions` errors.
+
+  ## Examples
+      iex> Curves.take!(Curves.define_bezier([{0, 0}, {1, 2}, {2, 0}]), 2)
+      [{1.0, 1.0}, {2.0, 0.0}]
   """
   @spec take!(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do

@@ -94,6 +94,7 @@ defmodule Curves.Spline.Curve do
     Map.put(curve, :compressed, compressed)
   end
 
+  @doc false
   @spec compress(__MODULE__.t(), opts :: list()) ::
           {:ok, (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()})} | {:error, any()}
   def compress(%__MODULE__{opts: curve_opts, mod: mod} = curve, opts \\ []) do
