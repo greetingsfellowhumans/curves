@@ -1,4 +1,5 @@
 defmodule Curves.Support.SampleCurves do
+  @moduledoc false
 
   @curve0 [
     # P0
