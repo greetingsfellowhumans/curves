@@ -55,7 +55,6 @@ defmodule Curves.Utils.Derivatives do
     end
   end
 
-
   def apply_derivatives(%Curves.Spline.Curve{segments: segments, type: type} = curve) do
     segments = case type do
       :bezier_spline -> curve.segments

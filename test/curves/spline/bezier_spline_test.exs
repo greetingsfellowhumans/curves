@@ -4,7 +4,6 @@ defmodule Curves.Spline.BezierSplineTest do
 
   setup [:with_curves]
 
-
   test "should calculate a bezier spline", ctx do
     curve = ctx.curves.curve1
     {x, y} = Curves.solve!(curve, 1.11)

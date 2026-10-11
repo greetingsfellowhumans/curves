@@ -6,7 +6,6 @@ defmodule Curves.Formula do
   @callback required_opts() :: list()
   @callback point_count() :: integer()
 
-
   def run(mod, points, t, opts \\ []) do
     {_, size} = Nx.shape(points)
 
@@ -24,7 +23,6 @@ defmodule Curves.Formula do
     end
   end
 
-
   def build_power_series(t, derivative \\ 0) do
     case derivative do
       0.5 ->
@@ -38,13 +36,11 @@ defmodule Curves.Formula do
     end
   end
 
-
   defmacro __using__(opts) do
     quote do
       import Nx, only: :sigils
       @behaviour Curves.Formula
       @derivative Keyword.get(unquote(opts), :derivative, 0)
-
 
       @impl true
       def power_series(t), do: Curves.Formula.build_power_series(t, @derivative)
@@ -60,7 +56,6 @@ defmodule Curves.Formula do
       #  Nx.slice(points, [0, 0], [dimensions, size])
       #end
       #defoverridable points_function: 1
-
 
     end
   end

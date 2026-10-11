@@ -7,5 +7,4 @@ defmodule Curves.Utils.Numbers do
     {trunc(float), t}
   end
 
-
 end

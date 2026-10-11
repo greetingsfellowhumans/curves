@@ -23,7 +23,6 @@ defmodule Curves.Spline.CatmullRomTest do
       assert hd == [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
     end
 
-
     test "get_prev and get_next", ctx do
       {segments_list, _curve} = initial_args(ctx)
       [{first, 0}, {second, 1} | _] = segments_list

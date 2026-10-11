@@ -70,7 +70,6 @@ defmodule Curves.Utils.SegmentTest do
       end
     end
 
-
     test "should split_u, returning the right segment and t" do
       segments = new_segments(@curve1)
       u = 0.31

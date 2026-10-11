@@ -4,7 +4,6 @@ defmodule Curves do
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Utils.Types, as: T
 
-
   @moduledoc """
   ## Usage
 
@@ -67,7 +66,6 @@ defmodule Curves do
 
   """
 
-
   @doc ~s"""
   Build a new `Curves.Bezier.Curve`
 
@@ -83,11 +81,9 @@ defmodule Curves do
   @spec define_bezier(points :: T.point_list() | Predefined.curve_key(), T.define_opts()) :: Bezier.t()
   defdelegate define_bezier(points, opts \\ []), to: Bezier, as: :define
 
-
   # For internal use, not part of the public facing API.
   @doc false
   defdelegate define_spline(points, spline_type, opts \\ []), to: Curves.Spline.Curve, as: :define
-
 
   @doc ~s"""
   Return a `Curves.Spline.Curve` struct representing a `Curves.Spline.Type.BezierSpline`.
@@ -129,7 +125,6 @@ defmodule Curves do
   @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) :: Spline.t()
   defdelegate define_bezier_spline(points, opts \\ []), to: Curves.Spline.Type.BezierSpline, as: :define
 
-
   @doc ~s"""
   Define a spline struct of type: `Curves.Spline.Type.BSpline`.
 
@@ -153,7 +148,6 @@ defmodule Curves do
   """
   @spec define_b_spline(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
-
 
   @doc ~s"""
   Define a new `Curves.Spline.Type.Hermite` spline.
@@ -180,7 +174,6 @@ defmodule Curves do
   @spec define_hermite(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
 
-
   @doc ~s"""
   Define a new `Curves.Spline.Type.CatmullRom`. Only the joins need to be defined, the control points are calculated automatically.
 
@@ -202,7 +195,6 @@ defmodule Curves do
   """
   @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []), to: Curves.Spline.Type.CatmullRom, as: :define
-
 
   @doc ~s"""
   Given a `Curves.Bezier.Curve` or `Curves.Spline.Curve` struct, and `t`, find the point along the curve.
@@ -232,7 +224,6 @@ defmodule Curves do
     end
   end
 
-
   @doc ~s"""
   The raising version of `solve/3`
   """
@@ -243,7 +234,6 @@ defmodule Curves do
       %Spline{} -> Spline.solve!(curve, t, opts)
     end
   end
-
 
   @doc ~s"""
   Take `n` samples, evenly spaced, from the curve.
@@ -256,7 +246,6 @@ defmodule Curves do
     end
   end
 
-
   @doc ~s"""
   The raising version of `take/3`
   """
@@ -267,6 +256,5 @@ defmodule Curves do
       %Spline{} -> Spline.take!(curve, n, opts)
     end
   end
-
 
 end

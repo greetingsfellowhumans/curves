@@ -41,7 +41,6 @@ defmodule Curves.Spline.Type.BSpline do
   use Curves.Spline.Type,
     override_segment_parsing: true
 
-
   @matrix ~MAT<
     1   0  0 0
     -3  3  0 0
@@ -57,7 +56,6 @@ defmodule Curves.Spline.Type.BSpline do
   @impl true
   def blending_function(), do: @matrix
 
-
   @doc false
   @impl true
   def define(points, opts \\ []) do
@@ -67,7 +65,6 @@ defmodule Curves.Spline.Type.BSpline do
       |> Curves.define_spline(:b_spline, opts)
   end
 
-
   defp auto_last([[p0, p1, p2], [p3 | _] = next_segment | segments], acc) do
     acc = [[p0, p1, p2, p3] | acc]
     segments = [next_segment | segments]
@@ -75,7 +72,6 @@ defmodule Curves.Spline.Type.BSpline do
   end
   # acc is built back to front, so flip it to keep the segments in curve order.
   defp auto_last(_, acc), do: Enum.reverse(acc)
-
 
   @doc false
   def rebuild_points(points, opts) do
@@ -92,7 +88,6 @@ defmodule Curves.Spline.Type.BSpline do
   end
   def rebuild_points(_, _opts, acc), do: Enum.reverse(acc)
 
-
   @doc false
   def split_points(point_a, point_b, midpoints) do
     {ax, ay} = point_a
@@ -104,12 +99,10 @@ defmodule Curves.Spline.Type.BSpline do
     end
   end
 
-
   defp get_slope({x0, y0}, {x1, y1}) do
     x = x1 - x0
     y = y1 - y0
     {y, x}
   end
-
 
 end

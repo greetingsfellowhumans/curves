@@ -131,12 +131,10 @@ defmodule Curves.Spline.Curve do
     s * 1.0
   end
 
-
   defp to_points(segments, opts) do
     List.flatten(segments)
       |> Points.new_points(opts)
   end
-
 
   @doc false
   def solve(curve, t), do: solve(curve, t, [])
@@ -183,4 +181,3 @@ defmodule Curves.Spline.Curve do
     end
   end
 end
-

@@ -75,7 +75,6 @@ defmodule Curves.Bezier.Curve do
     Map.put(curve, :compressed, cb)
   end
 
-
   @spec compress(__MODULE__.t(), T.opts()) ::
           {:ok, (t :: float(), opts :: T.opts() -> {:ok, T.point_tuple()} | {:error, tuple()})}
           | {:error, atom()}

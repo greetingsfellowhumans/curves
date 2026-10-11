@@ -2,7 +2,6 @@ defmodule Curves.Formula.CubicBezier do
   @moduledoc false
   use Curves.Formula
 
-
   @matrix ~MAT<
     1   0  0 0
     -3  3  0 0

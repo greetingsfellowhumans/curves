@@ -8,7 +8,6 @@ defmodule Curves.Transform.RotateTest do
 
   setup [:with_curves]
 
-
   test "should calculate radians" do
     r = Curves.Transform.Rotate.degrees_to_radians(90)
         |> Float.round(5)
@@ -68,7 +67,6 @@ defmodule Curves.Transform.RotateTest do
     assert Nx.shape(segments) == Nx.shape(segments2)
   end
 
-
   test "should rotate a bezier curve", _ctx do
     curve = Curves.define_bezier(:linear_up_right)
     {x, y} = Curves.solve!(curve, 0.0)
@@ -77,7 +75,6 @@ defmodule Curves.Transform.RotateTest do
     {x, y} = Curves.solve!(curve, 1.0)
     assert x == 1.0
     assert y == 1.0
-
 
     curve = Transform.set_rotation(curve, 90)
     {x, y} = Curves.solve!(curve, 1.0)
@@ -95,7 +92,6 @@ defmodule Curves.Transform.RotateTest do
     {x, y} = Curves.solve!(curve, 1.0)
     assert x == 11.0
     assert y == 11.0
-
 
     curve = Transform.set_rotation(curve, 90)
     {x, y} = Curves.solve!(curve, 1.0)

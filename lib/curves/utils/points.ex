@@ -98,7 +98,6 @@ defmodule Curves.Utils.Points do
     Enum.zip_with([xs, ys], fn [x, y] -> %{x: x, y: y} end)
   end
 
-
   @doc ~s"""
   Given a tensor of points, return a list like `[ {x1, y1}, {x2, y2}, ... ]`
   """
@@ -120,7 +119,6 @@ defmodule Curves.Utils.Points do
         {x, y} -> {y , x}
       end
   end
-
 
   @doc ~s"""
   Update in place a point at a specific idx

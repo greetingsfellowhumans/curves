@@ -33,7 +33,6 @@ defmodule Curves.Transform do
     Map.put(curve, :segments, segments)
   end
 
-
   @doc false
   # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
@@ -76,7 +75,6 @@ defmodule Curves.Transform do
     Map.put(curve, :compressed, cb)
   end
 
-
   @doc ~s"""
   Ignore current position and set a new one.
 
@@ -92,7 +90,6 @@ defmodule Curves.Transform do
   """
   @spec set_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
   def set_position(curve, origin), do: add(curve, {Move, :set_position, [origin], curve.origin})
-
 
   @doc ~s"""
   Using the current position increase both the x and y coordinates.
@@ -110,7 +107,6 @@ defmodule Curves.Transform do
   """
   @spec inc_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
   def inc_position(curve, pos), do: add(curve, {Move, :inc_position, [pos], curve.origin})
-
 
   @doc ~s"""
   Using the current position increase the x coordinates.
@@ -130,7 +126,6 @@ defmodule Curves.Transform do
   """
   @spec inc_x(curve :: T.curve_struct(), xinc :: T.coord()) :: T.curve_struct()
   def inc_x(curve, xinc), do: add(curve, {Move, :inc_x, [xinc], curve.origin})
-
 
   @doc ~s"""
   Using the current position increase the y coordinates.
@@ -152,7 +147,6 @@ defmodule Curves.Transform do
   """
   @spec inc_y(curve :: T.curve_struct(), yinc :: T.coord()) :: T.curve_struct()
   def inc_y(curve, yinc), do: add(curve, {Move, :inc_y, [yinc], curve.origin})
-
 
   @doc ~s"""
   resize the entire curve ignoring the existing scale. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.

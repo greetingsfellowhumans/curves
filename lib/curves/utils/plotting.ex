@@ -52,5 +52,4 @@ defmodule Curves.Utils.Plotting do
   #    |> List.flatten()
   #end
 
-
 end

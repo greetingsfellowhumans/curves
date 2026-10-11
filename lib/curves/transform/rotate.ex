@@ -12,7 +12,6 @@ defmodule Curves.Transform.Rotate do
     ], names: [:dimension, :point])
   end
 
-
   def rotate_points(point, radians, origin) do
     matrix = rotation_matrix(radians)
     rotate_points(point, radians, origin, matrix)
@@ -34,16 +33,13 @@ defmodule Curves.Transform.Rotate do
     end
   end
 
-
   def set_rotation(curve, deg) do
     transform(curve, fn _ -> degrees_to_radians(deg) end)
   end
 
-
   def inc_rotation(curve, amount) do
     transform(curve, fn old ->  old + degrees_to_radians(amount) end)
   end
-
 
   #@impl true
   defp transform(curve, cb) do

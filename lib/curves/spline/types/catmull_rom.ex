@@ -45,7 +45,6 @@ defmodule Curves.Spline.Type.CatmullRom do
     -1 3 -3 1
   >
 
-
   @doc false
   @impl true
   def point_count(), do: 4
@@ -61,7 +60,6 @@ defmodule Curves.Spline.Type.CatmullRom do
     |> Nx.tensor()
     |> Nx.divide(2)
   end
-
 
   @doc false
   @impl true
@@ -109,6 +107,5 @@ defmodule Curves.Spline.Type.CatmullRom do
         {x, y}
     end
   end
-
 
 end

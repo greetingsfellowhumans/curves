@@ -4,7 +4,6 @@ defmodule Curves.Spline.HermiteSplineTest do
 
   setup [:with_curves]
 
-
   describe "Hermite Splines" do
     test "Should build a hermite spline", ctx do
       curve = ctx.curve_specs.hermite0

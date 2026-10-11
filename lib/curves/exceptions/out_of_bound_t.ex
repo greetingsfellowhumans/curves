@@ -14,5 +14,4 @@ defmodule Curves.Exceptions.OutOfBoundT do
     %__MODULE__{message: msg}
   end
 
-
 end

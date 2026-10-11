@@ -15,7 +15,6 @@ defmodule Curves.Bezier.Predefined do
   import Curves.Utils.Points, only: [new_points: 2]
   alias Curves.Utils.Types, as: T
 
-
   @order1 %{
     linear:              [{0, 0}, {1, 1}],
     linear_up_right:     [{0, 0}, {1, 1}],
@@ -65,7 +64,6 @@ defmodule Curves.Bezier.Predefined do
       {k, [p1, p2]} -> {k, [{0, 0}, p1, p2, {1, 1}]}
       {k, [_p0, _p1, _p2, _p3] = li} -> {k, li}
     end)
-
 
   @all @order1
        |> Map.merge(@order2)
@@ -147,7 +145,6 @@ defmodule Curves.Bezier.Predefined do
     order = Enum.count(li) - 1
     %{key: k, points: li, order: order}
   end
-
 
   @doc ~s"""
   Return list of all details for all predefined curves

@@ -6,7 +6,6 @@ defmodule Curves.Utils.DerivativesTest do
 
   setup [:with_curves]
 
-
   describe "Utils.Derivatives" do
     property "get_derivative/3", ctx do
       c = ctx.curves.curve1

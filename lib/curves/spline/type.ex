@@ -20,7 +20,6 @@ defmodule Curves.Spline.TypeIndex do
   end
 end
 
-
 defmodule Curves.Spline.Type do
   #@moduledoc ~s"""
   #Turns a module into a spline type.
@@ -37,7 +36,6 @@ defmodule Curves.Spline.Type do
   @callback power_series(t :: float()) :: Nx.Tensor.t()
   @callback blending_function() :: struct()
   @callback point_count() :: integer()
-
 
   @doc ~s"""
   Can be used to rearange the points in a segment. Apply derivatives here.
@@ -73,7 +71,6 @@ defmodule Curves.Spline.Type do
     Curves.Utils.Derivatives.get_derivative(curve, u, :tuple)
   end
 
-
   defmacro __using__(opts) do
     quote do
       import Nx, only: :sigils
@@ -99,9 +96,7 @@ defmodule Curves.Spline.Type do
       def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2
 
-
     end
   end
-
 
 end

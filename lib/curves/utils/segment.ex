@@ -22,7 +22,6 @@ defmodule Curves.Utils.Segment do
       |> Nx.stack(name: :segment)
   end
 
-
   defp normalize_length(coords) do
     coords
       |> normalize_length([])
@@ -41,7 +40,6 @@ defmodule Curves.Utils.Segment do
   defp to_map_format([knot]), do: %{knot: knot, c0: knot, c1: knot}
   defp to_map_format([knot, c]), do: %{knot: knot, c0: c, c1: c}
   defp to_map_format([knot, c0, c1]), do: %{knot: knot, c0: c0, c1: c1}
-
 
   def split_u(%{segments: segments}, u), do: split_u(segments, u)
   def split_u(segments, u) do

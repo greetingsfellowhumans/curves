@@ -44,7 +44,6 @@ defmodule Curves.Spline.Type.BezierSpline do
   """
   use Curves.Spline.Type
 
-
   @matrix ~MAT<
     1   0  0 0
     -3  3  0 0
