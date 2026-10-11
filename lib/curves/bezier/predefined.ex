@@ -63,7 +63,7 @@ defmodule Curves.Bezier.Predefined do
     ease_in_out_quart:   [{0.75, 0}, {0.25, 1}],
     ease_in_out_quint:   [{0.87, 0}, {0.07, 1}],
     ease_in_out_sine:    [{0.35, 0}, {0.60, 1}],
-  } |> Map.new(fn 
+  } |> Map.new(fn
       {k, [p1, p2]} -> {k, [{0, 0}, p1, p2, {1, 1}]}
       {k, [_p0, _p1, _p2, _p3] = li} -> {k, li}
     end)

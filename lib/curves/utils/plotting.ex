@@ -32,12 +32,12 @@ defmodule Curves.Utils.Plotting do
   #defp extract_control_points(%Curves.Bezier.Curve{points: points}) do
   #  case Nx.shape(points) do
   #    {_, n} when n < 3 -> []
-  #    {_, n} -> 
+  #    {_, n} ->
   #      Nx.slice(points, [0, 1], [2, n - 2])
   #        |> to_maps()
   #  end
   #    |> Enum.with_index()
-  #    |> Enum.map(fn {p, idx} -> 
+  #    |> Enum.map(fn {p, idx} ->
   #      Map.put(p, :label, "control point #{idx}")
   #    end)
   #end

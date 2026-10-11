@@ -78,7 +78,7 @@ defmodule Curves.Bezier.Curve do
 
   @spec compress(__MODULE__.t(), T.opts()) :: {:ok, (t :: float(), opts :: T.opts() -> {:ok, T.point_tuple()} | {:error, tuple()})} | {:error, atom()}
   def compress(%{opts: curve_opts} = curve, opts \\ []) do
-    opts = 
+    opts =
       curve_opts
       |> Keyword.merge(opts)
       |> Curves.Utils.Opts.merge_opts()

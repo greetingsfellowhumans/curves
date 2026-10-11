@@ -15,5 +15,5 @@ defmodule Curves.Exceptions.TooFewPoints do
     %__MODULE__{message: msg}
   end
 
-  
+
 end

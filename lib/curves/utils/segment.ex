@@ -1,6 +1,6 @@
 defmodule Curves.Utils.Segment do
   @moduledoc false
-  # A segment is a tensor of shape {2, 4} holding two knots and two control points. 
+  # A segment is a tensor of shape {2, 4} holding two knots and two control points.
   # This is the format that can easily be passed into a matrix formula to solve a curve.
   # such that [knot0, cp0, cp1, knot1]
   alias Curves.Utils.Types, as: T

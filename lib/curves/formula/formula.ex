@@ -27,7 +27,7 @@ defmodule Curves.Formula do
 
   def build_power_series(t, derivative \\ 0) do
     case derivative do
-      0.5 -> 
+      0.5 ->
         [1, t, t ** 2, t ** 3]
         |> Nx.tensor()
         |> Nx.divide(2)

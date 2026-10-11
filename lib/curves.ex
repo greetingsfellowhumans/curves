@@ -131,7 +131,7 @@ defmodule Curves do
 
 
   @doc ~s"""
-  Define a spline struct of type: `Curves.Spline.Type.BSpline`. 
+  Define a spline struct of type: `Curves.Spline.Type.BSpline`.
 
   Only the knots need to be defined, the control points are calculated automatically.
 

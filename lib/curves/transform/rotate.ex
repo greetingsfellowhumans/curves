@@ -24,7 +24,7 @@ defmodule Curves.Transform.Rotate do
           point[i]
           |> rotate_points(radians, origin, matrix)
         end
-          |> Nx.stack() 
+          |> Nx.stack()
           |> Nx.rename([:segment, :dimension, :point])
 
       {_dimention, _point} ->

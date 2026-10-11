@@ -18,7 +18,7 @@ defmodule Curves.Transform.RotateTest do
         |> Float.round(5)
     assert r == -0.7854
   end
-  
+
   test "should rotate a point" do
     rad = Rotate.degrees_to_radians(90)
     p0 = Point.new_point({1.0, 1.0})

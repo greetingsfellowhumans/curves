@@ -107,7 +107,7 @@ defmodule Curves.Spline.Curve do
 
   @spec compress(__MODULE__.t(), opts :: list()) :: {:ok, (u :: float(), opts :: T.opts() -> T.point_tuple())} | {:error, any()}
   def compress(%__MODULE__{opts: curve_opts, mod: mod} = curve, opts \\ []) do
-    opts = 
+    opts =
       curve_opts
       |> Keyword.merge(opts)
       |> Curves.Utils.Opts.merge_opts()
