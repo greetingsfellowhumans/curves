@@ -15,34 +15,34 @@ Mix.install(
 ## Curves (Spline) tutorial
 
 ```elixir
-# A very common spline is the Bezier Spline.
-# It's basically a series of Bezier curves all linked together.
-# Notice you never define the endpoint for any of them,
-# they get that automatically from their neighbour.
+# Each control point gets a dashed line to the knot it pulls the curve towards.
+curve =
+  Curves.define_bezier_spline([
+    [{0, 0}, {2, 3}, {4, -3}],
+    [{6, 0}, {8, 3}, {10, -3}],
+    [{12, 0}]
+  ])
+
+curve
+|> Curves.Svg.render(title: "Handle lines")
+|> Kino.Image.new(:svg)
+```
+
+```elixir
+# A very common spline is the Bezier Spline: a chain of Bezier curves,
+# each one starting where the last one ended. Like an SVG path, each point
+# is a knot, then the control points of the curve to the next knot:
+#   [knot]          a straight line   (SVG L)
+#   [knot, c]       a quadratic curve (SVG Q)
+#   [knot, c0, c1]  a cubic curve     (SVG C)
+# The last point only ends the curve, so it is just [knot].
 
 curve = Curves.define_bezier_spline([
-  # P0
-  [{5.0, 10.0},
-  {10.0, 10.0}],
-
-  # P1
-  [{10.0, 5.0},
-    {5.0, 5.0}, 
-    {15.0, 5.0}],
-
-  # P2
-  [{15.0, 10.0},
-   {15.0, 6.0},
-   {15.0, 14.0}
-  ],
-
-  # P3
-  [{20.0, 15.0},
-   {18.0, 15.0},
-   {23.0, 15.0}],
-
-  [{30.0, 10.0}, 
-    {32.0, 5.0}]
+  [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+  [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+  [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+  [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+  [{30.0, 10.0}]
 ])
 
 curve
