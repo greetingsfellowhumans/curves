@@ -46,6 +46,14 @@ defmodule Curves.Utils.Segment do
   defp to_map_format([knot, c]), do: %{knot: knot, c0: c, c1: c}
   defp to_map_format([knot, c0, c1]), do: %{knot: knot, c0: c0, c1: c1}
 
+  # Anything else is a malformed input to define_bezier_spline/2, e.g. a plain {x, y} instead of [{x, y}].
+  defp to_map_format(other) do
+    raise ArgumentError,
+          "each point of a bezier spline must be a list of 1 to 3 {x, y} tuples: " <>
+            "[knot], [knot, control_point] or [knot, control_point0, control_point1]. " <>
+            "Got: #{inspect(other)}. See Curves.define_bezier_spline/2."
+  end
+
   def split_u(%{segments: segments}, u), do: split_u(segments, u)
 
   def split_u(segments, u) do
