@@ -33,8 +33,11 @@ defmodule Curves.Utils.Segment do
   defp normalize_length([], _acc),
     do: raise(ArgumentError, "a spline needs at least 1 point, got none")
 
+  # A single knot has nothing to curve towards, so its segment is just the knot: control points
+  # given with it are ignored. (They used to become the ends of the segment, so the curve
+  # never reached the knot.)
   defp normalize_length([hd], acc) do
-    [[hd.c0, hd.knot, hd.knot, hd.c1] | acc]
+    [[hd.knot, hd.knot, hd.knot, hd.knot] | acc]
   end
 
   defp normalize_length([hd, next], acc) do

@@ -160,7 +160,9 @@ defmodule Curves.Bezier.Curve do
     opts = resolve_opts(curve, opts)
 
     Enum.reduce_while(1..n, [], fn i, acc ->
-      case solve_resolved(curve, i * (1 / n), opts) do
+      # i / n, not i * (1 / n): the rounding in 1 / n would make the last t 0.9999999999999999
+      # for some n (e.g. 49) instead of exactly 1.0.
+      case solve_resolved(curve, i / n, opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end

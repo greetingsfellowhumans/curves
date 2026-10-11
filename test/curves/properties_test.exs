@@ -57,6 +57,19 @@ defmodule Curves.PropertiesTest do
            "#{inspect({ax, ay})} is not within #{tolerance} of #{inspect({bx, by})}"
   end
 
+  property "a bezier spline passes through every knot, at u = 0, 1, 2, ..." do
+    check all(knots <- points(1, 8), offset <- point()) do
+      curve =
+        knots
+        |> Enum.map(fn {x, y} -> [{x, y}, Curves.Utils.Vec.add({x, y}, offset)] end)
+        |> Curves.define_bezier_spline()
+
+      for {knot, u} <- Enum.with_index(knots) do
+        assert_near(Curves.solve!(curve, u * 1.0), knot, 1.0e-9)
+      end
+    end
+  end
+
   property "a bezier starts at its first point and ends at its last" do
     check all(pts <- points(2, 4)) do
       curve = Curves.define_bezier(pts)

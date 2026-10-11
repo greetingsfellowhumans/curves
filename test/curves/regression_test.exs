@@ -85,6 +85,16 @@ defmodule Curves.RegressionTest do
         assert Curves.take!(curve, 3) == [{1.0, 2.0}, {1.0, 2.0}, {1.0, 2.0}]
       end
     end
+
+    # The control points used to become the ends of the only segment, so the curve went from
+    # one control point to the other and never reached the knot.
+    test "a one-knot bezier spline with control points is just its knot" do
+      for point <- [[{5, 5}, {0, 0}], [{5, 5}, {0, 0}, {10, 0}]] do
+        curve = Curves.define_bezier_spline([point])
+        assert Curves.solve!(curve, 0.0) == {5.0, 5.0}
+        assert Curves.take!(curve, 3) == [{5.0, 5.0}, {5.0, 5.0}, {5.0, 5.0}]
+      end
+    end
   end
 
   describe "force_percent" do
@@ -354,6 +364,19 @@ defmodule Curves.RegressionTest do
       end
 
       assert Curves.max_u(Curves.define_b_spline([{0, 0}, {1, 1}, {2, 0}, {3, 1}])) == 1.0
+    end
+  end
+
+  describe "bezier take/3" do
+    # It used to sample at i * (1 / n), and the rounding in 1 / n left the last t at
+    # 0.9999999999999999 for some n, e.g. 49.
+    test "the last sample is exactly the end of the curve" do
+      curve = Curves.define_bezier([{0, 0}, {1, 3}, {2, -1}, {3, 1}])
+      last = Curves.solve!(curve, 1.0)
+
+      for n <- 1..500 do
+        assert List.last(Curves.take!(curve, n)) == last, "n=#{n}"
+      end
     end
   end
 

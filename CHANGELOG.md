@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Dialyzer no longer warns about breaking the opaqueness of `Curves.Bezier.Curve.t()` and `Curves.Spline.Curve.t()` inside the library. Code outside the two curve modules no longer reads or matches their fields.
+- Bezier `take/3` and `take!/3` end exactly at the end of the curve. For some `n` (e.g. 49) the last sample used to be at `t = 0.9999999999999999`, so it was very slightly short of the last point.
+- A bezier spline with a single knot is now just that knot, as it already was without control points. With control points (e.g. `[[{5, 5}, {0, 0}, {10, 0}]]`), it used to run from one control point to the other and never reach the knot.
 
 ## [1.0.0-rc.1] - 2026-10-10
 
