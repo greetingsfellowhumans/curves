@@ -56,4 +56,11 @@ defmodule Curves.Types do
   Either a Bezier or Spline struct
   """
   @type curve_struct() :: Curves.Bezier.Curve.t() | Curves.Spline.Curve.t()
+
+  # A Bezier or Spline struct seen as a plain map. Internal helpers (Curves.Transform,
+  # Curves.Utils.Percent) use this instead of curve_struct(), because the structs are opaque:
+  # only Curves.Bezier.Curve and Curves.Spline.Curve may read their fields, so they are the
+  # only modules that call these helpers.
+  @typedoc false
+  @type curve_data() :: %{optional(atom()) => term()}
 end

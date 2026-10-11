@@ -11,7 +11,7 @@ defmodule Curves.Transform do
   # Replays the transformations list, then moves, scales and rotates a copy of the points
   # (beziers) or segments (splines). Used by compress; the stored curve keeps its original points.
   @doc false
-  @spec apply_all_transformations(T.curve_struct()) :: T.curve_struct()
+  @spec apply_all_transformations(T.curve_data()) :: T.curve_data()
   def apply_all_transformations(curve) do
     Enum.reduce(curve.transformations, curve, fn {mod, func, args, _prev}, curve ->
       apply(mod, func, [curve | args])
@@ -21,14 +21,14 @@ defmodule Curves.Transform do
     |> apply_rotation()
   end
 
-  @spec apply_origin_offset(T.curve_struct()) :: T.curve_struct()
+  @spec apply_origin_offset(T.curve_data()) :: T.curve_data()
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve),
     do: %{curve | points: Enum.map(points, &Vec.add(&1, origin))}
 
   defp apply_origin_offset(%Spline{segments: segments, origin: origin} = curve),
     do: %{curve | segments: map_segment_points(segments, &Vec.add(&1, origin))}
 
-  @spec apply_scale(T.curve_struct()) :: T.curve_struct()
+  @spec apply_scale(T.curve_data()) :: T.curve_data()
   defp apply_scale(%Bezier{points: points, scale: scale} = curve),
     do: %{curve | points: Enum.map(points, &Vec.scale(&1, scale))}
 
@@ -37,7 +37,7 @@ defmodule Curves.Transform do
 
   @doc false
   # Rotating by 0 changes nothing, so skip it. `==` matches both 0 and 0.0 (new curves start at 0.0).
-  @spec apply_rotation(T.curve_struct()) :: T.curve_struct()
+  @spec apply_rotation(T.curve_data()) :: T.curve_data()
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
 
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve),
@@ -56,28 +56,25 @@ defmodule Curves.Transform do
   # apply_all_transformations/1. The curve itself is not changed, so a spline's
   # original `:points` stay as the user gave them.
   @doc false
-  @spec transform_points(curve :: T.curve_struct(), points :: T.point_list()) :: T.point_list()
+  @spec transform_points(curve :: T.curve_data(), points :: T.point_list()) :: T.point_list()
   def transform_points(%{origin: origin, scale: scale} = curve, points) do
     Enum.map(points, fn point -> point |> Vec.add(origin) |> Vec.scale(scale) |> rotate(curve) end)
   end
 
   # Matches apply_rotation/1: a rotation of 0 or 0.0 is skipped.
-  @spec rotate(T.point_tuple(), T.curve_struct()) :: T.point_tuple()
+  @spec rotate(T.point_tuple(), T.curve_data()) :: T.point_tuple()
   defp rotate(point, %{rotation: rotation}) when rotation == 0, do: point
   defp rotate(point, %{rotation: angle, origin: origin}), do: Vec.rotate(point, angle, origin)
 
-  # Put a new transformation in the :transformations list, then recompress.
-  @spec add(T.curve_struct(), {module(), atom(), list(), term()}) :: T.curve_struct()
-  defp add(%Bezier{} = curve, transformation) do
-    curve = Map.update!(curve, :transformations, &(&1 ++ [transformation]))
-    {:ok, cb} = Bezier.compress(curve)
-    Map.put(curve, :compressed, cb)
-  end
-
-  defp add(%Spline{} = curve, transformation) do
-    curve = Map.update!(curve, :transformations, &(&1 ++ [transformation]))
-    {:ok, cb} = Spline.compress(curve)
-    Map.put(curve, :compressed, cb)
+  # Hands the transformation to the curve's own module, which adds it and recompresses.
+  # `field` names the value the transformation changes (e.g. :origin). Only Bezier and
+  # Spline may touch their (opaque) fields, so that work lives there, not here.
+  @spec add(T.curve_struct(), {module(), atom(), list()}, atom()) :: T.curve_struct()
+  defp add(curve, transformation, field) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.add_transformation(curve, transformation, field)
+      is_struct(curve, Spline) -> Spline.add_transformation(curve, transformation, field)
+    end
   end
 
   @doc ~s"""
@@ -94,7 +91,7 @@ defmodule Curves.Transform do
       10.5
   """
   @spec set_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
-  def set_position(curve, origin), do: add(curve, {Move, :set_position, [origin], curve.origin})
+  def set_position(curve, origin), do: add(curve, {Move, :set_position, [origin]}, :origin)
 
   @doc ~s"""
   Using the current position increase both the x and y coordinates.
@@ -111,7 +108,7 @@ defmodule Curves.Transform do
       20.5
   """
   @spec inc_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
-  def inc_position(curve, pos), do: add(curve, {Move, :inc_position, [pos], curve.origin})
+  def inc_position(curve, pos), do: add(curve, {Move, :inc_position, [pos]}, :origin)
 
   @doc ~s"""
   Using the current position increase the x coordinates.
@@ -130,7 +127,7 @@ defmodule Curves.Transform do
       10.5
   """
   @spec inc_x(curve :: T.curve_struct(), xinc :: T.coord()) :: T.curve_struct()
-  def inc_x(curve, xinc), do: add(curve, {Move, :inc_x, [xinc], curve.origin})
+  def inc_x(curve, xinc), do: add(curve, {Move, :inc_x, [xinc]}, :origin)
 
   @doc ~s"""
   Using the current position increase the y coordinates.
@@ -151,7 +148,7 @@ defmodule Curves.Transform do
       0.5
   """
   @spec inc_y(curve :: T.curve_struct(), yinc :: T.coord()) :: T.curve_struct()
-  def inc_y(curve, yinc), do: add(curve, {Move, :inc_y, [yinc], curve.origin})
+  def inc_y(curve, yinc), do: add(curve, {Move, :inc_y, [yinc]}, :origin)
 
   @doc ~s"""
   resize the entire curve ignoring the existing scale. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.
@@ -171,7 +168,7 @@ defmodule Curves.Transform do
       5.0
   """
   @spec set_scale(curve :: T.curve_struct(), scale :: number()) :: T.curve_struct()
-  def set_scale(curve, scale), do: add(curve, {Scale, :set_scale, [scale], curve.scale})
+  def set_scale(curve, scale), do: add(curve, {Scale, :set_scale, [scale]}, :scale)
 
   @doc ~s"""
   resize the entire curve, adding to the existing scale.
@@ -191,7 +188,7 @@ defmodule Curves.Transform do
       5.5
   """
   @spec inc_scale(curve :: T.curve_struct(), amount :: number()) :: T.curve_struct()
-  def inc_scale(curve, amount), do: add(curve, {Scale, :inc_scale, [amount], curve.scale})
+  def inc_scale(curve, amount), do: add(curve, {Scale, :inc_scale, [amount]}, :scale)
 
   @doc ~s"""
   increase rotation (counter-clockwise) by the given amount.
@@ -212,7 +209,7 @@ defmodule Curves.Transform do
   """
   @spec inc_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
   def inc_rotation(curve, amount),
-    do: add(curve, {Rotate, :inc_rotation, [amount], curve.rotation})
+    do: add(curve, {Rotate, :inc_rotation, [amount]}, :rotation)
 
   @doc ~s"""
   Rotate the curve counter-clockwise around the origin (Origin defaults to {0.0, 0.0}).
@@ -233,5 +230,5 @@ defmodule Curves.Transform do
   """
   @spec set_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
   def set_rotation(curve, amount),
-    do: add(curve, {Rotate, :set_rotation, [amount], curve.rotation})
+    do: add(curve, {Rotate, :set_rotation, [amount]}, :rotation)
 end

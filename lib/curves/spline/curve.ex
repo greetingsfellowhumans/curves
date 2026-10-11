@@ -113,6 +113,28 @@ defmodule Curves.Spline.Curve do
      end}
   end
 
+  # Adds a transformation such as {Curves.Transform.Move, :inc_x, [5]} to the end of the list,
+  # then recompresses. Called by Curves.Transform, which can't touch this opaque struct itself.
+  # The value of `field` (:origin, :scale or :rotation) before the change is stored with it.
+  @doc false
+  @spec add_transformation(t(), {module(), atom(), list()}, atom()) :: t()
+  def add_transformation(curve, {mod, func, args}, field) do
+    transformation = {mod, func, args, Map.fetch!(curve, field)}
+    curve = %{curve | transformations: curve.transformations ++ [transformation]}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # A transformed copy of the original points (knots or control points), for Curves.Svg
+  # to draw. `curve.points` itself is never changed.
+  @doc false
+  @spec transformed_points(t()) :: T.point_list()
+  def transformed_points(%__MODULE__{points: points} = curve) do
+    curve
+    |> Curves.Transform.apply_all_transformations()
+    |> Curves.Transform.transform_points(points)
+  end
+
   @doc false
   @spec solve(t(), number(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}

@@ -107,6 +107,26 @@ defmodule Curves.Bezier.Curve do
      end}
   end
 
+  # Adds a transformation such as {Curves.Transform.Move, :inc_x, [5]} to the end of the list,
+  # then recompresses. Called by Curves.Transform, which can't touch this opaque struct itself.
+  # The value of `field` (:origin, :scale or :rotation) before the change is stored with it.
+  @doc false
+  @spec add_transformation(t(), {module(), atom(), list()}, atom()) :: t()
+  def add_transformation(curve, {mod, func, args}, field) do
+    transformation = {mod, func, args, Map.fetch!(curve, field)}
+    curve = %{curve | transformations: curve.transformations ++ [transformation]}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The curve's points after moving, scaling and rotating, for Curves.Svg to draw.
+  @doc false
+  @spec transformed_points(t()) :: T.point_list()
+  def transformed_points(curve) do
+    %{points: points} = Curves.Transform.apply_all_transformations(curve)
+    points
+  end
+
   @doc false
   @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(%__MODULE__{} = curve, t, opts) when is_number(t),

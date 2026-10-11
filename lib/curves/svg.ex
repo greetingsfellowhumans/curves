@@ -125,15 +125,11 @@ defmodule Curves.Svg do
   # The curve's own points as {x, y} tuples, moved, scaled and rotated like the curve.
   # Repeated neighbours (B-splines store some points twice) are drawn once.
   @spec control_points(T.curve_struct()) :: T.point_list()
-  defp control_points(%Bezier{} = curve) do
-    %{points: points} = Curves.Transform.apply_all_transformations(curve)
-    Enum.dedup(points)
-  end
-
-  defp control_points(%Spline{points: points} = curve) do
-    curve
-    |> Curves.Transform.apply_all_transformations()
-    |> Curves.Transform.transform_points(points)
+  defp control_points(curve) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.transformed_points(curve)
+      is_struct(curve, Spline) -> Spline.transformed_points(curve)
+    end
     |> Enum.dedup()
   end
 
