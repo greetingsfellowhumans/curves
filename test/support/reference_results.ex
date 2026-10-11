@@ -121,7 +121,9 @@ defmodule Curves.Support.ReferenceResults do
       solve_percent: for(u <- us, do: {u, Curves.solve(curve, u, force_percent: true)}),
       take: Curves.take(curve, 9),
       take_percent: Curves.take(curve, 9, force_percent: true),
-      svg: Curves.Svg.render(curve, samples: 20, width: 200, height: 200)
+      # Without the axes grid (on by default since it was added), so the fixture checks the curve
+      # drawing only; the grid has its own tests in svg_test.exs.
+      svg: Curves.Svg.render(curve, samples: 20, width: 200, height: 200, show_axes: false)
     }
   end
 

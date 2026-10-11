@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Curves.Svg` has a `:show_axes` option that draws a grid with the x and y values along the bottom and left edges, like a ruler, so you can see a curve's real size and position. The x = 0 and y = 0 lines are darker. `:axis_color` sets its colour. It is on by default; `show_axes: false` gives the old look.
+
 ### Changed
 
+- `Curves.Svg` images now include the axes grid by default (see `:show_axes` above).
 - Passing something that isn't a curve to `Curves.solve/3`, `solve!/3`, `take/3`, `take!/3`, the `Curves.Transform` functions, or `Curves.Svg.render/2` and `save!/3` now raises an `ArgumentError` such as `expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: :nope`. It used to raise a `CaseClauseError`, `FunctionClauseError`, `KeyError` or `UndefinedFunctionError`, depending on the function and the input.
 
 ### Fixed

@@ -27,6 +27,8 @@ defmodule Curves.Svg do
   | `:show_polygon` | `true` | Draw a dashed line joining the curve's own points in order. |
   | `:polygon_color` | `"#adb5bd"` | Colour of that dashed line. |
   | `:title` | `nil` | Text drawn in the top-left corner. |
+  | `:show_axes` | `true` | Draw a grid with the x and y values along the bottom and left edges, like a ruler. The lines at x = 0 and y = 0 are darker. The image is always scaled to fit, so without the grid a curve looks the same at any size. The numbers sit in the padding, so a small `:padding` hides them. `false` turns the grid off. |
+  | `:axis_color` | `"#868e96"` | Colour of the grid lines and their numbers. |
   | `:solve_opts` | `[]` | Options passed to `Curves.take!/3` and `Curves.solve!/3`. |
 
   The dots are the points the curve stores. For most curves these are the points you defined it with,
@@ -34,11 +36,27 @@ defmodule Curves.Svg do
 
   If `:solve_opts` turns on `:force_percent`, the curve is drawn in 0..1 but its points are not,
   so set `show_points: false` and `show_polygon: false`.
+  For example, the grid shows that a scaled curve is bigger, even though the image fits it to the same size:
+
+  ```elixir
+  curve = Curves.define_bezier(:ease_in_out) |> Curves.Transform.set_scale(10)
+  Curves.Svg.render(curve)
+  ```
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
   alias Curves.Utils.Errors
+
+  # How curve coordinates map to pixels; see view/2.
+  @typep view :: %{
+           xmin: number(),
+           ymin: number(),
+           scale: number(),
+           offset_x: number(),
+           offset_y: number(),
+           height: number()
+         }
 
   @defaults [
     samples: 100,
@@ -54,6 +72,8 @@ defmodule Curves.Svg do
     show_polygon: true,
     polygon_color: "#adb5bd",
     title: nil,
+    show_axes: true,
+    axis_color: "#868e96",
     solve_opts: []
   ]
 
@@ -75,11 +95,13 @@ defmodule Curves.Svg do
     opts = Keyword.merge(@defaults, opts)
     line = sample(curve, opts[:samples], opts[:solve_opts])
     points = control_points(curve)
-    to_pixels = scaler(line ++ shown_points(points, opts), opts)
+    view = view(line ++ shown_points(points, opts), opts)
+    to_pixels = &to_pixels(view, &1)
 
     [
       ~s(<svg xmlns="http://www.w3.org/2000/svg" width="#{opts[:width]}" height="#{opts[:height]}" viewBox="0 0 #{opts[:width]} #{opts[:height]}">\n),
       background(opts[:background]),
+      axes(opts[:show_axes], view, opts),
       polygon(opts[:show_polygon], points, to_pixels, opts),
       ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:curve_color])}" stroke-width="#{opts[:curve_width]}" stroke-linejoin="round" stroke-linecap="round"/>\n),
       dots(opts[:show_points], points, to_pixels, opts),
@@ -135,22 +157,31 @@ defmodule Curves.Svg do
     |> Enum.dedup()
   end
 
-  # Returns a function that maps a curve point to an SVG pixel. The scale is the same on
-  # both axes so the shape isn't stretched, the drawing is centred, and y is flipped
-  # because SVG's y grows downwards.
-  @spec scaler(T.point_list(), keyword()) :: (T.point_tuple() -> T.point_tuple())
-  defp scaler(all_points, opts) do
+  # Where the curve sits in the image: how many pixels per unit (the same on both axes, so the
+  # shape isn't stretched) and where the lowest x and y land, so the drawing is centred.
+  @spec view(T.point_list(), keyword()) :: view()
+  defp view(all_points, opts) do
     {xmin, xmax} = all_points |> Enum.map(&elem(&1, 0)) |> Enum.min_max()
     {ymin, ymax} = all_points |> Enum.map(&elem(&1, 1)) |> Enum.min_max()
     inner_w = opts[:width] - 2 * opts[:padding]
     inner_h = opts[:height] - 2 * opts[:padding]
     scale = finite(min(fit(inner_w, xmax - xmin), fit(inner_h, ymax - ymin)))
-    offset_x = opts[:padding] + (inner_w - (xmax - xmin) * scale) / 2
-    offset_y = opts[:padding] + (inner_h - (ymax - ymin) * scale) / 2
 
-    fn {x, y} ->
-      {offset_x + (x - xmin) * scale, opts[:height] - offset_y - (y - ymin) * scale}
-    end
+    %{
+      xmin: xmin,
+      ymin: ymin,
+      scale: scale,
+      offset_x: opts[:padding] + (inner_w - (xmax - xmin) * scale) / 2,
+      offset_y: opts[:padding] + (inner_h - (ymax - ymin) * scale) / 2,
+      height: opts[:height]
+    }
+  end
+
+  # Maps a curve point to an SVG pixel. y is flipped because SVG's y grows downwards.
+  @spec to_pixels(view(), T.point_tuple()) :: T.point_tuple()
+  defp to_pixels(view, {x, y}) do
+    {view.offset_x + (x - view.xmin) * view.scale,
+     view.height - view.offset_y - (y - view.ymin) * view.scale}
   end
 
   # Pixels per unit along one axis. A flat axis (span 0) doesn't limit the scale.
@@ -199,6 +230,107 @@ defmodule Curves.Svg do
       ~s(  <circle cx="#{format(x)}" cy="#{format(y)}" r="#{opts[:point_radius]}" fill="#{escape(opts[:point_color])}"/>\n)
     end
   end
+
+  # A grid with numbered ticks along the bottom and left edges, covering the area inside the padding.
+  @spec axes(boolean(), view(), keyword()) :: iodata()
+  defp axes(false, _view, _opts), do: []
+
+  defp axes(_show, view, opts) do
+    edges =
+      {{opts[:padding], opts[:width] - opts[:padding]},
+       {opts[:padding], opts[:height] - opts[:padding]}}
+
+    grid(view, edges, opts)
+  end
+
+  # `edges` are the left/right and top/bottom pixels of the area inside the padding.
+  # When the padding leaves no area, there is nothing to measure (and the scale is 0).
+  @spec grid(view(), {{number(), number()}, {number(), number()}}, keyword()) :: iodata()
+  defp grid(_view, {{left, right}, {top, bottom}}, _opts) when right <= left or bottom <= top,
+    do: []
+
+  defp grid(view, {{left, right}, {top, bottom}}, opts) do
+    # The curve values at the edges of that area.
+    {x_lo, y_lo} = to_curve(view, {left, bottom})
+    {x_hi, y_hi} = to_curve(view, {right, top})
+    color = escape(opts[:axis_color])
+
+    x_lines =
+      for {x, label} <- ticks(x_lo, x_hi, div(right - left, 70)) do
+        {px, _} = to_pixels(view, {x, y_lo})
+
+        [
+          grid_line({px, top}, {px, bottom}, x == 0, color),
+          ~s(  <text x="#{format(px)}" y="#{bottom + 14}" text-anchor="middle" #{axis_font(color)}>#{label}</text>\n)
+        ]
+      end
+
+    y_lines =
+      for {y, label} <- ticks(y_lo, y_hi, div(bottom - top, 50)) do
+        {_, py} = to_pixels(view, {x_lo, y})
+
+        [
+          grid_line({left, py}, {right, py}, y == 0, color),
+          ~s(  <text x="#{left - 4}" y="#{format(py)}" text-anchor="end" dominant-baseline="middle" #{axis_font(color)}>#{label}</text>\n)
+        ]
+      end
+
+    [x_lines, y_lines]
+  end
+
+  # The opposite of to_pixels/2: which curve point a pixel shows.
+  @spec to_curve(view(), {number(), number()}) :: T.point_tuple()
+  defp to_curve(view, {px, py}) do
+    {view.xmin + (px - view.offset_x) / view.scale,
+     view.ymin + (view.height - view.offset_y - py) / view.scale}
+  end
+
+  # Evenly spaced values from `lo` to `hi`, each with its label, about `count` of them.
+  # The spacing is 1, 2 or 5 times a power of ten (e.g. 0.2 or 50), so the labels are round numbers.
+  # Each value is index * step rather than a running sum, so rounding errors don't add up.
+  @spec ticks(float(), float(), integer()) :: list({float(), String.t()})
+  defp ticks(lo, hi, count) when hi > lo do
+    step = nice_step((hi - lo) / max(count, 2))
+    decimals = max(0, -floor(:math.log10(step)))
+
+    for i <- ceil(lo / step)..floor(hi / step)//1 do
+      value = i * step
+      {value, tick_label(value, decimals)}
+    end
+  end
+
+  defp ticks(_lo, _hi, _count), do: []
+
+  # The smallest of 1, 2, 5 or 10 times a power of ten that is at least `raw`.
+  @spec nice_step(float()) :: float()
+  defp nice_step(raw) do
+    power = :math.pow(10, floor(:math.log10(raw)))
+    Enum.find([1, 2, 5, 10], &(&1 * power >= raw)) * power
+  end
+
+  # A tick value with a fixed number of decimals. -0 becomes 0.
+  @spec tick_label(float(), non_neg_integer()) :: String.t()
+  defp tick_label(value, decimals) when value == 0,
+    do: :erlang.float_to_binary(+0.0, decimals: decimals)
+
+  defp tick_label(value, decimals), do: :erlang.float_to_binary(value * 1.0, decimals: decimals)
+
+  # One grid line. The x = 0 and y = 0 lines are drawn darker, as the axes.
+  @spec grid_line(T.point_tuple(), T.point_tuple(), boolean(), String.t()) :: iodata()
+  defp grid_line({x1, y1}, {x2, y2}, axis?, color) do
+    ~s(  <line x1="#{format(x1)}" y1="#{format(y1)}" x2="#{format(x2)}" y2="#{format(y2)}" stroke="#{color}" stroke-width="#{line_width(axis?)}" stroke-opacity="#{line_opacity(axis?)}"/>\n)
+  end
+
+  @spec line_width(boolean()) :: number()
+  defp line_width(true), do: 1.5
+  defp line_width(false), do: 1
+
+  @spec line_opacity(boolean()) :: number()
+  defp line_opacity(true), do: 0.9
+  defp line_opacity(false), do: 0.3
+
+  @spec axis_font(String.t()) :: String.t()
+  defp axis_font(color), do: ~s(font-family="sans-serif" font-size="10" fill="#{color}")
 
   @spec title(String.t() | nil, keyword()) :: iodata()
   defp title(nil, _opts), do: []

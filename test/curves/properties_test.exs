@@ -171,6 +171,27 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  property "Svg axes stay inside the image, with increasing labels" do
+    check all(curve <- curve(), scale <- StreamData.float(min: 0.01, max: 1000.0)) do
+      svg = Curves.Svg.render(Curves.Transform.set_scale(curve, scale), show_axes: true)
+
+      for [_ | coords] <-
+            Regex.scan(~r/<line x1="([^"]+)" y1="([^"]+)" x2="([^"]+)" y2="([^"]+)"/, svg),
+          coord <- Enum.map(coords, &String.to_float/1) do
+        assert coord >= 39.99 and coord <= 560.01
+      end
+
+      for anchor <- ["middle", "end"] do
+        values =
+          for [_, label] <- Regex.scan(~r/text-anchor="#{anchor}"[^>]*>([^<]+)</, svg),
+              do: label |> Float.parse() |> elem(0)
+
+        assert length(values) >= 2
+        assert values == Enum.sort(values) and values == Enum.uniq(values)
+      end
+    end
+  end
+
   property "anything that isn't a curve raises an ArgumentError" do
     check all(bad <- StreamData.term()) do
       assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->

@@ -16,6 +16,13 @@ defmodule Curves.SvgTest do
     end
   end
 
+  # The numbers along the bottom edge, left to right.
+  @spec x_labels(String.t()) :: list(String.t())
+  defp x_labels(svg) do
+    for [_, label] <- Regex.scan(~r/<text [^>]*text-anchor="middle"[^>]*>([^<]+)</, svg),
+        do: label
+  end
+
   describe "render/2" do
     test "draws samples + 1 points, starting at the start of the curve" do
       svg =
@@ -123,6 +130,60 @@ defmodule Curves.SvgTest do
         assert_raise ArgumentError, ~r/:samples must be a positive integer/, fn ->
           Svg.render(Curves.define_bezier(:linear), samples: bad)
         end
+      end
+    end
+
+    test "axes by default, and show_axes: false turns them off" do
+      curve = Curves.define_bezier(:linear)
+      assert Svg.render(curve) =~ "<line"
+      assert Svg.render(curve) == Svg.render(curve, show_axes: true)
+      refute Svg.render(curve, show_axes: false) =~ "<line"
+    end
+
+    test "axes label round numbers, so a scaled curve shows bigger values" do
+      curve = Curves.define_bezier(:linear)
+      assert x_labels(Svg.render(curve, show_axes: true)) == ~w(0.0 0.2 0.4 0.6 0.8 1.0)
+
+      big = Curves.Transform.set_scale(curve, 10)
+      assert x_labels(Svg.render(big, show_axes: true)) == ~w(0 2 4 6 8 10)
+    end
+
+    test "axes follow a moved curve, including negative values" do
+      curve = Curves.define_bezier([{-300, -300}, {300, 300}])
+      labels = x_labels(Svg.render(curve, show_axes: true))
+      assert labels == ~w(-300 -200 -100 0 100 200 300)
+      refute "-0" in labels
+    end
+
+    test "the x = 0 and y = 0 lines are darker" do
+      svg = Svg.render(Curves.define_bezier([{-1, -1}, {1, 1}]), show_axes: true)
+      assert length(Regex.scan(~r/<line [^>]*stroke-opacity="0.9"/, svg)) == 2
+    end
+
+    test "axis_color colours the grid and is escaped" do
+      svg = Svg.render(Curves.define_bezier(:linear), show_axes: true, axis_color: "red\"")
+      assert svg =~ ~s(stroke="red&quot;")
+      refute svg =~ ~s(stroke="#868e96")
+    end
+
+    test "axes work for flat curves, single points, and padding that fills the image" do
+      for curve <- [
+            Curves.define_bezier([{0, 1}, {5, 1}]),
+            Curves.define_bezier([{2, 2}, {2, 2}])
+          ] do
+        assert Svg.render(curve, show_axes: true) =~ "<line"
+      end
+
+      for padding <- [50, 60] do
+        svg =
+          Svg.render(Curves.define_bezier(:linear),
+            show_axes: true,
+            width: 100,
+            height: 100,
+            padding: padding
+          )
+
+        refute svg =~ "<line"
       end
     end
 
