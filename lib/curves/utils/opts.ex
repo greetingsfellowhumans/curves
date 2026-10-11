@@ -1,5 +1,7 @@
 defmodule Curves.Utils.Opts do
   @moduledoc false
+  alias Curves.Utils.Types, as: T
+
   @config_opts [
     float_dtype: %{default: 32, doc: "The default bitsize for floats.", one_of: [8, 16, 32, 64]},
     force_percent: %{
@@ -10,6 +12,8 @@ defmodule Curves.Utils.Opts do
     }
   ]
 
+  # Fills in every config option. Precedence: user_opts, then the app config, then default_opts.
+  @spec merge_opts(T.opts(), T.opts()) :: T.opts()
   def merge_opts(user_opts, default_opts \\ [])
       when is_list(user_opts) and is_list(default_opts) do
     default_opts
@@ -17,6 +21,8 @@ defmodule Curves.Utils.Opts do
     |> Keyword.merge(user_opts)
   end
 
+  # Each config option's value from the app config, or its default when it isn't set.
+  @spec config_opts() :: T.opts()
   defp config_opts() do
     Enum.map(@config_opts, fn {k, %{default: d}} ->
       o =
