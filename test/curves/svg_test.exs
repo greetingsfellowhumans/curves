@@ -31,10 +31,12 @@ defmodule Curves.SvgTest do
     end
 
     test "works for every spline type, with 100 samples by default" do
+      hermite = fn points -> points |> Enum.map(&[&1, {1, 1}]) |> Curves.define_hermite() end
+
       for define <- [
             &Curves.define_b_spline/1,
             &Curves.define_catmull_rom/1,
-            &Curves.define_hermite/1
+            hermite
           ] do
         svg = Svg.render(define.(@b_spline))
         assert length(line_points(svg)) == 101

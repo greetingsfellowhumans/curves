@@ -22,14 +22,14 @@ defmodule Curves.RegressionTest do
     end
 
     test "accept integers" do
-      curve = Curves.define_hermite(@spline_points)
+      curve = Curves.define_catmull_rom(@spline_points)
       assert {:ok, {x, y}} = Curves.solve(curve, 1)
       assert {:ok, {^x, ^y}} = Curves.solve(curve, 1.0)
       assert Curves.solve!(curve, 1) == {x, y}
     end
 
     test "out of bounds returns the offending u, matching the bezier error shape" do
-      curve = Curves.define_hermite(@spline_points)
+      curve = Curves.define_catmull_rom(@spline_points)
       assert Curves.solve(curve, 99.0) == {:error, {:out_of_bounds, 99.0}}
       assert Curves.solve(curve, 99) == {:error, {:out_of_bounds, 99}}
 
@@ -38,7 +38,7 @@ defmodule Curves.RegressionTest do
     end
 
     test "solve! raises OutOfBoundU" do
-      curve = Curves.define_hermite(@spline_points)
+      curve = Curves.define_catmull_rom(@spline_points)
       assert_raise Curves.Exceptions.OutOfBoundU, fn -> Curves.solve!(curve, 99) end
     end
   end
@@ -57,7 +57,7 @@ defmodule Curves.RegressionTest do
     end
 
     test "take! returns points" do
-      curve = Curves.define_hermite(@spline_points)
+      curve = Curves.define_catmull_rom(@spline_points)
       assert length(Curves.take!(curve, 7)) == 7
     end
   end

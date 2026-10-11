@@ -17,6 +17,7 @@ Coming from 0.2.x? See the [upgrade guide](upgrading.html).
 
 ### Changed
 
+- **Breaking:** `define_hermite/2` now takes each point as `[knot, tangent]` (both `{x, y}`) and builds a true cubic Hermite spline: it passes exactly through every knot and leaves each one along its tangent. It used to take bare knots and compute its own slopes. For automatic tangents, use `define_catmull_rom/2`.
 - **Breaking:** The curve structs (`Curves.Bezier.Curve`, `Curves.Spline.Curve`) are now opaque: their fields are internal and may change in any 1.x release. Use `Curves.max_u/1` instead of reading `curve.max_u`.
 - **Breaking:** Splines now read the app-wide `:force_percent` setting on every `solve`/`take`, like beziers do. Previously they read it only when defined or transformed.
 - **Breaking:** With `:force_percent`, an axis where every point has the same value (a flat curve) now returns `0.5` instead of that raw value, so results are always numbers in `0.0..1.0`.
@@ -31,6 +32,7 @@ Coming from 0.2.x? See the [upgrade guide](upgrading.html).
 
 ### Fixed
 
+- Hermite splines missed their own knots (e.g. `{10.0017, 5.0033}` instead of `{10, 5}`), moved by the wrong amount when transformed, and could produce huge values near vertical slopes. The slope's axes were swapped, vertical slopes became `{1_000_000, 1}`, and Bezier-style control points were fed into the Hermite formula. Replaced by a correct cubic Hermite spline (see Changed).
 - The exceptions (`OutOfBoundT`, `OutOfBoundU`, `TooFewPoints`, `TooManyPoints`) now fill in their fields (`t`, `u`, `max`, `n`, `min`) instead of leaving them `nil`, and are documented.
 - Spline `solve/3` and `solve!/3` accept integer `u` values instead of raising `FunctionClauseError`.
 - Spline `take!/3` raises `Curves.Exceptions.OutOfBoundU` instead of a `MatchError`.

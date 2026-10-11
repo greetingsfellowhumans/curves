@@ -12,7 +12,14 @@ defmodule Curves.Support.ReferenceResults do
 
   @cubic [{0, 0}, {1, 3}, {2, -1}, {3, 1}]
   @six [{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}]
-  @hermite [{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}]
+  @hermite [
+    [{5, 10}, {5, -5}],
+    [{10, 5}, {5, 0}],
+    [{15, 10}, {5, 5}],
+    [{20, 10}, {5, -3}],
+    [{25, 5}, {5, 5}],
+    [{30, 15}, {5, 10}]
+  ]
   @b_spline [{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]
   @bezier_spline [
     [{5.0, 10.0}, {10.0, 10.0}],
@@ -55,7 +62,10 @@ defmodule Curves.Support.ReferenceResults do
       {"catmull_rom 4 points",
        fn opts -> Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}], opts) end},
       {"hermite 6 points", fn opts -> Curves.define_hermite(@hermite, opts) end},
-      {"hermite 3 points", fn opts -> Curves.define_hermite([{0, 0}, {1, 1}, {2, 0}], opts) end},
+      {"hermite 3 points",
+       fn opts ->
+         Curves.define_hermite([[{0, 0}, {1, 1}], [{1, 1}, {1, 0}], [{2, 0}, {1, -1}]], opts)
+       end},
       {"b_spline 6 points", fn opts -> Curves.define_b_spline(@six, opts) end},
       {"b_spline 7 points", fn opts -> Curves.define_b_spline(@b_spline, opts) end},
       {"bezier_spline 5 points",
@@ -115,10 +125,17 @@ defmodule Curves.Support.ReferenceResults do
     }
   end
 
-  # Records every case with 64-bit floats and writes the fixture file.
-  @spec write!() :: :ok
-  def write! do
-    results = Map.new(cases(), fn {name, build} -> {name, record(build.(float_dtype: 64))} end)
+  # Records every case with 64-bit floats and writes the fixture file. Pass a name fragment
+  # (e.g. "hermite") to re-record only the matching cases and keep everything else as it was.
+  @spec write!(String.t() | nil) :: :ok
+  def write!(only \\ nil) do
+    previous = if only, do: read!(), else: %{}
+
+    results =
+      for {name, build} <- cases(), only == nil or String.contains?(name, only), into: previous do
+        {name, record(build.(float_dtype: 64))}
+      end
+
     File.mkdir_p!(Path.dirname(@path))
     File.write!(@path, :erlang.term_to_binary(results))
     IO.puts("Wrote #{map_size(results)} cases to #{Path.relative_to_cwd(@path)}")

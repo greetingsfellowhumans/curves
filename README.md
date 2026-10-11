@@ -133,17 +133,17 @@ curve = Curves.define_bezier_spline(points)
 
 ### Cubic Hermite Spline
 
-Sometimes we don't want to manually define every control point.
-The Hermite spline automatically calculates it based on the first derivative at the start and end point of each segment.
+A smooth curve through every knot. At each knot you give a tangent: the direction (and speed) the curve leaves it with.
 
 ```elixir
 curve = Curves.define_hermite([
-  {5, 10},
-  {10, 5},
-  {15, 10},
-  {20, 10},
-  {25, 5},
-  {30, 15},
+  # [knot, tangent]
+  [{5, 10}, {5, -5}],
+  [{10, 5}, {5, 0}],
+  [{15, 10}, {5, 5}],
+  [{20, 10}, {5, -3}],
+  [{25, 5}, {5, 5}],
+  [{30, 15}, {5, 10}]
 ])
 ```
 

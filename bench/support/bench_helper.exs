@@ -17,15 +17,19 @@ defmodule Curves.Bench.Helper do
       "bezier linear" => Curves.define_bezier([{0.0, 0.0}, {1.0, 1.0}]),
       "bezier quadratic" => Curves.define_bezier([{0.0, 0.0}, {0.5, 1.0}, {1.0, 0.0}]),
       "bezier cubic" => Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}]),
-      "spline hermite" => Curves.define_hermite(spline_points()),
+      "spline hermite" => Curves.define_hermite(hermite_points()),
       "spline catmull_rom" => Curves.define_catmull_rom(spline_points()),
       "spline b_spline" => Curves.define_b_spline(spline_points()),
       "spline bezier_spline" => Curves.define_bezier_spline(bezier_spline_points())
     }
   end
 
+  # The same six knots with a tangent each, for define_hermite/2.
+  @spec hermite_points() :: list([Curves.Types.point_tuple()])
+  def hermite_points(), do: Enum.map(spline_points(), fn {x, y} -> [{x, y}, {5.0, y - 10.0}] end)
+
   # Six knots, giving a spline with several segments.
-  @spec spline_points() :: Curves.Utils.Types.point_list()
+  @spec spline_points() :: Curves.Types.point_list()
   def spline_points() do
     [
       {5.0, 10.0},
@@ -38,7 +42,7 @@ defmodule Curves.Bench.Helper do
   end
 
   # Knots with control points, in the format `define_bezier_spline/2` expects.
-  @spec bezier_spline_points() :: list(Curves.Utils.Types.point_list())
+  @spec bezier_spline_points() :: list(Curves.Types.point_list())
   def bezier_spline_points() do
     [
       [{5.0, 10.0}, {10.0, 10.0}],

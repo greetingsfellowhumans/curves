@@ -64,7 +64,6 @@ defmodule Curves.Spline.Curve do
 
     points = coords |> List.flatten() |> Enum.map(&Vec.new/1)
 
-    # We use an intermediary bezier_spline in order to later calculate derivatives.
     curve =
       struct(
         __MODULE__,
@@ -82,9 +81,8 @@ defmodule Curves.Spline.Curve do
         })
       )
 
-    {:ok, compressed} = compress(curve, opts)
-    curve = Map.put(curve, :compressed, compressed)
-    curve = Curves.Utils.Derivatives.apply_derivatives(curve)
+    # Each spline type can rebuild its segments first (e.g. Catmull-Rom adds the neighbouring knots).
+    curve = %{curve | segments: segments |> Enum.with_index() |> mod.map_segments(curve)}
 
     {:ok, compressed} = compress(curve, opts)
     Map.put(curve, :compressed, compressed)

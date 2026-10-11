@@ -126,6 +126,26 @@ curve = Curves.define_bezier([{0, 0}, {1, 1}, {2, 0}, {3, 1}, {4, 0}])
 {:error, {:too_many_points, 5, 4}} = Curves.solve(curve, 0.5)
 ```
 
+## 9. Hermite splines take tangents
+
+`define_hermite/2` is now a true cubic Hermite spline: give each knot together with its tangent,
+the direction (and speed) the curve leaves it with. The 0.2.x version took bare knots, guessed the
+slopes, and didn't actually pass through its knots.
+
+```elixir
+# 0.2.x
+Curves.define_hermite([{0, 0}, {2, 2}, {4, 0}])
+```
+
+```elixir
+# 1.0
+curve = Curves.define_hermite([[{0, 0}, {4, 0}], [{2, 2}, {0, 4}], [{4, 0}, {4, 0}]])
+{2.0, 2.0} = Curves.solve!(curve, 1.0)
+```
+
+If you want the tangents worked out for you, `define_catmull_rom/2` takes bare knots and is
+exactly a Hermite spline with automatic tangents.
+
 ## Everything else
 
 Everything else is either new or a bug fix that doesn't need code changes. See the [changelog](changelog.html) for the full list.

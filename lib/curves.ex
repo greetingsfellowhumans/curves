@@ -61,7 +61,7 @@ defmodule Curves do
   | --- | ---     | --- |
   | `:origin` | `{0, 0}` | Provides an offset. every point in the curve will automatically be increased by this {x, y} coordinate |
   | `:float_dtype` | `32` | One of `8`, `16`, `32`, `64`. Passed into Nx tensors as `{:f, dtype}`. |
-  | `:force_percent` | `false` | If true, `take` and `solve` rescale each coordinate to show where it sits between the lowest and highest point on that axis: the lowest becomes `0.0`, the highest becomes `1.0`, and halfway between them becomes `0.5`. The lowest and highest points are measured after any moves, scaling or rotation, including the `:origin` option. Curves that overshoot their points (e.g. Hermite) can return values slightly outside 0..1. If every point has the same value on an axis (a flat curve), that axis can't be rescaled, so it returns `0.5`. Rotating a flat curve adds tiny rounding errors, so that axis may no longer count as flat and can return values from `0.0` to `1.0`. |
+  | `:force_percent` | `false` | If true, `take` and `solve` rescale each coordinate to show where it sits between the lowest and highest point on that axis: the lowest becomes `0.0`, the highest becomes `1.0`, and halfway between them becomes `0.5`. The lowest and highest points are measured after any moves, scaling or rotation, including the `:origin` option. Curves that bend outside their points (e.g. Catmull-Rom) can return values slightly outside 0..1. If every point has the same value on an axis (a flat curve), that axis can't be rescaled, so it returns `0.5`. Rotating a flat curve adds tiny rounding errors, so that axis may no longer count as flat and can return values from `0.0` to `1.0`. |
 
   `:float_dtype` and `:force_percent` can also be set for the whole app, e.g. `config :curves, force_percent: true`.
   Opts passed to a function always win over the app config.
@@ -140,21 +140,25 @@ defmodule Curves do
   defdelegate define_b_spline(points, opts \\ []), to: Curves.Spline.Type.BSpline, as: :define
 
   @doc ~s"""
-  Define a new `Curves.Spline.Type.Hermite` spline.
-  Control points are calculated automatically based on the first derivative of each knot.
+  Define a new `Curves.Spline.Type.Hermite` spline: a smooth curve through every knot,
+  leaving each one along the tangent you give it.
+
+  Each point is `[knot, tangent]`, both `{x, y}`. The tangent is the curve's velocity at that knot
+  per unit of `u`. Needs at least 2 points; `n` points give `n - 1` segments.
 
   ## Options
   See [available opts](#module-options)
 
   ## Examples
-      iex> curve = Curves.define_hermite([{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}])
+      iex> curve = Curves.define_hermite([[{0, 0}, {4, 0}], [{2, 2}, {0, 4}], [{4, 0}, {4, 0}]])
       iex> Curves.max_u(curve)
-      5.0
-      iex> {x, y} = Curves.solve!(curve, 0.85)
-      iex> is_float(x) and is_float(y)
-      true
+      2.0
+      iex> Curves.solve!(curve, 1.0)
+      {2.0, 2.0}
+      iex> Curves.solve!(curve, 0.5)
+      {1.5, 0.5}
   """
-  @spec define_hermite(T.point_list(), T.define_opts()) :: Spline.t()
+  @spec define_hermite(list([T.point_tuple()]), T.define_opts()) :: Spline.t()
   defdelegate define_hermite(points, opts \\ []), to: Curves.Spline.Type.Hermite, as: :define
 
   @doc ~s"""

@@ -17,20 +17,25 @@ defmodule Curves.PropertiesTest do
   @spec bezier() :: StreamData.t(Curves.Bezier.Curve.t())
   defp bezier, do: StreamData.map(points(2, 4), &Curves.define_bezier/1)
 
-  # Every spline type except Hermite, from 4 to 8 points. A bezier spline gets a control point either
-  # side of each knot. Hermite is left out until it's rewritten as a standard cubic Hermite spline:
-  # today it misses its knots and doesn't move correctly (see the 1.0.0-rc.1 plan).
+  # Every spline type, from 4 to 8 points. A bezier spline gets a control point either side of each
+  # knot, and a Hermite spline a tangent at each knot.
   @spec spline() :: StreamData.t(Curves.Spline.Curve.t())
   defp spline do
     StreamData.bind(
-      StreamData.member_of([:catmull_rom, :b_spline, :bezier_spline]),
+      StreamData.member_of([:catmull_rom, :hermite, :b_spline, :bezier_spline]),
       fn
         :catmull_rom -> StreamData.map(points(4, 8), &Curves.define_catmull_rom/1)
+        :hermite -> StreamData.map(points(4, 8), &hermite/1)
         :b_spline -> StreamData.map(points(4, 8), &Curves.define_b_spline/1)
         :bezier_spline -> StreamData.map(points(4, 8), &bezier_spline/1)
       end
     )
   end
+
+  # A Hermite spline with tangents taken from each knot's own coordinates, so they vary.
+  @spec hermite(list({float(), float()})) :: Curves.Spline.Curve.t()
+  defp hermite(knots),
+    do: knots |> Enum.map(fn {x, y} -> [{x, y}, {y / 2, -x / 2}] end) |> Curves.define_hermite()
 
   @spec bezier_spline(list({float(), float()})) :: Curves.Spline.Curve.t()
   defp bezier_spline(knots) do
@@ -116,15 +121,16 @@ defmodule Curves.PropertiesTest do
     end
   end
 
-  # Beziers, B-splines and bezier splines stay inside their own points, so force_percent stays in 0..1.
-  # (Catmull-Rom and Hermite can bend outside their knots, so they're left out.)
+  # Beziers, B-splines, bezier splines and Hermite splines stay inside their own (stored) points,
+  # so force_percent stays in 0..1. Catmull-Rom can bend outside its knots, so it's left out.
   property "force_percent stays within 0..1 for curves that stay inside their points" do
     check all(
             curve <-
               StreamData.one_of([
                 bezier(),
                 StreamData.map(points(4, 8), &Curves.define_b_spline/1),
-                StreamData.map(points(4, 8), &bezier_spline/1)
+                StreamData.map(points(4, 8), &bezier_spline/1),
+                StreamData.map(points(4, 8), &hermite/1)
               ]),
             f <- fraction()
           ) do

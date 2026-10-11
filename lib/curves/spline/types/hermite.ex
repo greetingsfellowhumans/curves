@@ -1,20 +1,17 @@
 defmodule Curves.Spline.Type.Hermite do
   @moduledoc ~s"""
-  An implementation of Uniform Cubic Hermite Splines.
+  A cubic Hermite spline: a smooth curve through every knot, leaving each knot in the direction
+  (and with the speed) of the tangent you give it.
 
-  Hermite splines accept no control points. Only knots.
-  Control points are calculated automatically based on the first derivative of each knot.
-
-  ## Example
+  Each point is a list of its knot and its tangent, `[{x, y}, {tx, ty}]`. The tangent is the
+  curve's velocity at that knot per unit of `u`: a longer tangent makes the curve leave the knot
+  more steeply and bend later. A spline with `n` points has `n - 1` segments.
 
   ```elixir
   curve = Curves.define_hermite([
-    {5, 10},
-    {10, 5},
-    {15, 10},
-    {20, 10},
-    {25, 5},
-    {30, 15},
+    [{0, 0}, {10, 0}],
+    [{10, 5}, {0, 10}],
+    [{20, 10}, {10, 0}]
   ])
 
   # Find any point along the curve (u goes from 0.0 to Curves.max_u(curve))...
@@ -26,42 +23,55 @@ defmodule Curves.Spline.Type.Hermite do
 
   ![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.svg)
 
+  ## How it is built
+
+  A Hermite segment from knot `p0` (tangent `m0`) to knot `p1` (tangent `m1`) is exactly the cubic
+  Bezier curve `[p0, p0 + m0 / 3, p1 - m1 / 3, p1]`. So each segment is stored and solved as that
+  Bezier curve: the curve stores those Bezier points (the knots plus the two points beside each),
+  and `Curves.Svg` draws them as its dots.
   """
   use Curves.Spline.Type,
-    derivative: 0
+    override_segment_parsing: true
 
-  @matrix_new [[1, 0, 0, 0], [0, 1, 0, 0], [-3, -2, 3, -1], [2, 1, -2, 1]]
+  alias Curves.Types, as: T
+  alias Curves.Utils.Vec
+
+  @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
   @doc false
   @impl true
   def define(points, opts \\ []) do
-    points = Enum.map(points, fn p -> [p] end)
-
     points
+    |> Enum.map(&knot_and_tangent/1)
+    |> to_bezier_segments()
     |> Curves.define_spline(:hermite, opts)
   end
 
   @doc false
   @impl true
-  def blending_function(), do: @matrix_new
+  def blending_function(), do: @matrix
 
-  @doc false
-  @impl true
-  def map_segments(all_segments, curve) do
-    Enum.map(all_segments, fn {segment_list, segment_idx} ->
-      map_segment(curve, segment_list, segment_idx)
-    end)
+  # Checks one point is [{x, y}, {tx, ty}], and turns it into floats.
+  @spec knot_and_tangent(term()) :: {T.point_tuple(), T.point_tuple()}
+  defp knot_and_tangent([{_, _} = knot, {_, _} = tangent]), do: {Vec.new(knot), Vec.new(tangent)}
+
+  defp knot_and_tangent(other) do
+    raise ArgumentError,
+          "each point of a Hermite spline must be [{x, y}, {tangent_x, tangent_y}]. " <>
+            "Got: #{inspect(other)}. See Curves.define_hermite/2."
   end
 
-  # Sets the two control points 1/3 of the way along the curve's slope at each knot.
-  @doc false
-  @spec map_segment(Curves.Spline.Curve.t(), Curves.Utils.Segment.t(), non_neg_integer()) ::
-          Curves.Utils.Segment.t()
-  def map_segment(curve, [{x0, y0}, _p1, _p2, {x3, y3}], idx) do
-    u = idx * 1.0
-    {dx, dy} = d(curve, u)
-    {dx1, dy1} = d(curve, u + 1.0)
+  # One Bezier segment per pair of neighbouring knots: [p0, p0 + m0 / 3, p1 - m1 / 3, p1].
+  @spec to_bezier_segments(list({T.point_tuple(), T.point_tuple()})) :: list(T.point_list())
+  defp to_bezier_segments(points) when length(points) < 2 do
+    raise ArgumentError, "a Hermite spline needs at least 2 points, got #{length(points)}"
+  end
 
-    [{x0, y0}, {x0 + dx / 3, y0 + dy / 3}, {x3 - dx1 / 3, y3 - dy1 / 3}, {x3, y3}]
+  defp to_bezier_segments(points) do
+    points
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.map(fn [{p0, m0}, {p1, m1}] ->
+      [p0, Vec.add(p0, Vec.scale(m0, 1 / 3)), Vec.subtract(p1, Vec.scale(m1, 1 / 3)), p1]
+    end)
   end
 end

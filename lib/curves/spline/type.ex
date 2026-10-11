@@ -68,17 +68,8 @@ defmodule Curves.Spline.Type do
   @spec list() :: list(atom())
   defdelegate list(), to: Curves.Spline.TypeIndex
 
-  @doc ~s"""
-  Shortcut for getting a tuple representing the derivative of a point on the curve.
-  """
-  @spec d(Curves.Spline.Curve.t(), number()) :: {number(), number()}
-  def d(curve, u) do
-    Curves.Utils.Derivatives.get_derivative(curve, u, :tuple)
-  end
-
   defmacro __using__(opts) do
     quote do
-      import Curves.Spline.Type, only: [d: 2]
       @behaviour Curves.Spline.Type
 
       @doc false
