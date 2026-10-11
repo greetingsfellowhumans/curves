@@ -11,7 +11,7 @@ defmodule Curves do
   # Create a bezier curve, and (optionally) apply any transformations you want.
   curve = Curves.define_bezier(:ease_in)
           |> Curves.Transform.set_scale(1.5)
-          |> Curves.Transform.inc_position(10)
+          |> Curves.Transform.inc_position({10, 10})
           |> Curves.Transform.set_rotation(90)
 
   # Find the {x, y} coordinate at 24% from the start
@@ -37,6 +37,12 @@ defmodule Curves do
 
   {x, y} = Curves.solve!(curve, t)
   ```
+
+  ## Precision
+
+  Results are accurate to the float precision of the `:float_dtype` option (32-bit by default).
+  The exact last digits are not part of the API: they may change in a minor release,
+  for example when a calculation is sped up, so compare results with a small tolerance.
 
   ## Interactive tutorial
   Be sure to check out the livebooks to see these points turn into graphs.
@@ -259,7 +265,10 @@ defmodule Curves do
   def max_u(%Spline{max_u: max_u}), do: max_u
 
   @doc ~s"""
-  Take `n` samples, evenly spaced, from the curve.
+  Take `n` samples, evenly spaced along the curve.
+
+  The samples are at `t = 1/n, 2/n, ... 1.0` for a bezier (or the same steps up to
+  `max_u/1` for a spline). The start, `t = 0`, is not included: call `solve/3` with `0.0` if you need it.
   """
   @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::
           {:ok, T.point_list()} | {:error, term()}

@@ -14,6 +14,18 @@ curve = Curves.define_bezier(:ease_out)
 {x, y} = Curves.solve!(curve, 0.25)
 ```
 
+## Installation
+
+Add `curves` to your dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:curves, "~> 1.0.0-rc.1"}
+  ]
+end
+```
+
 ## Directory
 
 - [Bezier Curves Livebook](https://github.com/greetingsfellowhumans/curves/blob/main/guides/bezier_curves.livemd)
