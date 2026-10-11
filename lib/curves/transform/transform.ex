@@ -2,10 +2,10 @@ defmodule Curves.Transform do
   @moduledoc ~s"""
   Utility functions that allow you to resize, move, and rotate a curve.
   """
-  alias Curves.Utils.Types, as: T
-  alias Curves.Transform.{Move, Scale, Rotate}
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
+  alias Curves.Transform.{Move, Rotate, Scale}
+  alias Curves.Utils.Types, as: T
 
   @doc false
   def apply_all_transformations(curve) do

@@ -1,7 +1,7 @@
 defmodule Curves.Bezier.QuadraticTest do
   use ExUnit.Case
   alias Curves.Bezier.Quadratic, as: Mod
-  alias Curves.Utils.{Points}
+  alias Curves.Utils.Points
   # import Point
   import Mod
   # doctest Mod

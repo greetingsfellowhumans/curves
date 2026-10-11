@@ -2,10 +2,10 @@ defmodule Curves.Bezier.Curve do
   @moduledoc ~s"""
   Struct representing a bezier curve.
   """
-  alias Curves.Utils.{Percent, Point, Points}
-  alias Curves.Utils.Types, as: T
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
+  alias Curves.Utils.{Percent, Point, Points}
+  alias Curves.Utils.Types, as: T
 
   defstruct [
     :points,

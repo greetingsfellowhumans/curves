@@ -1,8 +1,8 @@
 defmodule Curves.Transform.RotateTest do
   use ExUnit.Case
   alias Curves.Transform
-  alias Curves.Utils.{Point, Points, Segment}
   alias Curves.Transform.Rotate
+  alias Curves.Utils.{Point, Points, Segment}
   #doctest Transform
   import Curves.Support.SampleCurves
 

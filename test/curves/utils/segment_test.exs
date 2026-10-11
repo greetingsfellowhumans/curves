@@ -1,8 +1,8 @@
 defmodule Curves.Utils.SegmentTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
-  alias Curves.Utils.Segment, as: Mod
   alias Curves.Utils.Point
+  alias Curves.Utils.Segment, as: Mod
   import Mod
   doctest Mod
 

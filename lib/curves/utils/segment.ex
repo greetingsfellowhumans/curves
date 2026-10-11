@@ -8,7 +8,7 @@ defmodule Curves.Utils.Segment do
   @type loose_list() :: list(T.point_tuple()) # Any length
   @type tight_list() :: list(T.point_tuple()) # Lenght == 4
 
-  alias Curves.Utils.{Points}
+  alias Curves.Utils.Points
 
   defguard is_segment(p)
            when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) == 4

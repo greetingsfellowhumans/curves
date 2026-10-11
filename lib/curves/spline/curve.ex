@@ -2,9 +2,9 @@ defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
   Struct representing a spline
   """
+  alias Curves.Bezier.Predefined
   alias Curves.Utils.{Percent, Point, Points, Segment}
   alias Curves.Utils.Types, as: T
-  alias Curves.Bezier.Predefined
 
   @minimum_u (0.0 - Curves.Utils.Constants.small_number())
 

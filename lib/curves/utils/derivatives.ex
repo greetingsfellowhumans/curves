@@ -1,5 +1,5 @@
 defmodule Curves.Utils.Derivatives do
-  alias Curves.Utils.{Point}
+  alias Curves.Utils.Point
   @moduledoc false
   @small_num Curves.Utils.Constants.small_number()
 
