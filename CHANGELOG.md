@@ -25,8 +25,7 @@ Coming from 0.2.x? See the [upgrade guide](upgrading.html).
 - **Breaking:** Removed `Curves.Utils.Plotting`, which the 0.2.x livebooks used with VegaLite and Tucan. Use `Curves.Svg.render/2` instead (in Livebook: `Kino.Image.new(svg, :svg)`).
 - **Breaking:** `Curves.Utils.Types` is now `Curves.Types`. Its Nx tensor types (`point/0`, `points/0` and `point_names/0`) are gone along with Nx; use `Curves.Types.point_tuple/0` and `point_list/0`.
 - **Breaking:** Spline out-of-bounds errors now include the offending `u`, matching the bezier error shape. `{:error, :out_of_bounds}` is now `{:error, {:out_of_bounds, u}}`.
-- Solving linear (2-point) and quadratic (3-point) bezier curves is about 2.4× faster and uses about a third of the memory. Results are unchanged.
-- Defining curves is about 2–3× faster for beziers, B-splines, bezier splines and Catmull-Rom splines, and about 20% faster for Hermite splines. A rotation of `0.0`, which every new curve starts with, is now skipped instead of computed. Results are unchanged. Moving or scaling an unrotated curve gets the same speedup.
+- Everything is much faster now that it runs on plain floats instead of Nx (measured against 0.2.x's code on the same machine): solving a point takes 0.15–0.26 µs instead of 9–34 µs (40–130×), `take!/3` of 100 points takes 14–17 µs instead of 2.8–3.5 ms (about 200×), defining a curve is 6–9× faster (Hermite: 9 µs instead of 778 µs), and `Curves.Svg.render/2` of a spline takes about 65 µs.
 - `define_bezier_spline/2` raises an `ArgumentError` explaining the expected point format when a point isn't a list of 1 to 3 `{x, y}` tuples (e.g. a plain `{x, y}`), instead of a `FunctionClauseError` from deep inside the library.
 - Bezier curves with fewer than 2 points can now be defined and transformed. Solving them returns `{:error, {:too_few_points, n, 2}}` instead of crashing in `define_bezier/2`.
 
