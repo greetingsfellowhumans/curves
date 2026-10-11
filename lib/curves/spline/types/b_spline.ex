@@ -14,7 +14,7 @@ defmodule Curves.Spline.Type.BSpline do
   ])
 
   for i <- 0..1000 do
-    Curves.solve!(curve, i / 1000)
+    Curves.solve!(curve, i / 1000 * curve.max_u)
   end
   |> # render_vega_lite_chart(...)
   ```
@@ -56,7 +56,8 @@ defmodule Curves.Spline.Type.BSpline do
     segments = [next_segment | segments]
     auto_last(segments, acc)
   end
-  defp auto_last(_, acc), do: acc
+  # acc is built back to front, so flip it to keep the segments in curve order.
+  defp auto_last(_, acc), do: Enum.reverse(acc)
 
 
   @doc false

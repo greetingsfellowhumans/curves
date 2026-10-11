@@ -47,6 +47,25 @@ defmodule Curves.Spline.BSplineTest do
       assert is_struct(curve, Curves.Spline.Curve)
     end
 
+    test "segments are solved in curve order", ctx do
+      curve_spec = ctx.curve_specs[:b_spline]
+      curve = define(curve_spec, [])
+      [[first_start | _] | _] = rebuild_points(curve_spec, [])
+
+      # u = 0 is the start of the first rebuilt segment, not the last one.
+      {x, y} = Curves.solve!(curve, 0.0)
+      assert_in_delta x, elem(first_start, 0), 0.0001
+      assert_in_delta y, elem(first_start, 1), 0.0001
+
+      # Each segment ends where the next one begins, so there are no jumps between them.
+      for u <- 1..(trunc(curve.max_u) - 1) do
+        {x0, y0} = Curves.solve!(curve, u - 0.000001)
+        {x1, y1} = Curves.solve!(curve, u + 0.000001)
+        assert_in_delta x0, x1, 0.001
+        assert_in_delta y0, y1, 0.001
+      end
+    end
+
   end
 
 end
