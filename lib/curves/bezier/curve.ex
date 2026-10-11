@@ -52,6 +52,7 @@ defmodule Curves.Bezier.Curve do
         }
 
   @doc false
+  @spec define(T.point_list() | Predefined.curve_key() | TensorT.points(), T.opts()) :: t()
   def define(points, opts \\ []) do
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
 
@@ -133,9 +134,11 @@ defmodule Curves.Bezier.Curve do
   end
 
   @doc false
+  @spec solve(t(), number()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
+  @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
     do: solve_resolved(curve, t, resolve_opts(curve, opts))
 
@@ -171,9 +174,12 @@ defmodule Curves.Bezier.Curve do
     do: {:ok, Percent.maybe_normalize(bounds, Point.to_tuple(point), solve_opts)}
 
   @doc false
+  @spec solve!(t(), number()) :: T.point_tuple()
   def solve!(curve, t), do: solve!(curve, t, [])
 
+  # Raises the matching Curves.Exceptions error instead of returning {:error, _}.
   @doc false
+  @spec solve!(t(), number(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
@@ -181,7 +187,9 @@ defmodule Curves.Bezier.Curve do
     end
   end
 
+  # n evenly spaced points, at t = 1/n, 2/n, ... 1.0 (t = 0 is not included).
   @doc false
+  @spec take(t(), pos_integer(), T.opts()) :: {:ok, T.point_list()} | {:error, tuple()}
   def take(curve, n, opts \\ []) do
     opts = resolve_opts(curve, opts)
 
@@ -198,6 +206,7 @@ defmodule Curves.Bezier.Curve do
   end
 
   @doc false
+  @spec take!(t(), pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do
     case take(curve, n, opts) do
       {:ok, points} -> points

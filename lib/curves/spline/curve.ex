@@ -61,7 +61,10 @@ defmodule Curves.Spline.Curve do
           origin: TensorT.point()
         }
 
+  # Each spline type's define/2 prepares `coords` first (e.g. wrapping each point in a list),
+  # so the shape of `coords` depends on the type.
   @doc false
+  @spec define(list(list(T.point_tuple())) | atom(), atom(), T.opts()) :: t()
   def define(coords, spline_type, opts \\ []) do
     mod = Curves.Spline.Type.get_mod(spline_type)
     {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
@@ -148,18 +151,23 @@ defmodule Curves.Spline.Curve do
   end
 
   @doc false
+  @spec solve(t(), number()) :: {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
+  @spec solve(t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
   def solve(%__MODULE__{max_u: max}, u, _opts) when is_number(u) and (u > max or u < @minimum_u),
     do: {:error, {:out_of_bounds, u}}
 
   def solve(%__MODULE__{compressed: cb}, u, opts) when is_number(u), do: cb.(u * 1.0, opts)
 
   @doc false
+  @spec solve!(t(), number()) :: T.point_tuple()
   def solve!(curve, t), do: solve!(curve, t, [])
 
   @doc false
+  @spec solve!(t(), number(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts) do
     case solve(curve, t, opts) do
       {:ok, resp} -> resp
@@ -167,7 +175,10 @@ defmodule Curves.Spline.Curve do
     end
   end
 
+  # n evenly spaced points by u, ending at max_u (u = 0 is not included).
   @doc false
+  @spec take(t(), pos_integer(), T.opts()) ::
+          {:ok, T.point_list()} | {:error, {:out_of_bounds, number()}}
   def take(%{segments: segments} = curve, n, opts \\ []) do
     seg_count = Nx.axis_size(segments, :segment)
 
@@ -187,6 +198,7 @@ defmodule Curves.Spline.Curve do
   end
 
   @doc false
+  @spec take!(t(), pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ []) do
     case take(curve, n, opts) do
       {:ok, points} -> points
