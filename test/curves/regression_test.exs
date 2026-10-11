@@ -308,6 +308,14 @@ defmodule Curves.RegressionTest do
     end
   end
 
+  describe "spline types" do
+    test "an unknown spline type raises with its name" do
+      assert_raise RuntimeError, "Unknown spline_type: :wavy", fn ->
+        Curves.Spline.TypeIndex.get(:wavy)
+      end
+    end
+  end
+
   describe "bezier point count" do
     test "more than 4 points returns an error instead of tensors" do
       curve = Curves.define_bezier([{0, 0}, {1, 1}, {2, 0}, {3, 1}, {4, 0}])

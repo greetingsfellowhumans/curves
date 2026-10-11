@@ -8,25 +8,15 @@ defmodule Curves.Formula do
   @callback required_opts() :: list()
   @callback point_count() :: integer()
 
-  # Solves one segment with the matrix form: power_series(t) · blending matrix · points.
-  # More than 4 points are split into two overlapping segments, and both results are returned.
+  # Solves one 4-point segment with the matrix form: power_series(t) · blending matrix · points.
+  # Callers always pass 4 points: a cubic bezier, or one spline segment.
   @spec run(module(), TensorT.points() | TensorT.cubic_segment(), number(), T.opts()) ::
-          TensorT.point() | {TensorT.point(), TensorT.point()}
-  def run(mod, points, t, opts \\ []) do
-    {_, size} = Nx.shape(points)
-
-    if size <= 4 do
-      mod.power_series(t)
-      |> Nx.dot(mod.blending_function())
-      |> Nx.multiply(points)
-      |> Nx.window_sum({1, mod.point_count()})
-    else
-      points_before = Nx.slice(points, [0, 0], [2, 4])
-      points_after = Nx.slice(points, [0, 3], [2, 4])
-      a = run(mod, points_before, t, opts)
-      b = run(mod, points_after, t, opts)
-      {a, b}
-    end
+          TensorT.point()
+  def run(mod, points, t, _opts \\ []) do
+    mod.power_series(t)
+    |> Nx.dot(mod.blending_function())
+    |> Nx.multiply(points)
+    |> Nx.window_sum({1, mod.point_count()})
   end
 
   # [1, t, t², t³], or its 1st/2nd/3rd derivative. 0.5 is a half-weighted series.
