@@ -4,7 +4,8 @@
 > switch spline types and bend tangents with sliders.
 
 A spline joins several curves end to end into one smooth path. Each piece is called a **segment**, and the
-points where segments meet are called **knots**.
+points where segments meet are called **knots**. This chapter also covers the simplest path of all, the
+polyline, which joins the knots with straight lines.
 
 ## `u`: which segment, and how far along it
 
@@ -23,6 +24,20 @@ Curves.solve!(curve, 2.0)
 ![u = 0, 1, 2, 3 and 4 land on the knots](images/spline_u.svg)
 
 `Curves.take!/2` works the same way: it spreads its points over the whole spline.
+
+## The simplest path: a polyline
+
+A polyline just joins the knots with straight lines, like SVG's `<polyline>`. It isn't a spline (nothing
+bends), but you move along it with `u` in exactly the same way, and at a steady speed along each line:
+`u = 1.5` is halfway between the second and third knots.
+
+```elixir
+curve = Curves.define_polyline([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}])
+Curves.solve!(curve, 1.5)
+#=> {3.0, 2.0}
+```
+
+![A polyline](images/polyline.svg)
 
 ## Four kinds of spline
 
@@ -98,6 +113,7 @@ Catmull-Rom is a Hermite spline that works out the tangents for you.
 
 | You want... | Use |
 | --- | --- |
+| straight lines between your points | `define_polyline/2` |
 | a smooth path through some points, quickly | `define_catmull_rom/2` |
 | the smoothest possible path, and don't need to hit the points exactly | `define_b_spline/2` |
 | exact control over every bend, or to copy an SVG path | `define_bezier_spline/2` |

@@ -11,6 +11,7 @@ The second release candidate. It has three breaking changes, listed under Change
 
 ### Added
 
+- `Curves.define_polyline/2` makes a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`. It is solved with `u` like a spline (each line adds one to `u`), at a steady speed along each line, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`.
 - A new tutorial for new users, in four chapters: your first curve, Bezier curves, splines, and transforms and drawing. The hexdocs version is full of pictures drawn with `Curves.Svg`, and its simplified first page is now the docs' landing page. Each chapter is also an interactive Livebook with sliders, animations and an easing race. They replace the two old livebooks.
 - `Curves.Svg` has a `:view` option, `{{x1, y1}, {x2, y2}}`, that draws a fixed area instead of fitting the picture to the curve, so several pictures or animation frames share the same scale.
 - `Curves.Svg` has a `:markers` option that highlights extra `{x, y}` points, e.g. `markers: [Curves.solve!(curve, 0.5)]` to show where `t = 0.5` lands. `:marker_color` and `:marker_radius` style them.

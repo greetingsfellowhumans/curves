@@ -101,6 +101,12 @@ images =
          title: "u = 0, 1, 2, 3 and 4 land on the knots",
          markers: for(u <- 0..4, do: Curves.solve!(Curves.define_catmull_rom(knots), u))
        ]},
+    {"#{guides}/polyline.svg", Curves.define_polyline(knots),
+     medium ++
+       [
+         title: "A polyline: u = 1.5 is halfway along the second line",
+         markers: [Curves.solve!(Curves.define_polyline(knots), 1.5)]
+       ]},
     {"#{guides}/spline_bezier_lqc.svg", mixed_spline, medium ++ [title: "L, then Q, then C"]},
     {"#{guides}/spline_catmull_rom.svg", Curves.define_catmull_rom(knots),
      small ++ [title: "Catmull-Rom: through every knot", markers: knots]},
@@ -171,6 +177,8 @@ images =
        [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
        [{30.0, 10.0}]
      ]), [width: 400, height: 400, samples: 400, title: "Bezier Spline"]},
+    {"#{readme}/polyline.svg", Curves.define_polyline([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]),
+     [width: 400, height: 400, samples: 400, title: "Polyline"]},
     {"#{readme}/hermite.svg",
      Curves.define_hermite([
        [{5, 10}, {5, -5}],

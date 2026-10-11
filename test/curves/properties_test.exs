@@ -49,7 +49,11 @@ defmodule Curves.PropertiesTest do
   end
 
   @spec curve() :: StreamData.t(Curves.Types.curve_struct())
-  defp curve, do: StreamData.one_of([bezier(), spline()])
+  # A polyline of 2 to 8 knots.
+  @spec polyline() :: StreamData.t(Curves.Polyline.Curve.t())
+  defp polyline, do: StreamData.map(points(2, 8), &Curves.define_polyline/1)
+
+  defp curve, do: StreamData.one_of([bezier(), spline(), polyline()])
 
   # A fraction of the way along a curve, 0.0..1.0.
   @spec fraction() :: StreamData.t(float())
@@ -103,8 +107,8 @@ defmodule Curves.PropertiesTest do
     end
   end
 
-  property "splines are continuous where segments meet" do
-    check all(curve <- spline()) do
+  property "splines and polylines are continuous where segments meet" do
+    check all(curve <- StreamData.one_of([spline(), polyline()])) do
       for boundary <- 1..(trunc(Curves.max_u(curve)) - 1)//1 do
         before = Curves.solve!(curve, boundary - 1.0e-7)
         after_ = Curves.solve!(curve, boundary + 1.0e-7)
@@ -254,17 +258,23 @@ defmodule Curves.PropertiesTest do
 
   property "anything that isn't a curve raises an ArgumentError" do
     check all(bad <- StreamData.term()) do
-      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
-        Curves.solve(bad, 0.5)
-      end
+      assert_raise ArgumentError,
+                   ~r/expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve/,
+                   fn ->
+                     Curves.solve(bad, 0.5)
+                   end
 
-      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
-        Curves.take!(bad, 3)
-      end
+      assert_raise ArgumentError,
+                   ~r/expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve/,
+                   fn ->
+                     Curves.take!(bad, 3)
+                   end
 
-      assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->
-        Curves.Transform.inc_x(bad, 1)
-      end
+      assert_raise ArgumentError,
+                   ~r/expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve/,
+                   fn ->
+                     Curves.Transform.inc_x(bad, 1)
+                   end
     end
   end
 end

@@ -429,12 +429,12 @@ defmodule Curves.RegressionTest do
       ]
     end
 
-    test "raises an ArgumentError naming both curve types and the bad value" do
+    test "raises an ArgumentError naming the curve types and the bad value" do
       for bad <- @not_curves, call <- calls(bad) do
         error = assert_raise ArgumentError, call
 
         assert error.message ==
-                 "expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: #{inspect(bad)}"
+                 "expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve, got: #{inspect(bad)}"
       end
     end
 

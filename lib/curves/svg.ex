@@ -1,6 +1,6 @@
 defmodule Curves.Svg do
   @moduledoc ~s"""
-  Draws a Bezier or Spline curve as an SVG image, using only Elixir.
+  Draws a curve (a Bezier, a spline or a polyline) as an SVG image, using only Elixir.
 
   The curve is solved at `:samples` evenly spaced points from start to end, and those points are joined with a line.
   The curve's own points are drawn as dots, and the image is scaled to fit while keeping the curve's shape.
@@ -50,6 +50,7 @@ defmodule Curves.Svg do
   ```
   """
   alias Curves.Bezier.Curve, as: Bezier
+  alias Curves.Polyline.Curve, as: Polyline
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
   alias Curves.Utils.{Errors, Vec}
@@ -165,6 +166,7 @@ defmodule Curves.Svg do
     cond do
       is_struct(curve, Bezier) -> Bezier.transformed_points(curve)
       is_struct(curve, Spline) -> Spline.transformed_points(curve)
+      is_struct(curve, Polyline) -> Polyline.transformed_points(curve)
       true -> Errors.raise_not_a_curve(curve)
     end
     |> Enum.dedup()
@@ -178,6 +180,7 @@ defmodule Curves.Svg do
     cond do
       is_struct(curve, Bezier) -> Bezier.control_lines(curve)
       is_struct(curve, Spline) -> Spline.control_lines(curve)
+      is_struct(curve, Polyline) -> Polyline.control_lines(curve)
       true -> Errors.raise_not_a_curve(curve)
     end
     |> Enum.map(&Enum.dedup/1)

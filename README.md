@@ -90,6 +90,16 @@ curve = Curves.define_bezier(points)
 
 ![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.svg)
 
+### Polyline
+
+The simplest path: straight lines from knot to knot, like SVG's `<polyline>`.
+
+```elixir
+curve = Curves.define_polyline([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}])
+```
+
+![Polyline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/polyline.svg)
+
 ## Spline examples
 
 The simplest spline is a chain of bezier curves, each one starting where the last one ended.

@@ -53,14 +53,15 @@ defmodule Curves.Types do
   @type define_opts :: [origin: point_tuple()]
 
   @typedoc ~s"""
-  Either a Bezier or Spline struct
+  Any curve: a `Curves.Bezier.Curve`, `Curves.Spline.Curve` or `Curves.Polyline.Curve`.
   """
-  @type curve_struct() :: Curves.Bezier.Curve.t() | Curves.Spline.Curve.t()
+  @type curve_struct() ::
+          Curves.Bezier.Curve.t() | Curves.Spline.Curve.t() | Curves.Polyline.Curve.t()
 
-  # A Bezier or Spline struct seen as a plain map. Internal helpers (Curves.Transform,
+  # A curve struct (Bezier, Spline or Polyline) seen as a plain map. Internal helpers (Curves.Transform,
   # Curves.Utils.Percent) use this instead of curve_struct(), because the structs are opaque:
-  # only Curves.Bezier.Curve and Curves.Spline.Curve may read their fields, so they are the
-  # only modules that call these helpers.
+  # only the curve modules (Curves.Bezier.Curve, Curves.Spline.Curve, Curves.Polyline.Curve)
+  # may read their fields, so they are the only modules that call these helpers.
   @typedoc false
   @type curve_data() :: %{optional(atom()) => term()}
 end

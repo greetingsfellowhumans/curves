@@ -1,6 +1,7 @@
 defmodule Curves do
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Bezier.Predefined
+  alias Curves.Polyline.Curve, as: Polyline
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
   alias Curves.Utils.Errors
@@ -51,7 +52,7 @@ defmodule Curves do
 
   1. [Your first curve](first_curve.html): `t`, `solve`, `take`, and the ready-made curves.
   2. [Bezier curves](bezier_curves.html): how control points shape a curve.
-  3. [Splines](splines.html): the four kinds, and when to use each.
+  3. [Splines](splines.html): polylines and the four kinds of spline, and when to use each.
   4. [Transforms and drawing](transforms.html): moving, scaling and rotating, and `Curves.Svg`.
 
 
@@ -197,7 +198,31 @@ defmodule Curves do
     as: :define
 
   @doc ~s"""
-  Given a `Curves.Bezier.Curve` or `Curves.Spline.Curve` struct, and `t`, find the point along the curve.
+  Define a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`.
+
+  Like a spline, it is solved with `u`: each line adds one to it, so `u = 1.0` is the second knot and
+  `max_u/1` is the last one. Within a line the speed is steady: `u = 0.5` is exactly halfway along the
+  first line. An empty list raises an `ArgumentError`.
+
+  ## Options
+  See [available opts](#module-options)
+
+  ## Examples
+      iex> curve = Curves.define_polyline([{0, 0}, {2, 4}, {6, 4}])
+      iex> Curves.max_u(curve)
+      2.0
+      iex> Curves.solve!(curve, 0.5)
+      {1.0, 2.0}
+      iex> Curves.solve!(curve, 1.25)
+      {3.0, 4.0}
+      iex> Curves.define_polyline([])
+      ** (ArgumentError) a polyline needs at least 1 point, got none
+  """
+  @spec define_polyline(T.point_list(), T.define_opts()) :: Polyline.t()
+  defdelegate define_polyline(points, opts \\ []), to: Polyline, as: :define
+
+  @doc ~s"""
+  Given a curve (`Curves.Bezier.Curve`, `Curves.Spline.Curve` or `Curves.Polyline.Curve`) and `t`, find the point along it.
 
   For a bezier curve, `t` must be between 0.0 and 1.0. A `t` that isn't a number raises an `ArgumentError`.
 
@@ -218,7 +243,7 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options).
   """
-  @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) ::
+  @spec solve(Bezier.t() | Spline.t() | Polyline.t(), T.t(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, term()}
   def solve(curve, t, opts \\ []) do
     # Dispatch with is_struct/2, not a %Bezier{} pattern (same in solve!/3, take/3, take!/3).
@@ -227,6 +252,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.solve(curve, t, opts)
       is_struct(curve, Spline) -> Spline.solve(curve, t, opts)
+      is_struct(curve, Polyline) -> Polyline.solve(curve, t, opts)
       true -> Errors.raise_not_a_curve(curve)
     end
   end
@@ -239,11 +265,12 @@ defmodule Curves do
       iex> Curves.solve!(Curves.define_bezier(:linear), 0.5)
       {0.5, 0.5}
   """
-  @spec solve!(Bezier.t() | Spline.t(), T.t(), T.opts()) :: T.point_tuple()
+  @spec solve!(Bezier.t() | Spline.t() | Polyline.t(), T.t(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts \\ []) do
     cond do
       is_struct(curve, Bezier) -> Bezier.solve!(curve, t, opts)
       is_struct(curve, Spline) -> Spline.solve!(curve, t, opts)
+      is_struct(curve, Polyline) -> Polyline.solve!(curve, t, opts)
       true -> Errors.raise_not_a_curve(curve)
     end
   end
@@ -251,18 +278,21 @@ defmodule Curves do
   @doc ~s"""
   The highest `t` (bezier) or `u` (spline) that `solve/3` accepts. Every curve starts at `0.0`.
 
-  Beziers always end at `1.0`. A spline ends at one unit per segment,
-  so `u = 1.0` is the end of its first segment and `u = max_u(curve)` is the end of the curve.
+  Beziers always end at `1.0`. Splines and polylines end at one unit per segment,
+  so `u = 1.0` is the end of the first segment and `u = max_u(curve)` is the end of the curve.
 
   ## Examples
       iex> Curves.max_u(Curves.define_bezier(:ease_in))
       1.0
       iex> Curves.max_u(Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}]))
       3.0
+      iex> Curves.max_u(Curves.define_polyline([{0, 0}, {1, 1}, {2, 0}]))
+      2.0
   """
-  @spec max_u(Bezier.t() | Spline.t()) :: float()
+  @spec max_u(Bezier.t() | Spline.t() | Polyline.t()) :: float()
   def max_u(%Bezier{}), do: 1.0
   def max_u(%Spline{max_u: max_u}), do: max_u
+  def max_u(%Polyline{max_u: max_u}), do: max_u
 
   @doc ~s"""
   Take `n` samples, evenly spaced along the curve.
@@ -279,7 +309,7 @@ defmodule Curves do
       iex> Curves.take(Curves.define_bezier(:linear), 0)
       ** (ArgumentError) n must be a positive integer (the number of samples), got: 0
   """
-  @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::
+  @spec take(Bezier.t() | Spline.t() | Polyline.t(), n :: pos_integer(), T.opts()) ::
           {:ok, T.point_list()} | {:error, term()}
   def take(curve, n, opts \\ [])
   def take(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
@@ -288,6 +318,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.take(curve, n, opts)
       is_struct(curve, Spline) -> Spline.take(curve, n, opts)
+      is_struct(curve, Polyline) -> Polyline.take(curve, n, opts)
       true -> Errors.raise_not_a_curve(curve)
     end
   end
@@ -299,7 +330,8 @@ defmodule Curves do
       iex> Curves.take!(Curves.define_bezier([{0, 0}, {1, 2}, {2, 0}]), 2)
       [{1.0, 1.0}, {2.0, 0.0}]
   """
-  @spec take!(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: T.point_list()
+  @spec take!(Bezier.t() | Spline.t() | Polyline.t(), n :: pos_integer(), T.opts()) ::
+          T.point_list()
   def take!(curve, n, opts \\ [])
   def take!(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
 
@@ -307,6 +339,7 @@ defmodule Curves do
     cond do
       is_struct(curve, Bezier) -> Bezier.take!(curve, n, opts)
       is_struct(curve, Spline) -> Spline.take!(curve, n, opts)
+      is_struct(curve, Polyline) -> Polyline.take!(curve, n, opts)
       true -> Errors.raise_not_a_curve(curve)
     end
   end

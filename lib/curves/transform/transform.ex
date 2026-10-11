@@ -11,6 +11,7 @@ defmodule Curves.Transform do
   Anything else raises an `ArgumentError`.
   """
   alias Curves.Bezier.Curve, as: Bezier
+  alias Curves.Polyline.Curve, as: Polyline
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Transform.{Move, Rotate, Scale}
   alias Curves.Types, as: T
@@ -34,11 +35,17 @@ defmodule Curves.Transform do
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve),
     do: %{curve | points: Enum.map(points, &Vec.add(&1, origin))}
 
+  defp apply_origin_offset(%Polyline{points: points, origin: origin} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.add(&1, origin))}
+
   defp apply_origin_offset(%Spline{segments: segments, origin: origin} = curve),
     do: %{curve | segments: map_segment_points(segments, &Vec.add(&1, origin))}
 
   @spec apply_scale(T.curve_data()) :: T.curve_data()
   defp apply_scale(%Bezier{points: points, scale: scale} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.scale(&1, scale))}
+
+  defp apply_scale(%Polyline{points: points, scale: scale} = curve),
     do: %{curve | points: Enum.map(points, &Vec.scale(&1, scale))}
 
   defp apply_scale(%Spline{segments: segments, scale: scale} = curve),
@@ -51,6 +58,9 @@ defmodule Curves.Transform do
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
 
   def apply_rotation(%Bezier{points: points, rotation: angle} = curve),
+    do: %{curve | points: Enum.map(points, &Vec.rotate(&1, angle, {0.0, 0.0}))}
+
+  def apply_rotation(%Polyline{points: points, rotation: angle} = curve),
     do: %{curve | points: Enum.map(points, &Vec.rotate(&1, angle, {0.0, 0.0}))}
 
   def apply_rotation(%Spline{segments: segments, rotation: angle} = curve),
@@ -91,6 +101,7 @@ defmodule Curves.Transform do
     cond do
       is_struct(curve, Bezier) -> Bezier.add_transformation(curve, transformation, field)
       is_struct(curve, Spline) -> Spline.add_transformation(curve, transformation, field)
+      is_struct(curve, Polyline) -> Polyline.add_transformation(curve, transformation, field)
       true -> Errors.raise_not_a_curve(curve)
     end
   end

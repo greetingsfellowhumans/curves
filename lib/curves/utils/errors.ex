@@ -7,6 +7,6 @@ defmodule Curves.Utils.Errors do
   @spec raise_not_a_curve(term()) :: no_return()
   def raise_not_a_curve(term) do
     raise ArgumentError,
-          "expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: #{inspect(term)}"
+          "expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve, got: #{inspect(term)}"
   end
 end

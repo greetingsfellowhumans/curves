@@ -65,12 +65,15 @@ Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) en
 Kino.Layout.grid([form, frame], columns: 1)
 ```
 
-## Four kinds of spline
+## Four kinds of spline (and a polyline)
 
-Curves has four kinds of spline. They all join curves together, but they bend differently:
+Curves has four kinds of spline. They all join curves together, but they bend differently. A
+**polyline** (`define_polyline/2`) is the simplest path of all: straight lines from knot to knot,
+like SVG's `<polyline>`.
 
 | Kind | Passes through the knots? | What you give it |
 | --- | --- | --- |
+| **Polyline** | yes, with straight lines | just the knots |
 | **Catmull-Rom** | yes | just the knots; it works out the bends |
 | **B-spline** | no, only near them | just the knots; the smoothest of all |
 | **Bezier spline** | yes | each knot plus the control points to the next one |
@@ -87,6 +90,7 @@ form =
       kind:
         Kino.Input.select("Kind",
           catmull_rom: "Catmull-Rom",
+          polyline: "Polyline (straight lines)",
           b_spline: "B-spline",
           bezier_spline: "Bezier spline (straight lines)",
           hermite: "Hermite (flat tangents)"
@@ -108,6 +112,7 @@ render = fn data ->
   curve =
     case data.kind do
       :catmull_rom -> Curves.define_catmull_rom(knots)
+      :polyline -> Curves.define_polyline(knots)
       :b_spline -> Curves.define_b_spline(knots)
       :bezier_spline -> Curves.define_bezier_spline(Enum.map(knots, &[&1]))
       :hermite -> Curves.define_hermite(Enum.map(knots, &[&1, {2, 0}]))

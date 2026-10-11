@@ -5,7 +5,7 @@ defmodule Curves.Utils.Percent do
 
   alias Curves.Types, as: T
 
-  # Anything with min/max bounds, such as a Bezier or Spline curve.
+  # Anything with min/max bounds, such as a curve (Bezier, Spline or Polyline).
   @type bounded :: %{xmin: T.coord(), xmax: T.coord(), ymin: T.coord(), ymax: T.coord()}
 
   # Finds the lowest and highest x and y among the points.

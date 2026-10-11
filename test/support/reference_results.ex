@@ -72,6 +72,8 @@ defmodule Curves.Support.ReferenceResults do
       {"b_spline 7 points", fn opts -> Curves.define_b_spline(@b_spline, opts) end},
       {"bezier_spline 5 points",
        fn opts -> Curves.define_bezier_spline(@bezier_spline, opts) end},
+      {"polyline 5 points",
+       fn opts -> Curves.define_polyline(@b_spline |> Enum.take(5), opts) end},
       {"bezier_spline 2 points",
        fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}, {2, 2}], [{3, 0}]], opts) end}
     ]
