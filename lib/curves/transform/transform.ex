@@ -1,11 +1,21 @@
 defmodule Curves.Transform do
   @moduledoc ~s"""
-  Utility functions that allow you to resize, move, and rotate a curve.
+  Utility functions that allow you to move, resize, stretch, flip, rotate and reverse a curve,
+  without changing the points you defined it with.
+
+  | To... | Use |
+  | --- | --- |
+  | move it | `set_position/2`, `inc_position/2`, `inc_x/2`, `inc_y/2` |
+  | resize or stretch it | `set_scale/3`, `inc_scale/3` (a number, or `{x, y}` for each direction) |
+  | mirror it | `flip_x/2`, `flip_y/2` |
+  | rotate it | `set_rotation/3`, `inc_rotation/3` (degrees, counter-clockwise) |
+  | travel it the other way | `reverse/1` |
 
   The curve is first scaled and then rotated around its own `{0, 0}`, and finally moved to its
   position (the `:origin` option, `set_position/2` and the like). This is the usual
   scale-rotate-translate order (like SVG's `transform="translate(…) rotate(…) scale(…)"`), so
-  scaling or rotating a curve never moves it away from its position.
+  scaling or rotating a curve never moves it away from its position. To scale, flip or rotate around
+  some other point, such as the curve's middle, pass `around: :center` or `around: {x, y}`.
 
   Positions are `{x, y}` tuples of numbers, and amounts are numbers.
   Anything else raises an `ArgumentError`.
@@ -17,6 +27,18 @@ defmodule Curves.Transform do
   alias Curves.Types, as: T
   alias Curves.Utils.Errors
   alias Curves.Utils.Vec
+
+  # A scale is a number, or an {x, y} pair to scale the two directions separately.
+  defguardp is_scale(s)
+            when is_number(s) or
+                   (is_tuple(s) and tuple_size(s) == 2 and is_number(elem(s, 0)) and
+                      is_number(elem(s, 1)))
+
+  @typedoc ~s"""
+  The point to scale, flip or rotate around: `:center` (the middle of the curve's points) or an
+  `{x, y}` point, in the curve's own coordinates. `nil` (the default) is the curve's own `{0, 0}`.
+  """
+  @type around() :: nil | :center | T.point_tuple()
 
   # Replays the transformations list, then scales, rotates and moves a copy of the points
   # (beziers) or segments (splines). Used by compress; the stored curve keeps its original points.
@@ -183,22 +205,36 @@ defmodule Curves.Transform do
 
   def inc_y(_curve, yinc), do: raise_not_a_number("inc_y/2", yinc)
 
+  # The `around:` option shared by the scale, rotation and flip functions.
+  @around_doc """
+  The curve is scaled and rotated around its own `{0, 0}`. Pass `around:` to turn around a
+  different point instead, which then stays exactly where it is: either `:center` (the middle of the
+  curve's points) or an `{x, y}` point. Both are in the curve's own coordinates: the points you defined
+  it with, before any transforms.
+  """
+
   @doc ~s"""
-  resize the entire curve ignoring the existing scale. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.
+  Resize the curve, replacing the existing scale. The default scale is `1.0`: `2.0` doubles the curve and
+  `0.5` halves it. A negative scale flips it.
+
+  Give an `{x, y}` pair to scale the two directions separately, e.g. `{2, 0.5}` makes it twice as wide
+  and half as tall.
+
+  #{@around_doc}
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear)
-      iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> x
-      0.5
-      iex> y
-      0.5
+      iex> Curves.solve!(curve, 0.5)
+      {0.5, 0.5}
       iex> curve = Transform.set_scale(curve, 10.0)
-      iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> x
-      5.0
-      iex> y
-      5.0
+      iex> Curves.solve!(curve, 0.5)
+      {5.0, 5.0}
+
+  Separate x and y scales:
+
+      iex> curve = Curves.define_bezier([{0, 0}, {2, 2}]) |> Transform.set_scale({2, 0.5})
+      iex> Curves.solve!(curve, 1.0)
+      {4.0, 1.0}
 
   The curve is scaled around its own `{0, 0}`, so a moved curve stays where it was put:
 
@@ -208,80 +244,177 @@ defmodule Curves.Transform do
       {10.0, 10.0}
       iex> Curves.solve!(curve, 1.0)
       {18.0, 10.0}
-  """
-  @spec set_scale(curve :: T.curve_struct(), scale :: number()) :: T.curve_struct()
-  def set_scale(curve, scale) when is_number(scale),
-    do: add(curve, {Scale, :set_scale, [scale]}, :scale)
 
-  def set_scale(_curve, scale), do: raise_not_a_number("set_scale/2", scale)
+  Scaled around its middle instead, it grows equally in every direction:
+
+      iex> curve = Curves.define_bezier([{0, 0}, {2, 2}]) |> Transform.set_scale(2, around: :center)
+      iex> {Curves.solve!(curve, 0.0), Curves.solve!(curve, 1.0)}
+      {{-1.0, -1.0}, {3.0, 3.0}}
+  """
+  @spec set_scale(
+          T.curve_struct(),
+          scale :: number() | {number(), number()},
+          opts :: [around: around()]
+        ) ::
+          T.curve_struct()
+  def set_scale(curve, scale, opts \\ [])
+
+  def set_scale(curve, scale, opts) when is_scale(scale),
+    do: add(curve, {Scale, :set_scale, [scale, around!(opts)]}, :scale)
+
+  def set_scale(_curve, scale, _opts), do: raise_not_a_scale("set_scale/3", scale)
 
   @doc ~s"""
-  resize the entire curve, adding to the existing scale.
+  Resize the curve, adding to the existing scale. With an `{x, y}` pair, each direction is added to
+  separately; a single number adds to both.
+
+  #{@around_doc}
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear)
-      iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> x
-      0.5
-      iex> y
-      0.5
       iex> curve = Transform.inc_scale(curve, 10.0)
-      iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> x
-      5.5
-      iex> y
-      5.5
+      iex> Curves.solve!(curve, 0.5)
+      {5.5, 5.5}
+      iex> curve = Transform.inc_scale(curve, {0, -10})
+      iex> Curves.solve!(curve, 0.5)
+      {5.5, 0.5}
   """
-  @spec inc_scale(curve :: T.curve_struct(), amount :: number()) :: T.curve_struct()
-  def inc_scale(curve, amount) when is_number(amount),
-    do: add(curve, {Scale, :inc_scale, [amount]}, :scale)
+  @spec inc_scale(
+          T.curve_struct(),
+          amount :: number() | {number(), number()},
+          opts :: [around: around()]
+        ) ::
+          T.curve_struct()
+  def inc_scale(curve, amount, opts \\ [])
 
-  def inc_scale(_curve, amount), do: raise_not_a_number("inc_scale/2", amount)
+  def inc_scale(curve, amount, opts) when is_scale(amount),
+    do: add(curve, {Scale, :inc_scale, [amount, around!(opts)]}, :scale)
+
+  def inc_scale(_curve, amount, _opts), do: raise_not_a_scale("inc_scale/3", amount)
 
   @doc ~s"""
-  increase rotation (counter-clockwise) by the given amount.
+  Mirror the curve left to right (its x scale turns negative, or back again).
+
+  #{@around_doc}
+
+  ## Examples
+      iex> curve = Curves.define_bezier([{1, 0}, {3, 2}])
+      iex> Curves.solve!(Transform.flip_x(curve), 1.0)
+      {-3.0, 2.0}
+      iex> Curves.solve!(Transform.flip_x(curve, around: :center), 1.0)
+      {1.0, 2.0}
+  """
+  @spec flip_x(T.curve_struct(), opts :: [around: around()]) :: T.curve_struct()
+  def flip_x(curve, opts \\ []), do: add(curve, {Scale, :flip, [:x, around!(opts)]}, :scale)
+
+  @doc ~s"""
+  Mirror the curve top to bottom (its y scale turns negative, or back again).
+
+  #{@around_doc}
+
+  ## Examples
+      iex> curve = Curves.define_bezier([{1, 0}, {3, 2}])
+      iex> Curves.solve!(Transform.flip_y(curve), 1.0)
+      {3.0, -2.0}
+      iex> Curves.solve!(Transform.flip_y(curve, around: :center), 1.0)
+      {3.0, 0.0}
+  """
+  @spec flip_y(T.curve_struct(), opts :: [around: around()]) :: T.curve_struct()
+  def flip_y(curve, opts \\ []), do: add(curve, {Scale, :flip, [:y, around!(opts)]}, :scale)
+
+  @doc ~s"""
+  Increase the rotation (counter-clockwise) by the given amount, in degrees.
+
+  #{@around_doc}
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear)
-      iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> x
-      0.5
-      iex> y
-      0.5
       iex> curve = Transform.inc_rotation(curve, 45.0)
       iex> {x, y} = Curves.solve!(curve, 0.5)
-      iex> Float.round(x, 5)
-      0.0
-      iex> Float.round(y, 5)
-      0.70711
+      iex> {Float.round(x, 5), Float.round(y, 5)}
+      {0.0, 0.70711}
   """
-  @spec inc_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def inc_rotation(curve, amount) when is_number(amount),
-    do: add(curve, {Rotate, :inc_rotation, [amount]}, :rotation)
+  @spec inc_rotation(T.curve_struct(), number(), opts :: [around: around()]) :: T.curve_struct()
+  def inc_rotation(curve, amount, opts \\ [])
 
-  def inc_rotation(_curve, amount), do: raise_not_a_number("inc_rotation/2", amount)
+  def inc_rotation(curve, amount, opts) when is_number(amount),
+    do: add(curve, {Rotate, :inc_rotation, [amount, around!(opts)]}, :rotation)
+
+  def inc_rotation(_curve, amount, _opts), do: raise_not_a_number("inc_rotation/3", amount)
 
   @doc ~s"""
-  Rotate the curve counter-clockwise, in degrees, around its position (the `:origin` option or
-  `set_position/2`, `{0.0, 0.0}` by default).
+  Rotate the curve counter-clockwise, in degrees, replacing the existing rotation. It turns around its
+  position (the `:origin` option or `set_position/2`, `{0.0, 0.0}` by default).
+
+  #{@around_doc}
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear_up_right)
-      iex> {x, y} = Curves.solve!(curve, 1.0)
-      iex> x
-      1.0
-      iex> y
-      1.0
       iex> curve = Transform.set_rotation(curve, 90)
       iex> {x, y} = Curves.solve!(curve, 1.0)
-      iex> Float.round(x, 5)
-      -1.0
-      iex> Float.round(y, 5)
-      1.0
-  """
-  @spec set_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def set_rotation(curve, amount) when is_number(amount),
-    do: add(curve, {Rotate, :set_rotation, [amount]}, :rotation)
+      iex> {Float.round(x, 5), Float.round(y, 5)}
+      {-1.0, 1.0}
 
-  def set_rotation(_curve, amount), do: raise_not_a_number("set_rotation/2", amount)
+  Turned around its middle, the line stays centred on the same spot:
+
+      iex> curve = Curves.define_bezier([{0, 0}, {2, 0}]) |> Transform.set_rotation(90, around: :center)
+      iex> for t <- [0.0, 1.0], {x, y} = Curves.solve!(curve, t), do: {Float.round(x, 5), Float.round(y, 5)}
+      [{1.0, -1.0}, {1.0, 1.0}]
+  """
+  @spec set_rotation(T.curve_struct(), number(), opts :: [around: around()]) :: T.curve_struct()
+  def set_rotation(curve, amount, opts \\ [])
+
+  def set_rotation(curve, amount, opts) when is_number(amount),
+    do: add(curve, {Rotate, :set_rotation, [amount, around!(opts)]}, :rotation)
+
+  def set_rotation(_curve, amount, _opts), do: raise_not_a_number("set_rotation/3", amount)
+
+  @doc ~s"""
+  The same curve, travelled the other way: `t` (or `u`) `= 0.0` is now its old end. Its shape,
+  position and transforms don't change. Handy to play an easing backwards, or follow a path in reverse.
+
+  ## Examples
+      iex> curve = Curves.define_bezier([{0, 0}, {1, 2}])
+      iex> Curves.solve!(Transform.reverse(curve), 0.0)
+      {1.0, 2.0}
+      iex> spline = Curves.define_catmull_rom([{0, 0}, {1, 1}, {2, 0}])
+      iex> Curves.solve!(Transform.reverse(spline), 2.0)
+      {0.0, 0.0}
+  """
+  @spec reverse(T.curve_struct()) :: T.curve_struct()
+  def reverse(curve) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.reverse(curve)
+      is_struct(curve, Spline) -> Spline.reverse(curve)
+      is_struct(curve, Polyline) -> Polyline.reverse(curve)
+      true -> Errors.raise_not_a_curve(curve)
+    end
+  end
+
+  # The :around option, checked: nil, :center or an {x, y} point.
+  @spec around!(keyword()) :: around()
+  defp around!(opts) when is_list(opts), do: opts |> Keyword.get(:around) |> check_around()
+
+  defp around!(opts),
+    do:
+      raise(
+        ArgumentError,
+        "expected a keyword list of options, like [around: :center], got: #{inspect(opts)}"
+      )
+
+  @spec check_around(term()) :: around()
+  defp check_around(around) when around in [nil, :center], do: around
+  defp check_around({x, y} = around) when is_number(x) and is_number(y), do: around
+
+  defp check_around(other) do
+    raise ArgumentError,
+          ":around must be :center or an {x, y} point in the curve's own coordinates, got: #{inspect(other)}"
+  end
+
+  # A scale must be a number or an {x, y} pair of numbers.
+  @spec raise_not_a_scale(String.t(), term()) :: no_return()
+  defp raise_not_a_scale(function, value) do
+    raise ArgumentError,
+          "Curves.Transform.#{function} needs a number or an {x, y} pair of numbers, got: #{inspect(value)}"
+  end
 end

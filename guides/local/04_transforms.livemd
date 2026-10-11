@@ -106,6 +106,83 @@ end)
 Kino.Layout.grid([button, frame], columns: 1)
 ```
 
+## Stretch, flip and turn around a point
+
+Scale the two directions separately (a negative scale flips that way), and choose what the curve turns
+around: its own `{0, 0}` (here, its first point), or its middle with `around: :center`. The purple dot is
+the point it turns around, which never moves.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      around: Kino.Input.select("Around", own_origin: "its own {0, 0}", center: ":center"),
+      scale_x: Kino.Input.range("Scale x", min: -3, max: 3, step: 0.1, default: 1),
+      scale_y: Kino.Input.range("Scale y", min: -3, max: 3, step: 0.1, default: 1),
+      rotation: Kino.Input.range("Rotation (degrees)", min: -180, max: 180, step: 5, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{around: around, scale_x: scale_x, scale_y: scale_y, rotation: rotation} ->
+  {opts, pivot} =
+    case around do
+      :own_origin -> {[], {0, 0}}
+      :center -> {[around: :center], {2, 1.5}}
+    end
+
+  shape
+  |> Transform.set_scale({scale_x, scale_y}, opts)
+  |> Transform.set_rotation(rotation, opts)
+  |> Curves.Svg.render(width: 480, height: 480, view: {{-10, -10}, {10, 10}}, markers: [pivot])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{around: :own_origin, scale_x: 1, scale_y: 1, rotation: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+Turn the rotation with **Around** set to each option, and watch the difference: around its own `{0, 0}`
+the shape swings around its first point; around `:center` it spins in place. `flip_x/2` and `flip_y/2` are
+shortcuts for a scale of `-1` one way.
+
+## Going backwards
+
+`Transform.reverse/1` gives you the same curve travelled the other way: `t = 0.0` becomes its old end.
+Drag `t` and switch the direction:
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      direction: Kino.Input.select("Direction", forwards: "Forwards", backwards: "Backwards (reverse/1)"),
+      t: Kino.Input.range("t", min: 0, max: 1, step: 0.01, default: 0.2)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{direction: direction, t: t} ->
+  curve =
+    case direction do
+      :forwards -> shape
+      :backwards -> Transform.reverse(shape)
+    end
+
+  curve
+  |> Curves.Svg.render(width: 480, height: 360, markers: [Curves.solve!(curve, t)])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{direction: :forwards, t: 0.2}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
 ## Results between 0 and 1: `:force_percent`
 
 Sometimes you only care *where along the shape* a point is, not its real coordinates; for example to

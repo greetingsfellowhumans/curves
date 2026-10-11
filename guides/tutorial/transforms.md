@@ -45,6 +45,39 @@ shape
 
 ![Moved, scaled and rotated](images/transform_all.svg)
 
+## Stretch, flip and turn around a point
+
+Give `set_scale/3` an `{x, y}` pair to scale the two directions separately, and use `flip_x/2` or
+`flip_y/2` to mirror a curve:
+
+| | |
+| --- | --- |
+| ![Stretched](images/transform_stretched.svg) | ![Flipped](images/transform_flipped.svg) |
+| `Transform.set_scale(shape, {2, 0.5})` | `Transform.flip_y(shape, around: :center)` |
+
+By default, everything turns around the curve's own `{0, 0}` (here, its first point). Pass `around:` to
+turn around a different point, which then stays exactly where it is: `:center` is the middle of the curve's
+points, or give any `{x, y}` in the curve's own coordinates. The purple dot is the point it turned around:
+
+| | | |
+| --- | --- | --- |
+| ![The original](images/transform_pivot_none.svg) | ![Around {0, 0}](images/transform_pivot_position.svg) | ![Around the center](images/transform_pivot_center.svg) |
+| `shape` | `Transform.set_rotation(shape, 90)` | `Transform.set_rotation(shape, 90, around: :center)` |
+
+`around:` works with `set_scale/3`, `inc_scale/3`, `flip_x/2`, `flip_y/2`, `set_rotation/3` and `inc_rotation/3`.
+
+## Going backwards
+
+`Transform.reverse/1` gives you the same curve travelled the other way, so `t = 0.0` is its old end.
+Its shape doesn't change. It's handy to play an easing backwards, or to follow a path in reverse:
+
+```elixir
+Curves.solve!(shape, 0.0)
+#=> {0.0, 0.0}
+shape |> Transform.reverse() |> Curves.solve!(0.0)
+#=> {4.0, 0.0}
+```
+
 ## `set_` or `inc_`?
 
 Each transform comes in two flavours:

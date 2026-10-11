@@ -18,8 +18,10 @@ defmodule Curves.Utils.Vec do
   @spec subtract(T.point_tuple(), T.point_tuple()) :: T.point_tuple()
   def subtract({x, y}, {dx, dy}), do: {x - dx, y - dy}
 
-  # Multiplies both coordinates by `k`, which scales about {0, 0}.
-  @spec scale(T.point_tuple(), number()) :: T.point_tuple()
+  # Multiplies both coordinates by `k`, which scales about {0, 0}. With a {kx, ky} pair, x is
+  # multiplied by kx and y by ky, which stretches (or, with a negative, flips) one way more than the other.
+  @spec scale(T.point_tuple(), number() | {number(), number()}) :: T.point_tuple()
+  def scale({x, y}, {kx, ky}), do: {x * kx, y * ky}
   def scale({x, y}, k), do: {x * k, y * k}
 
   # Rotates a point counter-clockwise by `radians` around `origin`.

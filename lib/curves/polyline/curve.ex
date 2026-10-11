@@ -189,6 +189,16 @@ defmodule Curves.Polyline.Curve do
     %{curve | compressed: cb}
   end
 
+  # The same polyline travelled the other way: its knots in reverse order, so u = 0 is the old end.
+  # Called by Curves.Transform.reverse/1. Transforms still apply on top, as before.
+  @doc false
+  @spec reverse(t()) :: t()
+  def reverse(curve) do
+    curve = %{curve | points: Enum.reverse(curve.points)}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
   # The knots after moving, scaling and rotating, for Curves.Svg to draw.
   @doc false
   @spec transformed_points(t()) :: T.point_list()

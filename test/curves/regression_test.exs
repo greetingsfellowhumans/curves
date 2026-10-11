@@ -514,10 +514,38 @@ defmodule Curves.RegressionTest do
     test "a transform amount that isn't a number" do
       curve = Curves.define_bezier(:linear)
 
-      for fun <- [:inc_x, :inc_y, :set_scale, :inc_scale, :set_rotation, :inc_rotation] do
+      for fun <- [:inc_x, :inc_y] do
         assert_raise ArgumentError, "Curves.Transform.#{fun}/2 needs a number, got: :a", fn ->
           apply(Curves.Transform, fun, [curve, :a])
         end
+      end
+
+      for fun <- [:set_rotation, :inc_rotation] do
+        assert_raise ArgumentError, "Curves.Transform.#{fun}/3 needs a number, got: :a", fn ->
+          apply(Curves.Transform, fun, [curve, :a])
+        end
+      end
+
+      # A scale can also be an {x, y} pair.
+      for fun <- [:set_scale, :inc_scale], bad <- [:a, {1, :a}, {1, 2, 3}] do
+        message =
+          "Curves.Transform.#{fun}/3 needs a number or an {x, y} pair of numbers, got: #{inspect(bad)}"
+
+        assert_raise ArgumentError, message, fn -> apply(Curves.Transform, fun, [curve, bad]) end
+      end
+    end
+
+    test "a bad :around option" do
+      curve = Curves.define_bezier(:linear)
+
+      for bad <- [:middle, {1, :a}, 5] do
+        assert_raise ArgumentError, ~r/:around must be :center or an \{x, y\} point/, fn ->
+          Curves.Transform.set_rotation(curve, 90, around: bad)
+        end
+      end
+
+      assert_raise ArgumentError, ~r/expected a keyword list of options/, fn ->
+        Curves.Transform.flip_x(curve, :center)
       end
     end
 

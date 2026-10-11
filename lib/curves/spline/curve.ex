@@ -128,6 +128,23 @@ defmodule Curves.Spline.Curve do
     %{curve | compressed: cb}
   end
 
+  # The same spline travelled the other way, so u = 0 is the old end. Every spline type is stored
+  # as 4-point segments that read the same backwards (a Bezier segment [p0, c0, c1, p1] backwards is
+  # [p1, c1, c0, p0]; Catmull-Rom's [previous, k0, k1, next] becomes [next, k1, k0, previous]), so it
+  # reverses the segments and the points in each one. Called by Curves.Transform.reverse/1.
+  @doc false
+  @spec reverse(t()) :: t()
+  def reverse(curve) do
+    curve = %{
+      curve
+      | segments: curve.segments |> Enum.reverse() |> Enum.map(&Enum.reverse/1),
+        points: Enum.reverse(curve.points)
+    }
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
   # A transformed copy of the original points (knots or control points), for Curves.Svg
   # to draw. `curve.points` itself is never changed.
   @doc false

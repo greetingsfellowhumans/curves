@@ -11,6 +11,11 @@ The second release candidate. It has three breaking changes, listed under Change
 
 ### Added
 
+- More transforms in `Curves.Transform`:
+  - `set_scale/3` and `inc_scale/3` take an `{x, y}` pair to scale the two directions separately, e.g. `set_scale(curve, {2, 0.5})`.
+  - `flip_x/2` and `flip_y/2` mirror a curve.
+  - An `around:` option on the scale, flip and rotation functions turns the curve around `:center` (the middle of its points) or any `{x, y}` point in its own coordinates, which then stays where it is.
+  - `reverse/1` gives the same curve travelled the other way.
 - `Curves.define_polyline/2` makes a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`. It is solved with `u` like a spline (each line adds one to `u`), at a steady speed along each line, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`.
 - A new tutorial for new users, in four chapters: your first curve, Bezier curves, splines, and transforms and drawing. The hexdocs version is full of pictures drawn with `Curves.Svg`, and its simplified first page is now the docs' landing page. Each chapter is also an interactive Livebook with sliders, animations and an easing race. They replace the two old livebooks.
 - `Curves.Svg` has a `:view` option, `{{x1, y1}, {x2, y2}}`, that draws a fixed area instead of fitting the picture to the curve, so several pictures or animation frames share the same scale.

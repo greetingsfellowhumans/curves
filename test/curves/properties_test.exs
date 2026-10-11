@@ -166,6 +166,90 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  property "reverse travels the same path the other way" do
+    check all(curve <- curve(), f <- fraction()) do
+      max_u = Curves.max_u(curve)
+      u = f * max_u
+      reversed = Transform.reverse(curve)
+      assert_near(Curves.solve!(reversed, u), Curves.solve!(curve, max_u - u), 1.0e-9)
+      assert_near(Curves.solve!(Transform.reverse(reversed), u), Curves.solve!(curve, u), 1.0e-9)
+    end
+  end
+
+  # The first point of a bezier or polyline is where u = 0 lands, so it's easy to watch.
+  property "scaling, flipping or rotating around a point leaves that point where it was" do
+    check all(
+            points <- points(2, 4),
+            kind <- StreamData.member_of([:bezier, :polyline]),
+            position <- point(),
+            {kx, ky} <-
+              StreamData.tuple(
+                {StreamData.float(min: -3.0, max: 3.0), StreamData.float(min: -3.0, max: 3.0)}
+              ),
+            deg <- StreamData.float(min: -360.0, max: 360.0),
+            change <-
+              StreamData.member_of([
+                :set_scale,
+                :inc_scale,
+                :set_rotation,
+                :inc_rotation,
+                :flip_x,
+                :flip_y
+              ])
+          ) do
+      curve =
+        case kind do
+          :bezier -> Curves.define_bezier(points)
+          :polyline -> Curves.define_polyline(points)
+        end
+        |> Transform.set_position(position)
+        |> Transform.set_scale({kx, ky})
+        |> Transform.set_rotation(deg)
+
+      before = Curves.solve!(curve, 0.0)
+      around = [around: hd(points)]
+
+      changed =
+        case change do
+          :set_scale -> Transform.set_scale(curve, {ky, kx}, around)
+          :inc_scale -> Transform.inc_scale(curve, 0.5, around)
+          :set_rotation -> Transform.set_rotation(curve, deg / 2, around)
+          :inc_rotation -> Transform.inc_rotation(curve, 33, around)
+          :flip_x -> Transform.flip_x(curve, around)
+          :flip_y -> Transform.flip_y(curve, around)
+        end
+
+      assert_near(Curves.solve!(changed, 0.0), before, 1.0e-6)
+    end
+  end
+
+  property "separate x and y scales, and flips, scale each direction on its own" do
+    check all(
+            curve <- curve(),
+            kx <- StreamData.float(min: -3.0, max: 3.0),
+            ky <- StreamData.float(min: -3.0, max: 3.0),
+            f <- fraction()
+          ) do
+      u = f * Curves.max_u(curve)
+      {x, y} = Curves.solve!(curve, u)
+
+      assert_near(
+        Curves.solve!(Transform.set_scale(curve, {kx, ky}), u),
+        {x * kx, y * ky},
+        1.0e-6
+      )
+
+      assert_near(Curves.solve!(Transform.flip_x(curve), u), {-x, y}, 1.0e-9)
+      assert_near(Curves.solve!(Transform.flip_y(curve), u), {x, -y}, 1.0e-9)
+
+      assert_near(
+        Curves.solve!(curve |> Transform.flip_x() |> Transform.flip_x(), u),
+        {x, y},
+        1.0e-9
+      )
+    end
+  end
+
   property "set_rotation keeps every point's distance from the origin" do
     check all(curve <- curve(), deg <- StreamData.float(min: -360.0, max: 360.0), f <- fraction()) do
       u = f * Curves.max_u(curve)

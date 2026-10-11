@@ -36,6 +36,8 @@ hermite = fn middle_tangent ->
 end
 
 shape = Curves.define_bezier([{0, 0}, {1, 3}, {3, 3}, {4, 0}])
+# One fixed area for the three rotation pictures, so you can compare where the shape ends up.
+pivot_view = {{-4, -1}, {5, 5}}
 
 predefined_gallery =
   for key <- [
@@ -141,6 +143,16 @@ images =
          title: "Moved, scaled and rotated: the start stays at {5, 2}",
          markers: [{5, 2}]
        ]},
+    {"#{guides}/transform_stretched.svg", Transform.set_scale(shape, {2, 0.5}),
+     small ++ [title: "set_scale(shape, {2, 0.5})"]},
+    {"#{guides}/transform_flipped.svg", Transform.flip_y(shape, around: :center),
+     small ++ [title: "flip_y(shape, around: :center)"]},
+    {"#{guides}/transform_pivot_none.svg", shape,
+     small ++ [title: "The original", view: pivot_view]},
+    {"#{guides}/transform_pivot_position.svg", Transform.set_rotation(shape, 90),
+     small ++ [title: "set_rotation(shape, 90)", view: pivot_view, markers: [{0, 0}]]},
+    {"#{guides}/transform_pivot_center.svg", Transform.set_rotation(shape, 90, around: :center),
+     small ++ [title: "...around: :center", view: pivot_view, markers: [{2, 1.5}]]},
     {"#{guides}/transform_percent.svg", Transform.set_scale(shape, 3),
      medium ++
        [
