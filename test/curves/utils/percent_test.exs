@@ -43,7 +43,8 @@ defmodule Curves.Utils.PercentTest do
     end
 
     test "integer coordinates raise" do
-      assert_raise FunctionClauseError, fn -> Percent.normalize(@box, {5, 25}) end
+      # apply/3 keeps the compiler's type checker from warning about the deliberately wrong input.
+      assert_raise FunctionClauseError, fn -> apply(Percent, :normalize, [@box, {5, 25}]) end
     end
   end
 end
