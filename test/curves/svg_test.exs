@@ -216,6 +216,56 @@ defmodule Curves.SvgTest do
       assert dashed.(Curves.define_catmull_rom(@b_spline)) == [6]
     end
 
+    test "markers highlight extra points, and the image grows to fit them" do
+      curve = Curves.define_bezier(:linear)
+      plain = Svg.render(curve, width: 100, height: 100, padding: 0, show_axes: false)
+      refute plain =~ "#7048e8"
+
+      svg =
+        Svg.render(curve,
+          markers: [Curves.solve!(curve, 0.5)],
+          width: 100,
+          height: 100,
+          padding: 0
+        )
+
+      assert svg =~ ~s(<circle cx="50.00" cy="50.00" r="7" fill="#7048e8" stroke="#ffffff")
+
+      # A marker outside the curve widens the view: x spans 0..2 (50 px per unit), so the end
+      # {1, 1} lands halfway across, and y (0..1) is centred vertically.
+      wide =
+        Svg.render(curve,
+          markers: [{2, 1}],
+          width: 100,
+          height: 100,
+          padding: 0,
+          show_axes: false
+        )
+
+      assert List.last(line_points(wide)) == {50.0, 25.0}
+    end
+
+    test "a fixed view draws the same area whatever the curve's size" do
+      opts = [width: 100, height: 100, padding: 0, show_axes: false, view: {{0, 0}, {10, 10}}]
+      small = Curves.define_bezier([{0, 0}, {1, 1}])
+      big = Curves.Transform.set_scale(small, 5)
+
+      assert List.last(line_points(Svg.render(small, opts))) == {10.0, 90.0}
+      assert List.last(line_points(Svg.render(big, opts))) == {50.0, 50.0}
+    end
+
+    test "view must be two corners" do
+      assert_raise ArgumentError, ~r/:view must be two corners/, fn ->
+        Svg.render(Curves.define_bezier(:linear), view: {0, 10})
+      end
+    end
+
+    test "markers must be {x, y} points" do
+      assert_raise ArgumentError, ~r/expected an \{x, y\} point with numbers, got: :nope/, fn ->
+        Svg.render(Curves.define_bezier(:linear), markers: [:nope])
+      end
+    end
+
     test "save!/3 writes the file and returns the path" do
       path = Path.join(System.tmp_dir!(), "curves_svg_save_test.svg")
       assert Svg.save!(Curves.define_bezier(:linear), path, samples: 3) == path

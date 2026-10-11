@@ -26,6 +26,10 @@ defmodule Curves.Svg do
   | `:point_radius` | `5` | Size of the dots. |
   | `:show_polygon` | `true` | Draw dashed lines showing how the curve's points shape it. For beziers and bezier splines they go from each control point to the knot it pulls on; for other splines one line joins the points in order. |
   | `:polygon_color` | `"#adb5bd"` | Colour of that dashed line. |
+  | `:view` | `nil` | The area to draw, as two opposite corners: `{{x1, y1}, {x2, y2}}`. `nil` fits the picture to the curve. A fixed view keeps several pictures (or the frames of an animation) at the same scale, so you can see a curve move and grow. Anything outside it is cut off. |
+  | `:markers` | `[]` | Extra `{x, y}` points to highlight, e.g. `[Curves.solve!(curve, 0.5)]` to show where `t = 0.5` lands. They are in the same coordinates `Curves.solve/3` returns. |
+  | `:marker_color` | `"#7048e8"` | Colour of the markers. |
+  | `:marker_radius` | `7` | Size of the markers. |
   | `:title` | `nil` | Text drawn in the top-left corner. |
   | `:show_axes` | `true` | Draw a grid with the x and y values along the bottom and left edges, like a ruler. The lines at x = 0 and y = 0 are darker. The image is always scaled to fit, so without the grid a curve looks the same at any size. The numbers sit in the padding, so a small `:padding` hides them. `false` turns the grid off. |
   | `:axis_color` | `"#868e96"` | Colour of the grid lines and their numbers. |
@@ -48,7 +52,7 @@ defmodule Curves.Svg do
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Types, as: T
-  alias Curves.Utils.Errors
+  alias Curves.Utils.{Errors, Vec}
 
   # How curve coordinates map to pixels; see view/2.
   @typep view :: %{
@@ -74,6 +78,10 @@ defmodule Curves.Svg do
     show_polygon: true,
     polygon_color: "#adb5bd",
     title: nil,
+    view: nil,
+    markers: [],
+    marker_color: "#7048e8",
+    marker_radius: 7,
     show_axes: true,
     axis_color: "#868e96",
     solve_opts: []
@@ -97,7 +105,8 @@ defmodule Curves.Svg do
     opts = Keyword.merge(@defaults, opts)
     line = sample(curve, opts[:samples], opts[:solve_opts])
     points = control_points(curve)
-    view = view(line ++ shown_points(points, opts), opts)
+    markers = Enum.map(opts[:markers], &Vec.new/1)
+    view = view(area(opts[:view], line ++ shown_points(points, opts) ++ markers), opts)
     to_pixels = &to_pixels(view, &1)
 
     [
@@ -107,6 +116,7 @@ defmodule Curves.Svg do
       polygon(opts[:show_polygon], control_lines(curve), to_pixels, opts),
       ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:curve_color])}" stroke-width="#{opts[:curve_width]}" stroke-linejoin="round" stroke-linecap="round"/>\n),
       dots(opts[:show_points], points, to_pixels, opts),
+      markers(markers, to_pixels, opts),
       title(opts[:title], opts),
       "</svg>\n"
     ]
@@ -171,6 +181,18 @@ defmodule Curves.Svg do
       true -> Errors.raise_not_a_curve(curve)
     end
     |> Enum.map(&Enum.dedup/1)
+  end
+
+  # The points the picture is fitted to: the two corners of the :view option, or else everything drawn.
+  @spec area({T.point_tuple(), T.point_tuple()} | nil, T.point_list()) :: T.point_list()
+  defp area(nil, drawn), do: drawn
+
+  defp area({corner1, corner2}, _drawn) when is_tuple(corner1) and is_tuple(corner2),
+    do: [Vec.new(corner1), Vec.new(corner2)]
+
+  defp area(other, _drawn) do
+    raise ArgumentError,
+          ":view must be two corners {{x1, y1}, {x2, y2}}, or nil, got: #{inspect(other)}"
   end
 
   # Where the curve sits in the image: how many pixels per unit (the same on both axes, so the
@@ -247,6 +269,16 @@ defmodule Curves.Svg do
       {x, y} = to_pixels.(point)
 
       ~s(  <circle cx="#{format(x)}" cy="#{format(y)}" r="#{opts[:point_radius]}" fill="#{escape(opts[:point_color])}"/>\n)
+    end
+  end
+
+  # The highlighted points from the :markers option, drawn on top with a white ring so they stand out.
+  @spec markers(T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) :: iodata()
+  defp markers(points, to_pixels, opts) do
+    for point <- points do
+      {x, y} = to_pixels.(point)
+
+      ~s(  <circle cx="#{format(x)}" cy="#{format(y)}" r="#{opts[:marker_radius]}" fill="#{escape(opts[:marker_color])}" stroke="#ffffff" stroke-width="2"/>\n)
     end
   end
 
