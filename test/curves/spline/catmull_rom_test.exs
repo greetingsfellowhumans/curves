@@ -9,7 +9,7 @@ defmodule Curves.Spline.CatmullRomTest do
   def initial_args(ctx, k \\ :catmull_rom) do
     curve_spec = ctx.curve_specs[k]
     bezier = Curves.define_spline(curve_spec, :bezier_spline)
-    segments_list = Nx.to_list(bezier.segments) |> Enum.with_index()
+    segments_list = Enum.with_index(bezier.segments)
     {segments_list, bezier}
   end
 
@@ -19,14 +19,14 @@ defmodule Curves.Spline.CatmullRomTest do
       assert is_struct(curve, Curves.Spline.Curve)
       assert is_list(segments_list)
       [{hd, 0} | _] = segments_list
-      assert hd == [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
+      assert hd == [{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}]
     end
 
     test "get_prev and get_next", ctx do
       {segments_list, _curve} = initial_args(ctx)
       [{first, 0}, {second, 1} | _] = segments_list
-      assert first == [[0.0, 0.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]]
-      assert second == [[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 1.0, 1.0]]
+      assert first == [{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}]
+      assert second == [{1.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {1.0, 1.0}]
 
       assert get_prev_coord(segments_list, 1, second) == {0.0, 0.0}
       assert get_prev_coord(segments_list, 0, first) == {-1.0, 0.0}
@@ -35,7 +35,7 @@ defmodule Curves.Spline.CatmullRomTest do
       assert get_next_coord(segments_list, 1, second) == {0.0, 1.0}
 
       {last, _} = Enum.at(segments_list, Enum.count(segments_list) - 1)
-      [[_, _, _, 1.0], [_, _, _, 2.0]] = last
+      [_, _, _, {1.0, 2.0}] = last
 
       assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {2.0, 2.0}
 
@@ -48,7 +48,7 @@ defmodule Curves.Spline.CatmullRomTest do
       assert get_next_coord(segments_list, 1, second) == {15.0, 14.0}
 
       {last, _} = Enum.at(segments_list, Enum.count(segments_list) - 1)
-      [[_, _, _, 18.0], [_, _, _, 10.0]] = last
+      [_, _, _, {18.0, 10.0}] = last
       assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {20.0, 8.0}
     end
 

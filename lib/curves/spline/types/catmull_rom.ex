@@ -29,9 +29,10 @@ defmodule Curves.Spline.Type.CatmullRom do
   use Curves.Spline.Type
 
   alias Curves.Types, as: T
+  alias Curves.Utils.{Segment, Vec}
 
-  # A segment as nested lists, [[x0, x1, x2, x3], [y0, y1, y2, y3]], paired with its index.
-  @type indexed_segment :: {list(list(number())), non_neg_integer()}
+  # A segment, [p0, p1, p2, p3], paired with its index.
+  @type indexed_segment :: {Segment.t(), non_neg_integer()}
 
   @doc false
   @impl true
@@ -44,16 +45,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   # Pk   == x1/y1
   # Pk+1 == x2/y2
   # Pk+2 == x3/y3
-  @matrix ~MAT<
-    0 2 0 0
-    -1 0 1 0
-    2 -5 4 -1
-    -1 3 -3 1
-  >
-
-  @doc false
-  @impl true
-  def point_count(), do: 4
+  @matrix [[0, 2, 0, 0], [-1, 0, 1, 0], [2, -5, 4, -1], [-1, 3, -3, 1]]
 
   @doc false
   @impl true
@@ -61,66 +53,39 @@ defmodule Curves.Spline.Type.CatmullRom do
 
   @doc false
   @impl true
-  def power_series(t) do
-    [1, t, t ** 2, t ** 3]
-    |> Nx.tensor()
-    |> Nx.divide(2)
-  end
+  def blending_factor(), do: 0.5
 
   @doc false
   @impl true
   def map_segments(all_segments, _curve) do
-    Enum.map(all_segments, fn {[[x1, _, _, x2], [y1, _, _, y2]] = segment, segment_idx} ->
-      {x0, y0} = get_prev_coord(all_segments, segment_idx, segment)
-      {x3, y3} = get_next_coord(all_segments, segment_idx, segment)
-
-      map_segment([[x0, x1, x2, x3], [y0, y1, y2, y3]])
+    Enum.map(all_segments, fn {[p1, _, _, p2] = segment, segment_idx} ->
+      [
+        get_prev_coord(all_segments, segment_idx, segment),
+        p1,
+        p2,
+        get_next_coord(all_segments, segment_idx, segment)
+      ]
     end)
-  end
-
-  @doc false
-  @spec map_segment(list(list(number()))) :: list(list(number()))
-  def map_segment([[x0, x1, x2, x3], [y0, y1, y2, y3]]) do
-    [
-      [x0, x1, x2, x3],
-      [y0, y1, y2, y3]
-    ]
   end
 
   # The point before this segment's start: the previous segment's first point, or a mirrored point at the start.
   @doc false
-  @spec get_prev_coord(list(indexed_segment()), non_neg_integer(), list(list(number()))) ::
-          T.point_tuple()
-  def get_prev_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
-    prev_idx = segment_idx - 1
-
-    if prev_idx >= 0 do
-      prev_seg = Enum.at(all_segments, segment_idx - 1)
-      {[[x0, _, _, _x1], [y0, _, _, _y1]], _idx} = prev_seg
-      {x0, y0}
-    else
-      x = x1 + (x1 - x2)
-      y = y1 + (y1 - y2)
-      {x, y}
+  @spec get_prev_coord(list(indexed_segment()), non_neg_integer(), Segment.t()) :: T.point_tuple()
+  def get_prev_coord(all_segments, segment_idx, [p1, _, _, p2]) do
+    case Enum.at(all_segments, segment_idx - 1) do
+      {[p0 | _], _idx} when segment_idx > 0 -> p0
+      _ -> Vec.add(p1, Vec.subtract(p1, p2))
     end
   end
 
   # The point after this segment's end: the next segment's last point, or a mirrored point at the end.
   @doc false
-  @spec get_next_coord(list(indexed_segment()), non_neg_integer(), list(list(number()))) ::
-          T.point_tuple()
-  def get_next_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
-    next_seg = Enum.at(all_segments, segment_idx + 1)
-
-    case next_seg do
-      {[[_, _, _, x3], [_, _, _, y3]], _idx} ->
-        {x3, y3}
-
+  @spec get_next_coord(list(indexed_segment()), non_neg_integer(), Segment.t()) :: T.point_tuple()
+  def get_next_coord(all_segments, segment_idx, [p1, _, _, p2]) do
+    case Enum.at(all_segments, segment_idx + 1) do
+      {[_, _, _, p3], _idx} -> p3
       # Just mirror the slope from here to the next point
-      nil ->
-        x = x2 + (x2 - x1)
-        y = y2 + (y2 - y1)
-        {x, y}
+      nil -> Vec.add(p2, Vec.subtract(p2, p1))
     end
   end
 end

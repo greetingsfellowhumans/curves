@@ -37,7 +37,6 @@ defmodule Curves.Svg do
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
-  alias Curves.TensorTypes, as: TensorT
   alias Curves.Types, as: T
 
   @defaults [
@@ -135,14 +134,7 @@ defmodule Curves.Svg do
     curve
     |> Curves.Transform.apply_all_transformations()
     |> Curves.Transform.transform_points(points)
-    |> to_tuples()
-  end
-
-  # {2, n} tensor to a list of n {x, y} tuples.
-  @spec to_tuples(TensorT.points()) :: T.point_list()
-  defp to_tuples(points) do
-    [xs, ys] = Nx.to_list(points)
-    Enum.zip(xs, ys) |> Enum.dedup()
+    |> Enum.dedup()
   end
 
   # Returns a function that maps a curve point to an SVG pixel. The scale is the same on

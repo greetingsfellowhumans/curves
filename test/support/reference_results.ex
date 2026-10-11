@@ -76,8 +76,12 @@ defmodule Curves.Support.ReferenceResults do
   # The recording code was Nx-based: even with `float_dtype: 64`, it built `t`, its powers and the
   # rotation angle as 32-bit floats, so recorded values carry rounding of about 1e-7. A real bug
   # (a wrong matrix, a transform in the wrong order) is off by far more than 1e-6.
+  # Rotated cases get 1e-5: the old rotation matrix was 32-bit too, about 6e-8 of each coordinate,
+  # so up to ~6e-6 on a curve with coordinates near 100, even where the result itself is small.
   @spec tolerance(String.t()) :: float()
-  def tolerance(_name), do: 1.0e-6
+  def tolerance(name) do
+    if String.contains?(name, ["rotated", "combined"]), do: 1.0e-5, else: 1.0e-6
+  end
 
   # Builds the curve, applying define options first and then each transform in order.
   @spec apply_steps((keyword() -> struct()), keyword() | list(), keyword()) :: struct()

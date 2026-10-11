@@ -30,12 +30,7 @@ defmodule Curves.Spline.Type.Hermite do
   use Curves.Spline.Type,
     derivative: 0
 
-  @matrix_new ~MAT<
-    1 0 0 0
-    0 1 0 0
-    -3 -2 3 -1
-    2 1 -2 1
-  >
+  @matrix_new [[1, 0, 0, 0], [0, 1, 0, 0], [-3, -2, 3, -1], [2, 1, -2, 1]]
 
   @doc false
   @impl true
@@ -45,10 +40,6 @@ defmodule Curves.Spline.Type.Hermite do
     points
     |> Curves.define_spline(:hermite, opts)
   end
-
-  @doc false
-  @impl true
-  def point_count(), do: 4
 
   @doc false
   @impl true
@@ -64,16 +55,13 @@ defmodule Curves.Spline.Type.Hermite do
 
   # Sets the two control points 1/3 of the way along the curve's slope at each knot.
   @doc false
-  @spec map_segment(Curves.Spline.Curve.t(), list(list(number())), non_neg_integer()) ::
-          list(list(number()))
-  def map_segment(curve, [[x0, _x1, _x2, x3], [y0, _y1, _y2, y3]], idx) do
+  @spec map_segment(Curves.Spline.Curve.t(), Curves.Utils.Segment.t(), non_neg_integer()) ::
+          Curves.Utils.Segment.t()
+  def map_segment(curve, [{x0, y0}, _p1, _p2, {x3, y3}], idx) do
     u = idx * 1.0
     {dx, dy} = d(curve, u)
     {dx1, dy1} = d(curve, u + 1.0)
 
-    [
-      [x0, x0 + dx / 3, x3 - dx1 / 3, x3],
-      [y0, y0 + dy / 3, y3 - dy1 / 3, y3]
-    ]
+    [{x0, y0}, {x0 + dx / 3, y0 + dy / 3}, {x3 - dx1 / 3, y3 - dy1 / 3}, {x3, y3}]
   end
 end

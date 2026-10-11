@@ -2,7 +2,7 @@ defmodule Curves.Transform.RotateTest do
   use ExUnit.Case
   alias Curves.Transform
   alias Curves.Transform.Rotate
-  alias Curves.Utils.{Point, Points, Segment}
+  alias Curves.Utils.Vec
   # doctest Transform
   import Curves.Support.SampleCurves
 
@@ -23,59 +23,28 @@ defmodule Curves.Transform.RotateTest do
   end
 
   test "should rotate a point" do
-    rad = Rotate.degrees_to_radians(90)
-    p0 = Point.new_point({1.0, 1.0})
-    origin = Point.new_point({0, 0})
-    {x, y} = Rotate.rotate_points(p0, rad, origin) |> Point.to_tuple()
+    origin = {0.0, 0.0}
+    {x, y} = Vec.rotate({1.0, 1.0}, Rotate.degrees_to_radians(90), origin)
     assert {Float.round(x, 5), Float.round(y, 5)} == {-1.0, 1.0}
 
-    rad = Rotate.degrees_to_radians(180)
-    p0 = Point.new_point({1.0, 1.0})
-    {x, y} = Rotate.rotate_points(p0, rad, origin) |> Point.to_tuple()
+    {x, y} = Vec.rotate({1.0, 1.0}, Rotate.degrees_to_radians(180), origin)
     assert {Float.round(x, 5), Float.round(y, 5)} == {-1.0, -1.0}
 
-    rad = Rotate.degrees_to_radians(-45)
-    p0 = Point.new_point({1.0, 1.0})
-    {x, y} = Rotate.rotate_points(p0, rad, origin) |> Point.to_tuple()
+    {x, y} = Vec.rotate({1.0, 1.0}, Rotate.degrees_to_radians(-45), origin)
     assert Float.round(x, 5) > 1.0
     assert Float.round(y, 5) == 0.0
   end
 
   test "should rotate a list of points" do
-    origin = Point.new_point({0, 0})
     rad = Rotate.degrees_to_radians(90)
-    list = Points.new_points([{1.0, 1.0}, {0.5, 0.5}, {-0.5, 0.25}])
-    assert list == Nx.subtract(list, origin)
 
-    tuples =
-      Rotate.rotate_points(list, rad, origin)
-      |> Points.to_tuples()
-      |> Enum.map(fn {x, y} -> {Float.round(x, 5), Float.round(y, 5)} end)
-
-    [{x0, y0}, {x1, y1}, {x2, y2}] = tuples
-    assert x0 == -1.0
-    assert y0 == 1.0
-
-    assert x1 == -0.5
-    assert y1 == 0.5
-
-    assert x2 == -0.25
-    assert y2 == -0.5
-  end
-
-  test "should rotate a segment of points", ctx do
-    origin = Point.new_point({0, 0})
-    rad = Rotate.degrees_to_radians(90)
-    segments = Segment.new_segments(ctx.curve_specs.curve1)
-    {size, _, _} = Nx.shape(segments)
-
-    li =
-      for i <- 0..(size - 1) do
-        segments[i] |> Rotate.rotate_points(rad, origin)
+    rotated =
+      for p <- [{1.0, 1.0}, {0.5, 0.5}, {-0.5, 0.25}] do
+        {x, y} = Vec.rotate(p, rad, {0.0, 0.0})
+        {Float.round(x, 5), Float.round(y, 5)}
       end
 
-    segments2 = Nx.stack(li) |> Nx.rename([:segment, :dimension, :point])
-    assert Nx.shape(segments) == Nx.shape(segments2)
+    assert rotated == [{-1.0, 1.0}, {-0.5, 0.5}, {-0.25, -0.5}]
   end
 
   test "should rotate a bezier curve", _ctx do

@@ -4,7 +4,6 @@ defmodule Curves.Transform do
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
-  alias Curves.TensorTypes, as: TensorT
   alias Curves.Transform.{Move, Rotate, Scale}
   alias Curves.Types, as: T
   alias Curves.Utils.Vec
@@ -26,19 +25,15 @@ defmodule Curves.Transform do
   defp apply_origin_offset(%Bezier{points: points, origin: origin} = curve),
     do: %{curve | points: Enum.map(points, &Vec.add(&1, origin))}
 
-  defp apply_origin_offset(%Spline{segments: segments} = curve) do
-    segments = Nx.add(segments, origin_tensor(curve))
-    Map.put(curve, :segments, segments)
-  end
+  defp apply_origin_offset(%Spline{segments: segments, origin: origin} = curve),
+    do: %{curve | segments: map_segment_points(segments, &Vec.add(&1, origin))}
 
   @spec apply_scale(T.curve_struct()) :: T.curve_struct()
   defp apply_scale(%Bezier{points: points, scale: scale} = curve),
     do: %{curve | points: Enum.map(points, &Vec.scale(&1, scale))}
 
-  defp apply_scale(%Spline{segments: segments, scale: scale, origin: _origin} = curve) do
-    segments = Nx.multiply(segments, Nx.tensor([[[scale]]]))
-    Map.put(curve, :segments, segments)
-  end
+  defp apply_scale(%Spline{segments: segments, scale: scale} = curve),
+    do: %{curve | segments: map_segment_points(segments, &Vec.scale(&1, scale))}
 
   @doc false
   # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
@@ -48,37 +43,28 @@ defmodule Curves.Transform do
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve),
     do: %{curve | points: Enum.map(points, &Vec.rotate(&1, angle, origin))}
 
-  def apply_rotation(%Spline{segments: segments, rotation: angle} = curve) do
-    segments = Rotate.rotate_points(segments, angle, origin_tensor(curve))
-    Map.put(curve, :segments, segments)
-  end
+  def apply_rotation(%Spline{segments: segments, rotation: angle, origin: origin} = curve),
+    do: %{curve | segments: map_segment_points(segments, &Vec.rotate(&1, angle, origin))}
+
+  # Applies `fun` to every point of every segment.
+  @spec map_segment_points(list(list(T.point_tuple())), (T.point_tuple() -> T.point_tuple())) ::
+          list(list(T.point_tuple()))
+  defp map_segment_points(segments, fun), do: Enum.map(segments, &Enum.map(&1, fun))
 
   # Returns a new copy of `points` moved by the origin, then scaled, then rotated,
   # the same way the curve's own points are. `curve` must already have been through
   # apply_all_transformations/1. The curve itself is not changed, so a spline's
   # original `:points` stay as the user gave them.
   @doc false
-  @spec transform_points(curve :: T.curve_struct(), points :: TensorT.points()) ::
-          TensorT.points()
-  def transform_points(%{scale: scale} = curve, points) do
-    points
-    |> Nx.add(origin_tensor(curve))
-    |> Nx.multiply(Nx.tensor([[scale]]))
-    |> rotate_points(curve)
+  @spec transform_points(curve :: T.curve_struct(), points :: T.point_list()) :: T.point_list()
+  def transform_points(%{origin: origin, scale: scale} = curve, points) do
+    Enum.map(points, fn point -> point |> Vec.add(origin) |> Vec.scale(scale) |> rotate(curve) end)
   end
 
   # Matches apply_rotation/1: a rotation of 0 or 0.0 is skipped.
-  @spec rotate_points(points :: TensorT.points(), curve :: T.curve_struct()) :: TensorT.points()
-  defp rotate_points(points, %{rotation: rotation}) when rotation == 0, do: points
-
-  defp rotate_points(points, %{rotation: angle} = curve),
-    do: Rotate.rotate_points(points, angle, origin_tensor(curve))
-
-  # Splines still store points as Nx tensors (until they move to plain floats too),
-  # so their tuple origin is turned into a {2, 1} tensor of the curve's float type.
-  @spec origin_tensor(Spline.t()) :: Nx.Tensor.t()
-  defp origin_tensor(%Spline{origin: origin, opts: opts}),
-    do: Curves.Utils.Point.new_point(origin, opts)
+  @spec rotate(T.point_tuple(), T.curve_struct()) :: T.point_tuple()
+  defp rotate(point, %{rotation: rotation}) when rotation == 0, do: point
+  defp rotate(point, %{rotation: angle, origin: origin}), do: Vec.rotate(point, angle, origin)
 
   # Put a new transformation in the :transformations list, then recompress.
   @spec add(T.curve_struct(), {module(), atom(), list(), term()}) :: T.curve_struct()

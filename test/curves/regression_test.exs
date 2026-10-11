@@ -187,7 +187,8 @@ defmodule Curves.RegressionTest do
     test "rotated spline uses transformed bounds" do
       curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_rotation(90)
       [{x0, y0}, _mid, {x1, y1}] = ends(curve)
-      assert {x0, y0, x1, y1} == {1.0, 0.0, 0.0, 1.0}
+      assert {x0, y0, x1} == {1.0, 0.0, 0.0}
+      assert_in_delta y1, 1.0, 1.0e-12
     end
 
     test "take! on a moved spline stays within 0..1" do
@@ -212,7 +213,7 @@ defmodule Curves.RegressionTest do
     test "the struct keeps the original points" do
       curve = Curves.define_catmull_rom(@catmull_points)
       moved = Curves.Transform.set_position(curve, {5, 5})
-      assert Nx.to_list(moved.points) == Nx.to_list(curve.points)
+      assert moved.points == curve.points
     end
   end
 

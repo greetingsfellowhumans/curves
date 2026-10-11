@@ -36,11 +36,11 @@ defmodule Curves.Spline.Type do
   # ```
   # """
   @moduledoc false
-  alias Curves.TensorTypes, as: TensorT
 
-  @callback power_series(t :: float()) :: TensorT.power_series()
-  @callback blending_function() :: struct()
-  @callback point_count() :: integer()
+  # The 4x4 blending matrix: row i holds the weights of the 4 control points for t^i.
+  @callback blending_function() :: list(list(number()))
+  # A number every coefficient is multiplied by (Catmull-Rom's matrix is defined at twice its size).
+  @callback blending_factor() :: number()
 
   @doc ~s"""
   Can be used to rearange the points in a segment. Apply derivatives here.
@@ -48,11 +48,8 @@ defmodule Curves.Spline.Type do
   ```elixir
   @impl true
   def map_segments(all_segments, curve) do
-    Enum.map(all_segments, fn {[[x0, x1, x2, x3], [y0, y1, y2, y3]], _segment_idx} ->
-      [
-        [x0, x1, x2, x3],
-        [y0, y1, y2, y3]
-      ]
+    Enum.map(all_segments, fn {[p0, p1, p2, p3], _segment_idx} ->
+      [p0, p1, p2, p3]
     end)
   end
   ```
@@ -81,10 +78,8 @@ defmodule Curves.Spline.Type do
 
   defmacro __using__(opts) do
     quote do
-      import Nx, only: :sigils
       import Curves.Spline.Type, only: [d: 2]
       @behaviour Curves.Spline.Type
-      @derivative Keyword.get(unquote(opts), :derivative, 0)
 
       @doc false
       @override_segment_parsing Keyword.get(unquote(opts), :override_segment_parsing, false)
@@ -93,8 +88,8 @@ defmodule Curves.Spline.Type do
 
       @doc false
       @impl true
-      def power_series(t), do: Curves.Formula.build_power_series(t, @derivative)
-      defoverridable power_series: 1
+      def blending_factor(), do: 1.0
+      defoverridable blending_factor: 0
 
       @doc false
       @impl true

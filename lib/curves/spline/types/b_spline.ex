@@ -43,16 +43,7 @@ defmodule Curves.Spline.Type.BSpline do
 
   alias Curves.Types, as: T
 
-  @matrix ~MAT<
-    1   0  0 0
-    -3  3  0 0
-    3  -6  3 0
-    -1  3 -3 1
-  >
-
-  @doc false
-  @impl true
-  def point_count(), do: 4
+  @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
   @doc false
   @impl true

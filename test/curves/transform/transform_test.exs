@@ -31,17 +31,21 @@ defmodule Curves.Transform.TransformTest do
         assert Enum.all?(points, fn {x, y} -> is_float(x) and is_float(y) end)
       end
 
-      test "spline segments after #{name}" do
-        curve = build(&Curves.define_hermite(@spline_points, &1), @name, @transform)
+      test "spline segments stay 4-point lists of float tuples after #{name}" do
+        curve = build(&Curves.define_catmull_rom(@spline_points, &1), @name, @transform)
         %{segments: segments} = Transform.apply_all_transformations(curve)
-        assert Nx.names(segments) == [:segment, :dimension, :point]
+        assert Enum.all?(segments, &(length(&1) == 4))
+
+        assert segments
+               |> List.flatten()
+               |> Enum.all?(fn {x, y} -> is_float(x) and is_float(y) end)
       end
 
       test "transform_points/2 leaves the spline's points alone after #{name}" do
-        curve = build(&Curves.define_hermite(@spline_points, &1), @name, @transform)
+        curve = build(&Curves.define_catmull_rom(@spline_points, &1), @name, @transform)
         transformed = Transform.apply_all_transformations(curve)
         _copy = Transform.transform_points(transformed, transformed.points)
-        assert Nx.to_list(transformed.points) == Nx.to_list(curve.points)
+        assert transformed.points == curve.points
       end
     end
   end
