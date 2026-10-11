@@ -2,18 +2,19 @@ defmodule Curves.Svg do
   @moduledoc ~s"""
   Draws a Bezier or Spline curve as an SVG image, using only Elixir.
 
-  The curve is sampled `samples` times from start to end, and the points are joined with a line.
+  The curve is solved at `:samples` evenly spaced points from start to end, and those points are joined with a line.
   The curve's own points are drawn as dots, and the image is scaled to fit while keeping the curve's shape.
 
   ```elixir
   curve = Curves.define_b_spline([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}])
-  Curves.Svg.save!(curve, 300, "b_spline.svg", title: "B-Spline")
+  Curves.Svg.save!(curve, "b_spline.svg", title: "B-Spline")
   ```
 
   ## Options
 
   | `key` | `default` | `description` |
   | --- | --- | --- |
+  | `:samples` | `100` | How many points to solve along the curve, not counting the start. More gives a smoother line. |
   | `:width` | `600` | Image width in pixels. |
   | `:height` | `600` | Image height in pixels. |
   | `:padding` | `40` | Empty space around the curve, in pixels. |
@@ -40,6 +41,7 @@ defmodule Curves.Svg do
   alias Curves.Utils.Types, as: T
 
   @defaults [
+    samples: 100,
     width: 600,
     height: 600,
     padding: 40,
@@ -58,21 +60,20 @@ defmodule Curves.Svg do
   @doc ~s"""
   Builds the SVG for a curve and returns it as a string.
 
-  `samples` is how many points are taken along the curve, not counting the start.
-  More samples give a smoother line. See the module docs for `opts`.
+  See the module docs for `opts`, including `:samples` for how smooth the line is.
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear)
-      iex> svg = Curves.Svg.render(curve, 2, width: 100, height: 100, padding: 0, show_points: false)
+      iex> svg = Curves.Svg.render(curve, samples: 2, width: 100, height: 100, padding: 0, show_points: false)
       iex> String.starts_with?(svg, "<svg")
       true
       iex> svg =~ ~s(points="0.00,100.00 50.00,50.00 100.00,0.00")
       true
   """
-  @spec render(T.curve_struct(), pos_integer(), keyword()) :: String.t()
-  def render(curve, samples, opts \\ []) when is_integer(samples) and samples > 0 do
+  @spec render(T.curve_struct(), keyword()) :: String.t()
+  def render(curve, opts \\ []) do
     opts = Keyword.merge(@defaults, opts)
-    line = sample(curve, samples, opts[:solve_opts])
+    line = sample(curve, opts[:samples], opts[:solve_opts])
     points = control_points(curve)
     to_pixels = scaler(line ++ shown_points(points, opts), opts)
 
@@ -89,26 +90,29 @@ defmodule Curves.Svg do
   end
 
   @doc ~s"""
-  Builds the SVG for a curve with `render/3` and writes it to `path`.
+  Builds the SVG for a curve with `render/2` and writes it to `path`.
   Returns `path`, and raises if the file can't be written.
 
   ## Examples
       iex> path = Path.join(System.tmp_dir!(), "curves_svg_doctest.svg")
       iex> curve = Curves.define_bezier(:ease_in_out_cubic)
-      iex> Curves.Svg.save!(curve, 50, path)
+      iex> Curves.Svg.save!(curve, path, samples: 50)
       iex> File.read!(path) |> String.starts_with?("<svg")
       true
   """
-  @spec save!(T.curve_struct(), pos_integer(), Path.t(), keyword()) :: Path.t()
-  def save!(curve, samples, path, opts \\ []) do
-    File.write!(path, render(curve, samples, opts))
+  @spec save!(T.curve_struct(), Path.t(), keyword()) :: Path.t()
+  def save!(curve, path, opts \\ []) do
+    File.write!(path, render(curve, opts))
     path
   end
 
   # The start of the curve plus `samples` evenly spaced points. take!/3 skips the start, so it is added here.
-  @spec sample(T.curve_struct(), pos_integer(), T.opts()) :: T.point_list()
-  defp sample(curve, samples, solve_opts),
+  @spec sample(T.curve_struct(), term(), T.opts()) :: T.point_list()
+  defp sample(curve, samples, solve_opts) when is_integer(samples) and samples > 0,
     do: [Curves.solve!(curve, 0.0, solve_opts) | Curves.take!(curve, samples, solve_opts)]
+
+  defp sample(_curve, samples, _solve_opts),
+    do: raise(ArgumentError, ":samples must be a positive integer, got: #{inspect(samples)}")
 
   # The curve's own points that will be drawn, so the image is only sized around what is visible.
   @spec shown_points(T.point_list(), keyword()) :: T.point_list()

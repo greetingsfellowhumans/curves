@@ -17,7 +17,7 @@ defmodule Curves.Spline.Type.BSpline do
   Curves.solve!(curve, 1.5)
 
   # ...or draw the whole curve as an SVG image
-  Curves.Svg.save!(curve, 300, "b_spline.svg")
+  Curves.Svg.save!(curve, "b_spline.svg")
   ```
 
   ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.svg)

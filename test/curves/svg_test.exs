@@ -16,9 +16,10 @@ defmodule Curves.SvgTest do
     end
   end
 
-  describe "render/3" do
+  describe "render/2" do
     test "draws samples + 1 points, starting at the start of the curve" do
-      svg = Svg.render(Curves.define_bezier(:linear), 4, width: 100, height: 100, padding: 0)
+      svg =
+        Svg.render(Curves.define_bezier(:linear), samples: 4, width: 100, height: 100, padding: 0)
 
       assert line_points(svg) == [
                {0.0, 100.0},
@@ -29,20 +30,20 @@ defmodule Curves.SvgTest do
              ]
     end
 
-    test "works for every spline type" do
+    test "works for every spline type, with 100 samples by default" do
       for define <- [
             &Curves.define_b_spline/1,
             &Curves.define_catmull_rom/1,
             &Curves.define_hermite/1
           ] do
-        svg = Svg.render(define.(@b_spline), 50)
-        assert length(line_points(svg)) == 51
+        svg = Svg.render(define.(@b_spline))
+        assert length(line_points(svg)) == 101
       end
     end
 
     test "keeps everything inside the image" do
       svg =
-        Svg.render(Curves.define_b_spline(@b_spline), 100, width: 300, height: 200, padding: 10)
+        Svg.render(Curves.define_b_spline(@b_spline), width: 300, height: 200, padding: 10)
 
       for {x, y} <- line_points(svg) do
         assert x >= 10.0 and x <= 290.0
@@ -52,22 +53,23 @@ defmodule Curves.SvgTest do
 
     test "draws one dot per point, and no dots when turned off" do
       curve = Curves.define_catmull_rom(@b_spline)
-      assert Svg.render(curve, 10) |> count("<circle") == 6
-      assert Svg.render(curve, 10, show_points: false) |> count("<circle") == 0
+      assert Svg.render(curve, samples: 10) |> count("<circle") == 6
+      assert Svg.render(curve, samples: 10, show_points: false) |> count("<circle") == 0
     end
 
     test "dots follow the curve when it is moved" do
       curve =
         Curves.define_bezier([{0, 0}, {10, 10}]) |> Curves.Transform.set_position({100, 100})
 
-      svg = Svg.render(curve, 2, width: 100, height: 100, padding: 0)
+      svg = Svg.render(curve, samples: 2, width: 100, height: 100, padding: 0)
       assert svg =~ ~s(<circle cx="0.00" cy="100.00")
       assert svg =~ ~s(<circle cx="100.00" cy="0.00")
     end
 
     test "a flat curve doesn't divide by zero" do
       svg =
-        Svg.render(Curves.define_bezier(:linear_horizontal), 2,
+        Svg.render(Curves.define_bezier(:linear_horizontal),
+          samples: 2,
           width: 100,
           height: 100,
           padding: 0
@@ -78,17 +80,20 @@ defmodule Curves.SvgTest do
 
     test "optional parts" do
       curve = Curves.define_bezier(:linear)
-      assert Svg.render(curve, 2) =~ "stroke-dasharray"
-      refute Svg.render(curve, 2, show_polygon: false) =~ "stroke-dasharray"
-      refute Svg.render(curve, 2, background: nil) =~ "<rect"
-      assert Svg.render(curve, 2, title: "a < b & \"c\"") =~ "a &lt; b &amp; &quot;c&quot;</text>"
+      assert Svg.render(curve, samples: 2) =~ "stroke-dasharray"
+      refute Svg.render(curve, samples: 2, show_polygon: false) =~ "stroke-dasharray"
+      refute Svg.render(curve, samples: 2, background: nil) =~ "<rect"
+
+      assert Svg.render(curve, samples: 2, title: "a < b & \"c\"") =~
+               "a &lt; b &amp; &quot;c&quot;</text>"
     end
 
     test "passes solve_opts through" do
       curve = Curves.define_bezier([{10, 100}, {40, 400}])
 
       svg =
-        Svg.render(curve, 2,
+        Svg.render(curve,
+          samples: 2,
           solve_opts: [force_percent: true],
           show_points: false,
           show_polygon: false,
@@ -100,8 +105,18 @@ defmodule Curves.SvgTest do
       assert line_points(svg) == [{0.0, 100.0}, {50.0, 50.0}, {100.0, 0.0}]
     end
 
-    test "raises on a bad sample count" do
-      assert_raise FunctionClauseError, fn -> Svg.render(Curves.define_bezier(:linear), 0) end
+    test "raises a clear error on a bad sample count" do
+      for bad <- [0, -1, 2.5, nil] do
+        assert_raise ArgumentError, ~r/:samples must be a positive integer/, fn ->
+          Svg.render(Curves.define_bezier(:linear), samples: bad)
+        end
+      end
+    end
+
+    test "save!/3 writes the file and returns the path" do
+      path = Path.join(System.tmp_dir!(), "curves_svg_save_test.svg")
+      assert Svg.save!(Curves.define_bezier(:linear), path, samples: 3) == path
+      assert path |> File.read!() |> line_points() |> length() == 4
     end
   end
 

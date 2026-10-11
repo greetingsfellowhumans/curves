@@ -43,7 +43,7 @@ curve = Curves.define_bezier_spline([
 
 curve
 |> Curves.Transform.inc_rotation(0)
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -59,7 +59,7 @@ curve = Curves.define_hermite([
 
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -75,7 +75,7 @@ curve = Curves.define_catmull_rom([
 
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -92,6 +92,6 @@ curve = Curves.define_b_spline([
 
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```

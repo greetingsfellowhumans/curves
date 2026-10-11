@@ -39,7 +39,7 @@ curve = Curves.define_bezier(:ease_in_out)
 Curves.solve!(curve, 0.25)
 
 # ...or draw the whole curve as an SVG image
-Curves.Svg.save!(curve, 300, "ease_in_out.svg")
+Curves.Svg.save!(curve, "ease_in_out.svg")
 ```
 
 ![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.svg)

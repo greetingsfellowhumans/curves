@@ -21,7 +21,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   Curves.solve!(curve, 1.5)
 
   # ...or draw the whole curve as an SVG image
-  Curves.Svg.save!(curve, 300, "catmull_rom.svg")
+  Curves.Svg.save!(curve, "catmull_rom.svg")
   ```
 
   ![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.svg)

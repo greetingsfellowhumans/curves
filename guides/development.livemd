@@ -38,7 +38,7 @@ curve = Curves.define_b_spline([
 ])
 
 
-Curves.Svg.render(curve, 300)
+Curves.Svg.render(curve)
 |> Kino.Image.new(:svg)
 ```
 
@@ -54,7 +54,7 @@ curve = Curves.define_catmull_rom([
 
 
 curve
-|> Curves.Svg.render(300, title: "Catmull-Rom", width: 400, height: 400)
+|> Curves.Svg.render(title: "Catmull-Rom", width: 400, height: 400)
 |> Kino.Image.new(:svg)
 
 ```
@@ -71,7 +71,7 @@ curve = Curves.define_hermite([
 
 
 curve
-|> Curves.Svg.render(300, title: "Hermite")
+|> Curves.Svg.render(title: "Hermite")
 |> Kino.Image.new(:svg)
 ```
 
@@ -93,7 +93,7 @@ Kino.Input.read(bezier_type)
 #|> Curves.Transform.inc_position({-10, -10})
 |> Curves.Transform.set_rotation(4)
 #|> Curves.Transform.inc_position({10, 10})
-|> Curves.Svg.render(300)
+|> Curves.Svg.render()
 |> Kino.Image.new(:svg)
 
 
@@ -110,7 +110,7 @@ curve = Curves.define_bezier(:ease_in)
 is_struct(curve, Curves.Bezier.Curve)
 
 # And we can easily find a point along the curve at a given percentage.
-# `Curves.Svg.render/3` basically did that 300 times,
+# `Curves.Svg.render/2` basically did that 100 times,
 # and joined those points with straight lines so short they looked like one smooth curve.
 
 # Conventionally, percentage in a bezier curve is represented as `t`
@@ -128,7 +128,7 @@ t = 0.2
 # Each sample is 10% further along the curve, and the samples are joined by straight lines.
 # Notice how those 10 straight pieces are not all the same length.
 Curves.define_bezier(:ease_in_expo)
-|> Curves.Svg.render(10)
+|> Curves.Svg.render(samples: 10)
 |> Kino.Image.new(:svg)
 ```
 
@@ -145,7 +145,7 @@ curve = Curves.define_bezier([
 
 # We are actually solving 300 points between {0, 10} and {1, 0}, and joining them
 curve
-|> Curves.Svg.render(300, title: "Linear")
+|> Curves.Svg.render(title: "Linear")
 |> Kino.Image.new(:svg)
 ```
 
@@ -158,7 +158,7 @@ stop = {100, 0}
 curve = Curves.define_bezier(:quadratic_right)
 
 curve
-|> Curves.Svg.render(300, title: "Quadratic")
+|> Curves.Svg.render(title: "Quadratic")
 |> Kino.Image.new(:svg)
 ```
 
@@ -175,7 +175,7 @@ curve = curve |> Curves.Transform.inc_y(2)
 dbg curve
 curve
 |> Curves.Transform.inc_y(2)
-|> Curves.Svg.render(300, title: "Cubic")
+|> Curves.Svg.render(title: "Cubic")
 |> Kino.Image.new(:svg)
 ```
 
@@ -208,6 +208,6 @@ curve = Curves.define_bezier_spline([
 ])
 
 curve
-|> Curves.Svg.render(1000, title: "Bezier spline")
+|> Curves.Svg.render(samples: 1000, title: "Bezier spline")
 |> Kino.Image.new(:svg)
 ```

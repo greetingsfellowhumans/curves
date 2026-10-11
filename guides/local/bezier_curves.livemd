@@ -33,7 +33,7 @@ Curves.solve!(curve, 0.25)
 count = 10
 
 Curves.define_bezier(:ease_in)
-|> Curves.Svg.render(count, width: 400, height: 400)
+|> Curves.Svg.render(samples: count, width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -49,7 +49,7 @@ bezier_type = Kino.Input.select("Curve Type", types, default: :ease_in_out)
 # Now evaluate THIS code block to display a graph of the curve type you selected above.
 Kino.Input.read(bezier_type)
 |> Curves.define_bezier()
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 
 
@@ -67,7 +67,7 @@ curve = Curves.define_bezier([
 ])
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -80,7 +80,7 @@ stop = {100, 0}
 curve = Curves.define_bezier([start, control_point, stop])
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
@@ -94,6 +94,6 @@ curve = Curves.define_bezier([
 ])
 
 curve
-|> Curves.Svg.render(300, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```

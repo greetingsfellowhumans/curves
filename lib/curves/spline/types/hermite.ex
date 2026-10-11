@@ -21,7 +21,7 @@ defmodule Curves.Spline.Type.Hermite do
   Curves.solve!(curve, 1.5)
 
   # ...or draw the whole curve as an SVG image
-  Curves.Svg.save!(curve, 300, "hermite.svg")
+  Curves.Svg.save!(curve, "hermite.svg")
   ```
 
   ![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.svg)
