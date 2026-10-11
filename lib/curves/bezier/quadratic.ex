@@ -1,6 +1,7 @@
 defmodule Curves.Bezier.Quadratic do
   @moduledoc false
   import Nx.Defn
+  alias Curves.Utils.TensorTypes, as: TensorT
   #  import Curves.Utils.Points
 
   #  @doc ~s"""
@@ -34,7 +35,7 @@ defmodule Curves.Bezier.Quadratic do
   #
   # The order of operations matches the old `defn` exactly. Changing it shifts
   # results by float rounding, which the recorded-value tests will catch.
-  @spec get_quadratic_point(Nx.Tensor.t(), number()) :: Nx.Tensor.t()
+  @spec get_quadratic_point(TensorT.points(), number()) :: TensorT.point()
   def get_quadratic_point(points, t) do
     # `defn` turns a plain number into a tensor this same way
     # (floats -> f32, integers -> s32), so the output stays identical.
@@ -53,8 +54,12 @@ defmodule Curves.Bezier.Quadratic do
 
   # Unused. The original version, built from three linear interpolations.
   @deprecated "This works, and it is easy to read, but is slightly less performant"
-  @spec get_quadratic_bezier_curve_old(Nx.Tensor.t(), Nx.Tensor.t(), Nx.Tensor.t(), number()) ::
-          Nx.Tensor.t()
+  @spec get_quadratic_bezier_curve_old(
+          TensorT.flat_point(),
+          TensorT.flat_point(),
+          TensorT.flat_point(),
+          number()
+        ) :: TensorT.flat_point()
   defn get_quadratic_bezier_curve_old(start_point, control_point, end_point, t) do
     interpolation_point0 =
       Curves.Bezier.Linear.get_linear_interpolation_point(start_point, control_point, t)

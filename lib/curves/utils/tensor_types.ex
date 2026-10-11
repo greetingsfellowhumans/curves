@@ -8,6 +8,7 @@ defmodule Curves.Utils.TensorTypes do
   | type | shape | axis names | holds |
   | --- | --- | --- | --- |
   | `t:point/0` | `{2, 1}` | `[:dimension, :point]` | one `{x, y}` |
+  | `t:flat_point/0` | `{2}` | `[:dimension]` | one `[x, y]`, with no `:point` axis |
   | `t:points/0` | `{2, n}` | `[:dimension, :point]` | n `{x, y}` points |
   | `t:cubic_segment/0` | `{2, 4}` | `[:dimension, :point]` | `[knot0, control_point0, control_point1, knot1]` |
   | `t:cubic_segments/0` | `{n, 2, 4}` | `[:segment, :dimension, :point]` | n segments |
@@ -28,6 +29,13 @@ defmodule Curves.Utils.TensorTypes do
 
   @typedoc "A single `{x, y}` point, shape `{2, 1}`."
   @type point :: %Nx.Tensor{shape: {2, 1}, names: point_names(), type: float_type()}
+
+  @typedoc """
+  A single `[x, y]` with no `:point` axis, shape `{2}`.
+
+  Indexing one point out of `t:points/0` (e.g. `points[point: 0]`) drops the `:point` axis and gives this.
+  """
+  @type flat_point :: %Nx.Tensor{shape: {2}, names: [:dimension], type: float_type()}
 
   @typedoc "A series of n `{x, y}` points, shape `{2, n}`."
   @type points :: %Nx.Tensor{

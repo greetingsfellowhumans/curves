@@ -1,5 +1,6 @@
 defmodule Curves.Utils.Derivatives do
   alias Curves.Utils.Point
+  alias Curves.Utils.TensorTypes, as: TensorT
   @moduledoc false
   @small_num Curves.Utils.Constants.small_number()
 
@@ -39,7 +40,7 @@ defmodule Curves.Utils.Derivatives do
       Nx.tensor([0.125, 0.25, 0.5, 1])
   """
   @spec get_power_series(t :: float(), derivative :: integer(), dir :: :asc | :desc) ::
-          Nx.Tensor.t()
+          TensorT.power_series()
   def get_power_series(t, derivative, dir) do
     d =
       case derivative do

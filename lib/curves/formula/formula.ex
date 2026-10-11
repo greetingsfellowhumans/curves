@@ -1,7 +1,8 @@
 defmodule Curves.Formula do
   @moduledoc false
+  alias Curves.Utils.TensorTypes, as: TensorT
 
-  @callback power_series(t :: float()) :: Nx.Tensor.t()
+  @callback power_series(t :: float()) :: TensorT.power_series()
   @callback blending_function() :: struct()
   @callback required_opts() :: list()
   @callback point_count() :: integer()

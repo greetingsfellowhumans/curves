@@ -37,7 +37,7 @@ defmodule Curves.Bezier.Curve do
   | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
-          points: Nx.Tensor.t(),
+          points: TensorT.points(),
           xmax: T.coord(),
           xmin: T.coord(),
           ymax: T.coord(),
@@ -45,9 +45,10 @@ defmodule Curves.Bezier.Curve do
           scale: float(),
           rotation: float(),
           transformations: list(),
-          compressed: (t :: float(), opts :: T.opts() -> T.point_tuple()),
+          compressed: (t :: float(), opts :: T.opts() ->
+                         {:ok, T.point_tuple()} | {:error, tuple()}),
           opts: T.opts(),
-          origin: Nx.Tensor.t()
+          origin: TensorT.point()
         }
 
   @doc false

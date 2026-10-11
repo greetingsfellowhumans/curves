@@ -4,6 +4,7 @@ defmodule Curves.Spline.Curve do
   """
   alias Curves.Bezier.Predefined
   alias Curves.Utils.{Percent, Point, Points, Segment}
+  alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
 
   @minimum_u 0.0 - Curves.Utils.Constants.small_number()
@@ -43,10 +44,10 @@ defmodule Curves.Spline.Curve do
   | `:opts`   	| The keyword list of options                    	|
   """
   @type t :: %__MODULE__{
-          points: Nx.Tensor.t(),
-          segments: list(),
+          points: TensorT.points(),
+          segments: TensorT.cubic_segments(),
           transformations: list(),
-          compressed: (u :: float(), opts :: T.opts() -> T.point_tuple()),
+          compressed: (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()}),
           max_u: float(),
           type: atom(),
           mod: module(),
@@ -57,7 +58,7 @@ defmodule Curves.Spline.Curve do
           scale: float(),
           rotation: float(),
           opts: T.opts(),
-          origin: Nx.Tensor.t()
+          origin: TensorT.point()
         }
 
   @doc false
