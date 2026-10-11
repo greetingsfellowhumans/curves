@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.0] - 2026-10-09
 
+### Added
+
+- `Curves.Svg` draws any Bezier or Spline curve as an SVG image, with no extra dependencies. `render/3` returns the SVG as a string and `save!/4` writes it to a file. Options control the size, colours, title, and whether the curve's points and the dashed line joining them are drawn.
+
 ### Changed
 
 - **Breaking:** The default `:float_dtype` is now `32` (was `16`). Results are more precise, so values will differ slightly from previous versions. Pass `float_dtype: 16` to restore the old behaviour.
