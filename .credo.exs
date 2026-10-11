@@ -8,10 +8,6 @@
         excluded: [~r"/_build/", ~r"/deps/"]
       },
       checks: %{
-        extra: [
-          # Two blank lines between functions keep them apart from the @doc/@spec clutter. Three is still flagged.
-          {Credo.Check.Readability.RedundantBlankLines, [max_blank_lines: 2]}
-        ],
         disabled: [
           # Fully qualified calls like Curves.Utils.Opts.merge_opts/1 are fine; aliasing them is optional.
           {Credo.Check.Design.AliasUsage, []},
