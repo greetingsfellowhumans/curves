@@ -64,10 +64,10 @@ defmodule Curves.Svg do
 
   ## Examples
       iex> curve = Curves.define_bezier(:linear)
-      iex> svg = Curves.Svg.render(curve, samples: 2, width: 100, height: 100, padding: 0, show_points: false)
+      iex> svg = Curves.Svg.render(curve, width: 100, height: 100)
       iex> String.starts_with?(svg, "<svg")
       true
-      iex> svg =~ ~s(points="0.00,100.00 50.00,50.00 100.00,0.00")
+      iex> svg =~ ~s(<circle cx="40.00" cy="60.00")
       true
   """
   @spec render(T.curve_struct(), keyword()) :: String.t()

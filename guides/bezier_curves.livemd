@@ -21,15 +21,13 @@ Curves.solve!(curve, 0.25)
 ```
 
 ```elixir
-# To visualize this, we use Curves.Svg. It solves the curve `count` times,
-# evenly spaced along the curve (i.e. 10%, 20%, 30% ... 100%),
-# and joins those points with straight lines.
+# To visualize this, we use Curves.Svg. It solves the curve at 100 points,
+# evenly spaced along the curve (i.e. 1%, 2%, 3% ... 100%),
+# and joins them with straight lines so short the curve looks smooth.
 
-# With 10 you can see the 10 straight pieces. Go ahead and raise it for a smoother curve.
-count = 10
-
+# Go ahead and add `samples: 10` below to see it built from 10 straight pieces instead.
 Curves.define_bezier(:ease_in)
-|> Curves.Svg.render(samples: count, width: 400, height: 400)
+|> Curves.Svg.render(width: 400, height: 400)
 |> Kino.Image.new(:svg)
 ```
 
