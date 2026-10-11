@@ -1,11 +1,21 @@
 # Bezier Curves
 
 ```elixir
+#Mix.install(
+#  [
+#    {:curves, "~> 0.3.0"},
+#    {:kino, "~> 0.19"},
+#  ])
+
+# Or if you are developing locally:
 Mix.install(
   [
-    {:curves, "~> 0.3.0"},
+    {:curves, path: Path.join(__DIR__, "../"), env: :dev},
     {:kino, "~> 0.19"},
-  ])
+  ],
+  config_path: :curves,
+  lockfile: :curves
+)
 ```
 
 ## Curves (Bezier) tutorial
