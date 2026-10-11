@@ -15,6 +15,7 @@ The first release candidate for 1.0. Version 0.3.0 was never released; its chang
 
 ### Changed
 
+- **Breaking:** Splines now read the app-wide `:force_percent` setting on every `solve`/`take`, like beziers do. Previously they read it only when defined or transformed.
 - **Breaking:** With `:force_percent`, an axis where every point has the same value (a flat curve) now returns `0.5` instead of that raw value, so results are always numbers in `0.0..1.0`.
 - **Breaking:** The default `:float_dtype` is now `32` (was `16`). Results are more precise, so values will differ slightly from previous versions. Pass `float_dtype: 16` to restore the old behaviour.
 - **Breaking:** Removed `Curves.Utils.Plotting`, which the 0.2.x livebooks used with VegaLite and Tucan. Use `Curves.Svg.render/2` instead (in Livebook: `Kino.Image.new(svg, :svg)`).

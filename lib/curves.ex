@@ -60,9 +60,8 @@ defmodule Curves do
   `:float_dtype` and `:force_percent` can also be set for the whole app, e.g. `config :curves, force_percent: true`.
   Opts passed to a function always win over the app config.
 
-  If you change `:force_percent` in the app config while running (e.g. with `Application.put_env/3`),
-  bezier curves pick up the change on their next `solve` or `take`. Splines don't: they read it when they are
-  defined or transformed, so define the spline again to pick up the change.
+  `:force_percent` is read on every `solve` and `take`, so changing it in the app config while running
+  (e.g. with `Application.put_env/3`) applies to existing curves straight away.
 
   """
 

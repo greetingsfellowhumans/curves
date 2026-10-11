@@ -154,10 +154,21 @@ defmodule Curves.Spline.Curve do
   @doc false
   @spec solve(t(), number(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
-  def solve(%__MODULE__{max_u: max}, u, _opts) when is_number(u) and (u > max or u < @minimum_u),
+  def solve(%__MODULE__{} = curve, u, opts) when is_number(u),
+    do: solve_resolved(curve, u, resolve_opts(curve, opts))
+
+  # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
+  # once for every point instead of once per point.
+  @spec solve_resolved(t(), number(), T.opts()) ::
+          {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
+  defp solve_resolved(%{max_u: max}, u, _opts) when u > max or u < @minimum_u,
     do: {:error, {:out_of_bounds, u}}
 
-  def solve(%__MODULE__{compressed: cb}, u, opts) when is_number(u), do: cb.(u * 1.0, opts)
+  defp solve_resolved(%{compressed: cb}, u, opts), do: cb.(u * 1.0, opts)
+
+  # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
+  @spec resolve_opts(t(), T.opts()) :: T.opts()
+  defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
 
   @doc false
   @spec solve!(t(), number()) :: T.point_tuple()
@@ -178,12 +189,13 @@ defmodule Curves.Spline.Curve do
           {:ok, T.point_list()} | {:error, {:out_of_bounds, number()}}
   def take(%{segments: segments} = curve, n, opts \\ []) do
     seg_count = Nx.axis_size(segments, :segment)
+    opts = resolve_opts(curve, opts)
 
     Enum.reduce_while(1..n, [], fn step, acc ->
       # Multiply before dividing so the final step lands exactly on seg_count, not 3.0000000000000004.
       i = step * seg_count / n
 
-      case solve(curve, i, opts) do
+      case solve_resolved(curve, i, opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end

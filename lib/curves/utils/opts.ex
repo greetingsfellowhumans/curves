@@ -7,7 +7,7 @@ defmodule Curves.Utils.Opts do
     force_percent: %{
       default: false,
       doc:
-        "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0, measured after any moves, scaling or rotation. A flat axis, where every point has the same value, returns 0.5. Beziers read this config on every `solve`/`take`; splines read it when they are defined or transformed.",
+        "If true, `take` and `solve` rescale each coordinate so the lowest point on that axis is 0.0 and the highest is 1.0, measured after any moves, scaling or rotation. A flat axis, where every point has the same value, returns 0.5. It is read on every `solve`/`take`, so changing it while running applies straight away.",
       one_of: [true, false]
     }
   ]
@@ -19,6 +19,20 @@ defmodule Curves.Utils.Opts do
     default_opts
     |> Keyword.merge(config_opts())
     |> Keyword.merge(user_opts)
+  end
+
+  # Returns `call_opts` with :force_percent set to the value that applies right now.
+  # Precedence: call_opts, then curve_opts (given at define), then the app config, then the default.
+  # Called on every solve/take, so a change to the app config after define still applies.
+  @spec put_force_percent(T.opts(), T.opts()) :: T.opts()
+  def put_force_percent(curve_opts, call_opts) do
+    force_percent =
+      curve_opts
+      |> Keyword.merge(call_opts)
+      |> merge_opts()
+      |> Keyword.get(:force_percent)
+
+    Keyword.put(call_opts, :force_percent, force_percent)
   end
 
   # Each config option's value from the app config, or its default when it isn't set.

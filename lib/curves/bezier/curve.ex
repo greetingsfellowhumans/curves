@@ -149,17 +149,9 @@ defmodule Curves.Bezier.Curve do
   defp solve_resolved(_curve, t, _opts) when t < 0.0 or t > 1.0, do: {:error, {:out_of_bounds, t}}
   defp solve_resolved(%{compressed: compressed}, t, opts), do: compressed.(t, opts)
 
-  # Reads :force_percent once per solve or take call, so a change to the app config after define still applies.
-  # Precedence: opts passed to solve, then opts passed to define, then app config, then the default.
+  # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
   @spec resolve_opts(__MODULE__.t(), T.opts()) :: T.opts()
-  defp resolve_opts(curve, opts) do
-    force_percent =
-      Keyword.merge(curve.opts, opts)
-      |> Curves.Utils.Opts.merge_opts()
-      |> Keyword.get(:force_percent)
-
-    Keyword.put(opts, :force_percent, force_percent)
-  end
+  defp resolve_opts(curve, opts), do: Curves.Utils.Opts.put_force_percent(curve.opts, opts)
 
   # Bounds of the transformed points, for :force_percent. Only the 2-, 3- and 4-point branches call it,
   # so curves with a bad point count never crash at define. Only the bounds go into the closures,
