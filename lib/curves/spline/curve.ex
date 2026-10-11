@@ -141,12 +141,9 @@ defmodule Curves.Spline.Curve do
   def solve(curve, t), do: solve(curve, t, [])
 
   @doc false
-  def solve(%__MODULE__{max_u: max, compressed: cb}, u, opts) when is_number(u) do
-    cond do
-      (u > max or u < @minimum_u) -> {:error, {:out_of_bounds, u}}
-      true -> cb.(u * 1.0, opts)
-    end
-  end
+  def solve(%__MODULE__{max_u: max}, u, _opts) when is_number(u) and (u > max or u < @minimum_u),
+    do: {:error, {:out_of_bounds, u}}
+  def solve(%__MODULE__{compressed: cb}, u, opts) when is_number(u), do: cb.(u * 1.0, opts)
 
   @doc false
   def solve!(curve, t), do: solve!(curve, t, [])
