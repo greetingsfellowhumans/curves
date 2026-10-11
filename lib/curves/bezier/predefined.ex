@@ -78,13 +78,13 @@ defmodule Curves.Bezier.Predefined do
 
   @typedoc ~s"""
   ### Cubic
-  `#{Map.keys(@order3) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order3) |> Enum.map_join(", ", &(":#{&1}"))}`
 
   ### Quadratic
-  `#{Map.keys(@order2) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order2) |> Enum.map_join(", ", &(":#{&1}"))}`
 
   ### Linear
-  `#{Map.keys(@order1) |> Enum.map(&(":#{&1}")) |> Enum.join(", ")}`
+  `#{Map.keys(@order1) |> Enum.map_join(", ", &(":#{&1}"))}`
   """
   @type curve_key :: atom()
 
