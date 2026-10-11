@@ -32,6 +32,8 @@ Compare results with a small tolerance rather than exact equality: the exact las
 
 ```elixir
 # 0.2.x
+curve = Curves.define_bezier(:ease_in_out)
+
 curve
 |> Curves.Utils.Plotting.curve_to_scatterplot(count: 300)
 |> Tucan.scatter("x", "y")
@@ -41,8 +43,8 @@ curve
 # 1.0
 curve = Curves.define_bezier(:ease_in_out)
 
-svg = Curves.Svg.render(curve, samples: 300, title: "Ease in-out")
-Curves.Svg.save!(curve, Path.join(System.tmp_dir!(), "ease_in_out.svg"))
+Curves.Svg.render(curve, samples: 300, title: "Ease in-out")
+|> Curves.Svg.save!(Path.join(System.tmp_dir!(), "ease_in_out.svg"))
 ```
 
 In Livebook, show it with Kino: `curve |> Curves.Svg.render() |> Kino.Image.new(:svg)`.
@@ -59,7 +61,6 @@ Swap the `tucan`, `vega_lite` and `kino_vega_lite` dependencies for `{:kino, "~>
 
 ```elixir
 # 1.0
-spline = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}])
 {:error, {:out_of_bounds, 99.0}} = Curves.solve(spline, 99.0)
 ```
 
@@ -77,9 +78,7 @@ last_u = spline.max_u
 
 ```elixir
 # 1.0
-spline = Curves.define_hermite([{0, 0}, {1, 1}, {2, 0}])
 last_u = Curves.max_u(spline)
-{_x, _y} = Curves.solve!(spline, last_u)
 ```
 
 ## 5. Typespecs moved out of `Curves.Utils`
