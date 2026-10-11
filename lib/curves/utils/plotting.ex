@@ -3,7 +3,7 @@ defmodule Curves.Utils.Plotting do
   # These are helper functions for making it easier to plot curves with VegaLite.
   # """
   @moduledoc false
-  # import Curves.Utils.Points, only: [to_maps: 1]
+  alias Curves.Utils.Types, as: T
 
   @doc ~s"""
   Given a curve, build a list of points, in map format.
@@ -12,7 +12,10 @@ defmodule Curves.Utils.Plotting do
   * `:label`, default: `"Curve"`
   * `:count`, default: `1000`
   """
+  @spec curve_to_scatterplot(T.curve_struct()) :: list(%{x: float(), y: float()})
   def curve_to_scatterplot(curve), do: curve_to_scatterplot(curve, [])
+
+  @spec curve_to_scatterplot(T.curve_struct(), T.opts()) :: list(%{x: float(), y: float()})
 
   def curve_to_scatterplot(curve, opts) do
     # control_points = extract_control_points(curve)

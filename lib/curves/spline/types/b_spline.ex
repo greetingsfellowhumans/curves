@@ -41,6 +41,8 @@ defmodule Curves.Spline.Type.BSpline do
   use Curves.Spline.Type,
     override_segment_parsing: true
 
+  alias Curves.Utils.Types, as: T
+
   @matrix ~MAT<
     1   0  0 0
     -3  3  0 0
@@ -76,12 +78,15 @@ defmodule Curves.Spline.Type.BSpline do
   # acc is built back to front, so flip it to keep the segments in curve order.
   defp auto_last(_, acc), do: Enum.reverse(acc)
 
+  # One [cp0, m2, m3] Bezier start per 3 points in a row; see "How it is built" above.
   @doc false
+  @spec rebuild_points(T.point_list(), T.opts()) :: list(T.point_list())
   def rebuild_points(points, opts) do
     rebuild_points(points, opts, [])
   end
 
   @doc false
+  @spec rebuild_points(T.point_list(), T.opts(), list(T.point_list())) :: list(T.point_list())
   def rebuild_points([p0, p1, p2 | all_points], opts, acc) do
     [_m0, m1] = split_points(p0, p1, 2)
     [m2, m3] = split_points(p1, p2, 2)
@@ -93,7 +98,9 @@ defmodule Curves.Spline.Type.BSpline do
 
   def rebuild_points(_, _opts, acc), do: Enum.reverse(acc)
 
+  # `midpoints` evenly spaced points between point_a and point_b, e.g. 2 gives the 1/3 and 2/3 points.
   @doc false
+  @spec split_points(T.point_tuple(), T.point_tuple(), pos_integer()) :: T.point_list()
   def split_points(point_a, point_b, midpoints) do
     {ax, ay} = point_a
     {my, mx} = get_slope(point_a, point_b)

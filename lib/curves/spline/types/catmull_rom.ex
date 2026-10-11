@@ -27,6 +27,11 @@ defmodule Curves.Spline.Type.CatmullRom do
   """
   use Curves.Spline.Type
 
+  alias Curves.Utils.Types, as: T
+
+  # A segment as nested lists, [[x0, x1, x2, x3], [y0, y1, y2, y3]], paired with its index.
+  @type indexed_segment :: {list(list(number())), non_neg_integer()}
+
   @doc false
   @impl true
   def define(points, opts \\ []) do
@@ -73,6 +78,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   end
 
   @doc false
+  @spec map_segment(list(list(number()))) :: list(list(number()))
   def map_segment([[x0, x1, x2, x3], [y0, y1, y2, y3]]) do
     [
       [x0, x1, x2, x3],
@@ -80,7 +86,10 @@ defmodule Curves.Spline.Type.CatmullRom do
     ]
   end
 
+  # The point before this segment's start: the previous segment's first point, or a mirrored point at the start.
   @doc false
+  @spec get_prev_coord(list(indexed_segment()), non_neg_integer(), list(list(number()))) ::
+          T.point_tuple()
   def get_prev_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
     prev_idx = segment_idx - 1
 
@@ -95,7 +104,10 @@ defmodule Curves.Spline.Type.CatmullRom do
     end
   end
 
+  # The point after this segment's end: the next segment's last point, or a mirrored point at the end.
   @doc false
+  @spec get_next_coord(list(indexed_segment()), non_neg_integer(), list(list(number()))) ::
+          T.point_tuple()
   def get_next_coord(all_segments, segment_idx, [[x1, _, _, x2], [y1, _, _, y2]]) do
     next_seg = Enum.at(all_segments, segment_idx + 1)
 

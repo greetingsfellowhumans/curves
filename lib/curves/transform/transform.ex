@@ -8,7 +8,10 @@ defmodule Curves.Transform do
   alias Curves.Utils.TensorTypes, as: TensorT
   alias Curves.Utils.Types, as: T
 
+  # Replays the transformations list, then moves, scales and rotates a copy of the points
+  # (beziers) or segments (splines). Used by compress; the stored curve keeps its original points.
   @doc false
+  @spec apply_all_transformations(T.curve_struct()) :: T.curve_struct()
   def apply_all_transformations(curve) do
     Enum.reduce(curve.transformations, curve, fn {mod, func, args, _prev}, curve ->
       apply(mod, func, [curve | args])
@@ -40,6 +43,7 @@ defmodule Curves.Transform do
 
   @doc false
   # Rotating by 0 changes nothing, so skip the Nx work. `==` matches both 0 and 0.0 (new curves start at 0.0).
+  @spec apply_rotation(T.curve_struct()) :: T.curve_struct()
   def apply_rotation(%{rotation: rotation} = curve) when rotation == 0, do: curve
 
   def apply_rotation(%Bezier{points: points, rotation: angle, origin: origin} = curve) do

@@ -1,12 +1,17 @@
 defmodule Curves.Formula do
   @moduledoc false
   alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.Utils.Types, as: T
 
   @callback power_series(t :: float()) :: TensorT.power_series()
   @callback blending_function() :: struct()
   @callback required_opts() :: list()
   @callback point_count() :: integer()
 
+  # Solves one segment with the matrix form: power_series(t) · blending matrix · points.
+  # More than 4 points are split into two overlapping segments, and both results are returned.
+  @spec run(module(), TensorT.points() | TensorT.cubic_segment(), number(), T.opts()) ::
+          TensorT.point() | {TensorT.point(), TensorT.point()}
   def run(mod, points, t, opts \\ []) do
     {_, size} = Nx.shape(points)
 
@@ -24,6 +29,8 @@ defmodule Curves.Formula do
     end
   end
 
+  # [1, t, t², t³], or its 1st/2nd/3rd derivative. 0.5 is a half-weighted series.
+  @spec build_power_series(number(), 0..3 | float()) :: TensorT.power_series()
   def build_power_series(t, derivative \\ 0) do
     case derivative do
       0.5 ->

@@ -9,8 +9,11 @@ defmodule Curves.Spline.TypeIndex do
     hermite: T.Hermite
   }
 
+  @spec list() :: list(atom())
   def list(), do: Map.keys(@all)
 
+  # A spline type's module from its key (e.g. :hermite). {:module, mod} passes a custom module through.
+  @spec get(atom() | {:module, module()}) :: module()
   def get({:module, mod}), do: mod
 
   def get(key) do
@@ -59,16 +62,19 @@ defmodule Curves.Spline.Type do
   @callback define(points :: list(tuple() | list()), opts :: list()) :: Curves.Spline.Curve.t()
 
   @doc false
+  @spec get_mod(atom() | {:module, module()}) :: module()
   defdelegate get_mod(key), to: Curves.Spline.TypeIndex, as: :get
 
   @doc ~s"""
   Return list of all allowed curve_type keys
   """
+  @spec list() :: list(atom())
   defdelegate list(), to: Curves.Spline.TypeIndex
 
   @doc ~s"""
   Shortcut for getting a tuple representing the derivative of a point on the curve.
   """
+  @spec d(Curves.Spline.Curve.t(), number()) :: {number(), number()}
   def d(curve, u) do
     Curves.Utils.Derivatives.get_derivative(curve, u, :tuple)
   end
@@ -83,6 +89,7 @@ defmodule Curves.Spline.Type do
 
       @doc false
       @override_segment_parsing Keyword.get(unquote(opts), :override_segment_parsing, false)
+      @spec override_segment_parsing() :: boolean()
       def override_segment_parsing(), do: @override_segment_parsing
 
       @doc false
@@ -91,6 +98,7 @@ defmodule Curves.Spline.Type do
       defoverridable power_series: 1
 
       @doc false
+      @spec point_derivatives() :: list(term())
       def point_derivatives(), do: @derivatives
 
       @doc false

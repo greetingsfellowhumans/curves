@@ -62,7 +62,10 @@ defmodule Curves.Spline.Type.Hermite do
     end)
   end
 
+  # Sets the two control points 1/3 of the way along the curve's slope at each knot.
   @doc false
+  @spec map_segment(Curves.Spline.Curve.t(), list(list(number())), non_neg_integer()) ::
+          list(list(number()))
   def map_segment(curve, [[x0, _x1, _x2, x3], [y0, _y1, _y2, y3]], idx) do
     u = idx * 1.0
     {dx, dy} = d(curve, u)
