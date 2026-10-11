@@ -33,10 +33,11 @@ defmodule Curves.Spline.Type.BezierSpline do
   ]
   curve = Curves.define_bezier_spline(points)
 
-  for i <- 0..1000 do
-    Curves.solve!(curve, i / 1000 * curve.max_u)
-  end
-  |> # render_vega_lite_chart(...)
+  # Find any point along the curve (u goes from 0.0 to curve.max_u)...
+  Curves.solve!(curve, 1.5)
+
+  # ...or draw the whole curve as an SVG image
+  Curves.Svg.save!(curve, 300, "bezier_spline.svg")
   ```
 
   ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)

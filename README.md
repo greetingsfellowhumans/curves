@@ -34,10 +34,12 @@ The simplest way to use Curves is with the predefined ones like `:ease_in_out`
 
 ```elixir
 curve = Curves.define_bezier(:ease_in_out)
-for i <- 0..1000 do
-  Curves.solve!(curve, i / 1000)
-end
-|> # render_vega_lite_chart(...)
+
+# Find any point along the curve (t goes from 0.0 to 1.0)...
+Curves.solve!(curve, 0.25)
+
+# ...or draw the whole curve as an SVG image
+Curves.Svg.save!(curve, 300, "ease_in_out.svg")
 ```
 
 ![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.png)
