@@ -1,6 +1,6 @@
 defmodule Curves.Utils.Opts do
   @moduledoc false
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   @config_opts [
     float_dtype: %{default: 32, doc: "The default bitsize for floats.", one_of: [8, 16, 32, 64]},

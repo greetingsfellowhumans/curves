@@ -36,7 +36,7 @@ defmodule Curves.Spline.Type do
   # ```
   # """
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.TensorTypes, as: TensorT
 
   @callback power_series(t :: float()) :: TensorT.power_series()
   @callback blending_function() :: struct()

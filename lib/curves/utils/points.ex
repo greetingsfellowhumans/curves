@@ -1,8 +1,8 @@
 defmodule Curves.Utils.Points do
   @moduledoc false
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
   alias Curves.Utils.{Coord, Point}
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
 
   defguard is_points(p)
            when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) >= 0

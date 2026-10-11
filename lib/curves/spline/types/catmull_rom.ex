@@ -28,7 +28,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   """
   use Curves.Spline.Type
 
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   # A segment as nested lists, [[x0, x1, x2, x3], [y0, y1, y2, y3]], paired with its index.
   @type indexed_segment :: {list(list(number())), non_neg_integer()}

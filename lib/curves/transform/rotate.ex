@@ -1,7 +1,7 @@
 defmodule Curves.Transform.Rotate do
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   # The 2D matrix that rotates points counter-clockwise by `radians` around {0, 0}.
   @spec rotation_matrix(number()) :: TensorT.rotation_matrix()

@@ -1,7 +1,7 @@
 defmodule Curves.Formula do
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   @callback power_series(t :: float()) :: TensorT.power_series()
   @callback blending_function() :: struct()

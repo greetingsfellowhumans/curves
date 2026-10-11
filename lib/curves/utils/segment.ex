@@ -3,8 +3,8 @@ defmodule Curves.Utils.Segment do
   # A segment is a tensor of shape {2, 4} holding two knots and two control points.
   # This is the format that can easily be passed into a matrix formula to solve a curve.
   # such that [knot0, cp0, cp1, knot1]
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
   @type map_format() :: %{knot: T.point_tuple(), c0: T.point_tuple(), c1: T.point_tuple()}
   # Any length
   @type loose_list() :: list(T.point_tuple())

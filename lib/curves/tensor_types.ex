@@ -1,4 +1,4 @@
-defmodule Curves.Utils.TensorTypes do
+defmodule Curves.TensorTypes do
   @moduledoc ~s"""
   Typespecs for the `Nx` tensors used throughout Curves. There are no functions here.
 

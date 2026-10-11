@@ -13,8 +13,8 @@ defmodule Curves.Bezier.Predefined do
   ```
   """
   import Curves.Utils.Points, only: [new_points: 2]
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   @order1 %{
     linear:              [{0, 0}, {1, 1}],

@@ -1,7 +1,7 @@
 defmodule Curves.Utils.Derivatives do
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
   alias Curves.Utils.Point
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
   @moduledoc false
   @small_num Curves.Utils.Constants.small_number()
 

@@ -1,6 +1,6 @@
 defmodule Curves.Utils.Coord do
   @moduledoc false
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   # Coords represent the user input which can be in the form of a tuple `{x, y}`, or a list `[x, y]`.
 

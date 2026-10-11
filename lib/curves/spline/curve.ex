@@ -2,9 +2,9 @@ defmodule Curves.Spline.Curve do
   @moduledoc ~s"""
   Struct representing a spline
   """
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
   alias Curves.Utils.{Percent, Point, Points, Segment}
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
 
   @minimum_u 0.0 - Curves.Utils.Constants.small_number()
 

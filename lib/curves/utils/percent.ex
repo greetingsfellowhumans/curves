@@ -3,8 +3,8 @@ defmodule Curves.Utils.Percent do
   # Turns solved points into percentages of a curve's bounding box,
   # for the `:force_percent` option.
 
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   # Anything with min/max bounds, such as a Bezier or Spline curve.
   @type bounded :: %{xmin: T.coord(), xmax: T.coord(), ymin: T.coord(), ymax: T.coord()}

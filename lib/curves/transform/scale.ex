@@ -1,6 +1,6 @@
 defmodule Curves.Transform.Scale do
   @moduledoc false
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   # These only change the curve's :scale field. The points are scaled later, in compress.
   @spec set_scale(T.curve_struct(), number()) :: T.curve_struct()

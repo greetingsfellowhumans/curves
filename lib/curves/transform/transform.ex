@@ -4,9 +4,9 @@ defmodule Curves.Transform do
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
+  alias Curves.TensorTypes, as: TensorT
   alias Curves.Transform.{Move, Rotate, Scale}
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   # Replays the transformations list, then moves, scales and rotates a copy of the points
   # (beziers) or segments (splines). Used by compress; the stored curve keeps its original points.

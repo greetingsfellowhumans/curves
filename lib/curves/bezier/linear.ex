@@ -1,6 +1,6 @@
 defmodule Curves.Bezier.Linear do
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.TensorTypes, as: TensorT
 
   # Finds the point a fraction `t` of the way along a straight line between two points.
   #

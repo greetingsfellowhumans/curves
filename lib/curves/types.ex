@@ -1,4 +1,4 @@
-defmodule Curves.Utils.Types do
+defmodule Curves.Types do
   @moduledoc ~s"""
   A collection of typespecs to be used in other modules. There are no meaningful functions to be found here.
   """

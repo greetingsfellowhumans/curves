@@ -37,8 +37,8 @@ defmodule Curves.Svg do
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   @defaults [
     samples: 100,

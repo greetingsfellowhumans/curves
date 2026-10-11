@@ -1,8 +1,8 @@
 defmodule Curves.Transform.Move do
   @moduledoc false
   import Curves.Utils.Point, only: [new_point: 1]
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   # These only change the curve's :origin field. The points are moved later, in compress.
   @spec set_position(T.curve_struct(), T.point_tuple()) :: T.curve_struct()

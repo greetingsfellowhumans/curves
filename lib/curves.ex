@@ -2,7 +2,7 @@ defmodule Curves do
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Bezier.Predefined
   alias Curves.Spline.Curve, as: Spline
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   @moduledoc """
   ## Usage

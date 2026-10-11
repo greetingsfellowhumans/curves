@@ -42,7 +42,7 @@ defmodule Curves.Spline.Type.BSpline do
   use Curves.Spline.Type,
     override_segment_parsing: true
 
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   @matrix ~MAT<
     1   0  0 0

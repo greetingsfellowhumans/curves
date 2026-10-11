@@ -1,6 +1,6 @@
 defmodule Curves.RegressionTest do
   use ExUnit.Case
-  alias Curves.Utils.Types, as: T
+  alias Curves.Types, as: T
 
   @spline_points [{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}]
 

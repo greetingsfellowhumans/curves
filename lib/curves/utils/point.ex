@@ -1,7 +1,7 @@
 defmodule Curves.Utils.Point do
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
 
   _comment = ~s"""
   stores every point as a {2, 1} tensor.

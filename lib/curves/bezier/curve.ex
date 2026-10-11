@@ -4,9 +4,9 @@ defmodule Curves.Bezier.Curve do
   """
   alias Curves.Bezier.{Linear, Quadratic}
   alias Curves.Bezier.Predefined
+  alias Curves.TensorTypes, as: TensorT
+  alias Curves.Types, as: T
   alias Curves.Utils.{Percent, Point, Points}
-  alias Curves.Utils.TensorTypes, as: TensorT
-  alias Curves.Utils.Types, as: T
 
   defstruct [
     :points,

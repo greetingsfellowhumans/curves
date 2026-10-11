@@ -1,6 +1,6 @@
 defmodule Curves.Bezier.Quadratic do
   @moduledoc false
-  alias Curves.Utils.TensorTypes, as: TensorT
+  alias Curves.TensorTypes, as: TensorT
 
   # Finds the point a fraction `t` of the way along a 3-point bezier curve.
   #
