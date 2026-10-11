@@ -146,7 +146,7 @@ defmodule Curves.Svg do
     {ymin, ymax} = all_points |> Enum.map(&elem(&1, 1)) |> Enum.min_max()
     inner_w = opts[:width] - 2 * opts[:padding]
     inner_h = opts[:height] - 2 * opts[:padding]
-    scale = min(fit(inner_w, xmax - xmin), fit(inner_h, ymax - ymin))
+    scale = finite(min(fit(inner_w, xmax - xmin), fit(inner_h, ymax - ymin)))
     offset_x = opts[:padding] + (inner_w - (xmax - xmin) * scale) / 2
     offset_y = opts[:padding] + (inner_h - (ymax - ymin) * scale) / 2
 
@@ -156,9 +156,15 @@ defmodule Curves.Svg do
   end
 
   # Pixels per unit along one axis. A flat axis (span 0) doesn't limit the scale.
-  @spec fit(number(), number()) :: number()
+  @spec fit(number(), number()) :: number() | :infinity
   defp fit(_pixels, span) when span == 0, do: :infinity
   defp fit(pixels, span), do: pixels / span
+
+  # When every point is the same, neither axis limits the scale; any scale works, since the
+  # point is drawn at the centre either way.
+  @spec finite(number() | :infinity) :: number()
+  defp finite(:infinity), do: 1.0
+  defp finite(scale), do: scale
 
   # "x,y x,y ..." for an SVG polyline.
   @spec polyline(T.point_list(), (T.point_tuple() -> T.point_tuple())) :: String.t()

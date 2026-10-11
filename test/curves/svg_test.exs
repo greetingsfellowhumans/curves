@@ -80,6 +80,12 @@ defmodule Curves.SvgTest do
       assert line_points(svg) == [{0.0, 50.0}, {50.0, 50.0}, {100.0, 50.0}]
     end
 
+    test "a curve that is a single point is drawn at the centre" do
+      curve = Curves.define_bezier([{100, -100}, {100, -100}])
+      svg = Svg.render(curve, samples: 2, width: 100, height: 100)
+      assert line_points(svg) == [{50.0, 50.0}, {50.0, 50.0}, {50.0, 50.0}]
+    end
+
     test "optional parts" do
       curve = Curves.define_bezier(:linear)
       assert Svg.render(curve, samples: 2) =~ "stroke-dasharray"

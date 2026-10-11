@@ -32,6 +32,7 @@ Coming from 0.2.x? See the [upgrade guide](upgrading.html).
 
 ### Fixed
 
+- `Curves.Svg.render/2` no longer crashes (`0.0 * :infinity`) for a curve whose points are all the same; it draws it at the centre of the image.
 - Hermite splines missed their own knots (e.g. `{10.0017, 5.0033}` instead of `{10, 5}`), moved by the wrong amount when transformed, and could produce huge values near vertical slopes. The slope's axes were swapped, vertical slopes became `{1_000_000, 1}`, and Bezier-style control points were fed into the Hermite formula. Replaced by a correct cubic Hermite spline (see Changed).
 - The exceptions (`OutOfBoundT`, `OutOfBoundU`, `TooFewPoints`, `TooManyPoints`) now fill in their fields (`t`, `u`, `max`, `n`, `min`) instead of leaving them `nil`, and are documented.
 - Spline `solve/3` and `solve!/3` accept integer `u` values instead of raising `FunctionClauseError`.
