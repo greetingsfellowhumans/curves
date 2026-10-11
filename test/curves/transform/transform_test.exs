@@ -35,6 +35,21 @@ defmodule Curves.Transform.TransformTest do
         %{segments: segments} = Transform.apply_all_transformations(curve)
         assert Nx.names(segments) == [:segment, :dimension, :point]
       end
+
+      test "transform_points/2 matches the bezier's own points after #{name}" do
+        curve = build(&Curves.define_bezier([{0, 0}, {1, 2}, {3, 1}], &1), @name, @transform)
+        transformed = Transform.apply_all_transformations(curve)
+        copy = Transform.transform_points(transformed, curve.points)
+        assert Nx.to_list(copy) == Nx.to_list(transformed.points)
+        assert Nx.names(copy) == [:dimension, :point]
+      end
+
+      test "transform_points/2 leaves the spline's points alone after #{name}" do
+        curve = build(&Curves.define_hermite(@spline_points, &1), @name, @transform)
+        transformed = Transform.apply_all_transformations(curve)
+        _copy = Transform.transform_points(transformed, transformed.points)
+        assert Nx.to_list(transformed.points) == Nx.to_list(curve.points)
+      end
     end
   end
 end

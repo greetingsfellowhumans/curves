@@ -113,15 +113,36 @@ defmodule Curves.Spline.Curve do
       |> Curves.Utils.Opts.merge_opts()
 
     curve = Curves.Transform.apply_all_transformations(curve)
+    bounds = get_bounds(curve)
 
     {:ok, fn u, solve_opts ->
       {points, t} = Segment.split_u(curve, u)
       tuple = Curves.Formula.run(mod, points, t, Keyword.merge(opts, solve_opts))
               |> Point.to_tuple()
 
-      {:ok, Percent.maybe_normalize(curve, tuple, Keyword.merge(opts, solve_opts))}
+      {:ok, Percent.maybe_normalize(bounds, tuple, Keyword.merge(opts, solve_opts))}
     end}
   end
+
+  # The curve's lowest and highest x and y after transforms, for `:force_percent`.
+  # `curve` must already have been through apply_all_transformations/1.
+  # An untransformed curve (scale 1, rotation 0, origin {0, 0}) reuses the bounds stored at
+  # define time. They are exactly what transforming would give, and skipping it keeps define fast.
+  @spec get_bounds(__MODULE__.t()) :: Percent.bounded()
+  defp get_bounds(%{scale: scale, rotation: rotation} = curve) when scale == 1 and rotation == 0,
+    do: get_bounds_at_origin(Nx.to_flat_list(curve.origin), curve)
+  defp get_bounds(curve), do: get_transformed_bounds(curve)
+
+  # Stored bounds when the origin is {0, 0}, otherwise transform a copy of the points.
+  @spec get_bounds_at_origin(list(number()), __MODULE__.t()) :: Percent.bounded()
+  defp get_bounds_at_origin([x, y], curve) when x == 0 and y == 0,
+    do: Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
+  defp get_bounds_at_origin(_origin, curve), do: get_transformed_bounds(curve)
+
+  # Bounds of a transformed copy of the original points. `curve.points` itself is never changed.
+  @spec get_transformed_bounds(__MODULE__.t()) :: Percent.bounded()
+  defp get_transformed_bounds(curve),
+    do: curve |> Curves.Transform.transform_points(curve.points) |> Percent.get_bounds()
 
   defp get_max_u(segments) do
     {s, _d, _p} = Nx.shape(segments)

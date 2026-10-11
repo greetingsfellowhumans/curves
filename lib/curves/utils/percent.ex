@@ -12,7 +12,7 @@ defmodule Curves.Utils.Percent do
   # Example: points (0, 5) and (10, 1) give xmin 0.0, xmax 10.0, ymin 1.0, ymax 5.0.
   # Rotating a curve adds tiny float noise, so a flat axis can come back
   # very slightly not flat (e.g. -1.0 and -1.0000001). That is left as-is.
-  @spec get_bounds(Nx.Tensor.t()) :: bounded()
+  @spec get_bounds(points :: T.points()) :: bounded()
   def get_bounds(points) do
     %{
       xmin: Nx.reduce_min(points[dimension: 0]) |> Nx.to_number(),

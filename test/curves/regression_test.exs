@@ -1,5 +1,6 @@
 defmodule Curves.RegressionTest do
   use ExUnit.Case
+  alias Curves.Utils.Types, as: T
 
   @spline_points [{5, 10}, {10, 5}, {15, 10}, {20, 10}, {25, 5}, {30, 15}]
 
@@ -82,17 +83,66 @@ defmodule Curves.RegressionTest do
     end
   end
 
-  # Pins down current outputs, including known oddities (stale bounds after transforms,
+  describe "force_percent on transformed splines" do
+    @catmull_points [{0, 0}, {10, 100}, {20, 0}, {30, 100}]
+
+    # Solves the start, middle and end of a spline with force_percent on.
+    @spec ends(Curves.Spline.Curve.t()) :: list(T.point_tuple())
+    defp ends(curve), do: Enum.map([0.0, curve.max_u / 2, curve.max_u], &Curves.solve!(curve, &1, force_percent: true))
+
+    test "scaled spline uses transformed bounds" do
+      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_scale(2.0)
+      assert ends(curve) == [{0.0, 0.0}, {0.5, 0.5}, {1.0, 1.0}]
+    end
+
+    test "moved spline uses transformed bounds" do
+      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_position({5, 5})
+      assert ends(curve) == [{0.0, 0.0}, {0.5, 0.5}, {1.0, 1.0}]
+    end
+
+    test "origin option uses transformed bounds" do
+      curve = Curves.define_catmull_rom(@catmull_points, origin: {7, 7})
+      assert ends(curve) == [{0.0, 0.0}, {0.5, 0.5}, {1.0, 1.0}]
+    end
+
+    test "negative scale flips the percentages" do
+      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_scale(-1.5)
+      assert ends(curve) == [{1.0, 1.0}, {0.5, 0.5}, {0.0, 0.0}]
+    end
+
+    test "rotated spline uses transformed bounds" do
+      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_rotation(90)
+      [{x0, y0}, _mid, {x1, y1}] = ends(curve)
+      assert {x0, y0, x1, y1} == {1.0, 0.0, 0.0, 1.0}
+    end
+
+    test "take! on a moved spline stays within 0..1" do
+      curve = Curves.define_catmull_rom(@catmull_points) |> Curves.Transform.set_position({100, 100})
+      for {x, y} <- Curves.take!(curve, 20, force_percent: true) do
+        assert x >= 0.0 and x <= 1.0
+        assert y >= 0.0 and y <= 1.0
+      end
+    end
+
+    test "moved away and back gives the same result as never moving" do
+      curve = Curves.define_catmull_rom(@catmull_points)
+      moved_back = curve |> Curves.Transform.set_position({5, 5}) |> Curves.Transform.set_position({0, 0})
+      assert ends(moved_back) == ends(curve)
+    end
+
+    test "the struct keeps the original points" do
+      curve = Curves.define_catmull_rom(@catmull_points)
+      moved = Curves.Transform.set_position(curve, {5, 5})
+      assert Nx.to_list(moved.points) == Nx.to_list(curve.points)
+    end
+  end
+
+  # Pins down current outputs, including known oddities (stale bezier bounds after transforms,
   # flat ranges returning max), so refactors can't change them silently.
   describe "force_percent characterization" do
     test "moved bezier still uses define-time bounds" do
       curve = Curves.define_bezier([{10, 100}, {40, 400}]) |> Curves.Transform.set_position({5, 5})
       assert Curves.solve!(curve, 0.5, force_percent: true) == {0.6666666666666666, 0.5166666666666667}
-    end
-
-    test "scaled spline still uses define-time bounds" do
-      curve = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}]) |> Curves.Transform.set_scale(2.0)
-      assert Curves.solve!(curve, curve.max_u / 2, force_percent: true) == {1.0, 1.0}
     end
 
     test "flat range returns max" do

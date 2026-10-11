@@ -45,6 +45,24 @@ defmodule Curves.Transform do
     Map.put(curve, :segments, segments)
   end
 
+  # Returns a new copy of `points` moved by the origin, then scaled, then rotated,
+  # the same way the curve's own points are. `curve` must already have been through
+  # apply_all_transformations/1. The curve itself is not changed, so a spline's
+  # original `:points` stay as the user gave them.
+  @doc false
+  @spec transform_points(curve :: T.curve_struct(), points :: T.points()) :: T.points()
+  def transform_points(%{origin: origin, scale: scale} = curve, points) do
+    points
+    |> Nx.add(origin)
+    |> Nx.multiply(Nx.tensor([[scale]]))
+    |> rotate_points(curve)
+  end
+
+  # Matches apply_rotation/1: only the integer 0 skips rotation.
+  @spec rotate_points(points :: T.points(), curve :: T.curve_struct()) :: T.points()
+  defp rotate_points(points, %{rotation: 0}), do: points
+  defp rotate_points(points, %{rotation: angle, origin: origin}), do: Rotate.rotate_points(points, angle, origin)
+
   # Put a new transformation in the :transformations list, then recompress.
   defp add(%Bezier{} = curve, transformation) do
     curve = Map.update!(curve, :transformations, &(&1 ++ [transformation]))
