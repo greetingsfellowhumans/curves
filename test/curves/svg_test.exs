@@ -88,6 +88,11 @@ defmodule Curves.SvgTest do
                "a &lt; b &amp; &quot;c&quot;</text>"
     end
 
+    test "curve_color and curve_width style the curve" do
+      svg = Svg.render(Curves.define_bezier(:linear), curve_color: "#123456", curve_width: 7)
+      assert svg =~ ~s(fill="none" stroke="#123456" stroke-width="7")
+    end
+
     test "passes solve_opts through" do
       curve = Curves.define_bezier([{10, 100}, {40, 400}])
 

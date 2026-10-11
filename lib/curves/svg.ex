@@ -19,8 +19,8 @@ defmodule Curves.Svg do
   | `:height` | `600` | Image height in pixels. |
   | `:padding` | `40` | Empty space around the curve, in pixels. |
   | `:background` | `"#ffffff"` | Background colour. `nil` leaves it transparent. |
-  | `:stroke` | `"#1c7ed6"` | Colour of the curve. |
-  | `:stroke_width` | `3` | Thickness of the curve. |
+  | `:curve_color` | `"#1c7ed6"` | Colour of the curve. |
+  | `:curve_width` | `3` | Thickness of the curve. |
   | `:show_points` | `true` | Draw the curve's own points as dots. |
   | `:point_color` | `"#d9480f"` | Colour of the dots. |
   | `:point_radius` | `5` | Size of the dots. |
@@ -46,8 +46,8 @@ defmodule Curves.Svg do
     height: 600,
     padding: 40,
     background: "#ffffff",
-    stroke: "#1c7ed6",
-    stroke_width: 3,
+    curve_color: "#1c7ed6",
+    curve_width: 3,
     show_points: true,
     point_color: "#d9480f",
     point_radius: 5,
@@ -81,7 +81,7 @@ defmodule Curves.Svg do
       ~s(<svg xmlns="http://www.w3.org/2000/svg" width="#{opts[:width]}" height="#{opts[:height]}" viewBox="0 0 #{opts[:width]} #{opts[:height]}">\n),
       background(opts[:background]),
       polygon(opts[:show_polygon], points, to_pixels, opts),
-      ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:stroke])}" stroke-width="#{opts[:stroke_width]}" stroke-linejoin="round" stroke-linecap="round"/>\n),
+      ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:curve_color])}" stroke-width="#{opts[:curve_width]}" stroke-linejoin="round" stroke-linecap="round"/>\n),
       dots(opts[:show_points], points, to_pixels, opts),
       title(opts[:title], opts),
       "</svg>\n"
