@@ -31,10 +31,10 @@ defmodule Curves.Spline.Type.BezierSpline do
     [{30.0, 10.0}, # Knot
       {32.0, 5.0}] # control point 0
   ]
-  curves = Curves.define_bezier_spline(points)
+  curve = Curves.define_bezier_spline(points)
 
   for i <- 0..1000 do
-    Curves.solve!(curve, i / 1000)
+    Curves.solve!(curve, i / 1000 * curve.max_u)
   end
   |> # render_vega_lite_chart(...)
   ```
