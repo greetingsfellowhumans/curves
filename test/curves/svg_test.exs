@@ -94,7 +94,8 @@ defmodule Curves.SvgTest do
     end
 
     test "optional parts" do
-      curve = Curves.define_bezier(:linear)
+      # A cubic, so it has control lines (a straight line has none).
+      curve = Curves.define_bezier(:ease)
       assert Svg.render(curve, samples: 2) =~ "stroke-dasharray"
       refute Svg.render(curve, samples: 2, show_polygon: false) =~ "stroke-dasharray"
       refute Svg.render(curve, samples: 2, background: nil) =~ "<rect"
@@ -185,6 +186,34 @@ defmodule Curves.SvgTest do
 
         refute svg =~ "<line"
       end
+    end
+
+    test "dashed lines go from each control point to the point it pulls on" do
+      dashed = fn curve ->
+        svg = Svg.render(curve, width: 100, height: 100, padding: 0, show_axes: false)
+
+        for [_, points] <- Regex.scan(~r/<polyline points="([^"]+)"[^>]*stroke-dasharray/, svg),
+            do: points |> String.split(" ") |> length()
+      end
+
+      # Cubic: start to c0, and c1 to end. Quadratic: start to c to end. Line: none.
+      assert dashed.(Curves.define_bezier([{0, 0}, {1, 3}, {2, -1}, {3, 1}])) == [2, 2]
+      assert dashed.(Curves.define_bezier([{0, 0}, {1, 3}, {2, 0}])) == [3]
+      assert dashed.(Curves.define_bezier([{0, 0}, {1, 3}])) == []
+
+      # A bezier spline: the same for each curve, with nothing for its straight part.
+      spline =
+        Curves.define_bezier_spline([
+          [{0, 0}, {1, 3}, {2, -1}],
+          [{3, 1}, {4, 4}],
+          [{5, 0}],
+          [{6, 1}]
+        ])
+
+      assert dashed.(spline) == [2, 2, 3]
+
+      # Other splines still get one line through their points.
+      assert dashed.(Curves.define_catmull_rom(@b_spline)) == [6]
     end
 
     test "save!/3 writes the file and returns the path" do

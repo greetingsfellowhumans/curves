@@ -4,7 +4,7 @@ defmodule Curves.Bezier.Curve do
   """
   alias Curves.Bezier.Predefined
   alias Curves.Types, as: T
-  alias Curves.Utils.{Percent, Poly, Vec}
+  alias Curves.Utils.{Percent, Poly, Segment, Vec}
 
   # Blending matrices for 2, 3 and 4 points (linear, quadratic and cubic Bernstein polynomials).
   @matrices %{
@@ -133,6 +133,21 @@ defmodule Curves.Bezier.Curve do
     %{points: points} = Curves.Transform.apply_all_transformations(curve)
     points
   end
+
+  # The dashed lines Curves.Svg draws: from each control point to the end it pulls on
+  # (first to second point, and third to fourth for a cubic). Other point counts can't be
+  # solved, so they just get one line through every point.
+  @doc false
+  @spec control_lines(t()) :: list(T.point_list())
+  def control_lines(curve), do: curve |> transformed_points() |> handle_lines()
+
+  @spec handle_lines(T.point_list()) :: list(T.point_list())
+  defp handle_lines([start | _] = points) when length(points) in 2..4 do
+    {controls, [finish]} = points |> tl() |> Enum.split(-1)
+    Segment.handle_lines(start, controls, finish)
+  end
+
+  defp handle_lines(points), do: [points]
 
   @doc false
   @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}

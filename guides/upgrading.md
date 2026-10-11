@@ -149,6 +149,66 @@ curve = Curves.define_hermite([[{0, 0}, {4, 0}], [{2, 2}, {0, 4}], [{4, 0}, {4, 
 If you want the tangents worked out for you, `define_catmull_rom/2` takes bare knots and is
 exactly a Hermite spline with automatic tangents.
 
+## 10. Bezier spline points are SVG-style
+
+Each point of `define_bezier_spline/2` used to be a knot with the two handles *of that knot*:
+the control point the curve arrives from, and the one it leaves towards. Now each point works like a
+command in an SVG path (or `bezierCurveTo` on a canvas): a knot, then the control points of the curve
+from that knot *to the next one*.
+
+| Point | Curve to the next knot | SVG |
+| --- | --- | --- |
+| `[knot]` | a straight line | `L` |
+| `[knot, c]` | a quadratic curve | `Q` |
+| `[knot, c0, c1]` | a cubic curve | `C` |
+
+The last point only ends the curve, so it must be `[knot]`. Control points there raise an `ArgumentError`,
+which catches most old data. **Old points without control points on the last knot still work, but draw a
+different curve,** so convert every bezier spline. This function turns old points into new ones that draw
+exactly the same curve:
+
+```elixir
+# 0.2.x / 1.0.0-rc.1 points -> 1.0.0-rc.2 points
+def to_svg_style(points) do
+  points
+  |> Enum.chunk_every(2, 1)
+  |> Enum.map(fn
+    [[knot | _] = point, next] -> [knot, leaving(point), arriving(next)]
+    [[knot | _]] -> [knot]
+  end)
+end
+
+# The control point the old format left a knot towards, and the one it arrived from.
+defp leaving([knot]), do: knot
+defp leaving([_knot, c]), do: c
+defp leaving([_knot, _arrive, leave]), do: leave
+
+defp arriving([knot]), do: knot
+defp arriving([_knot, c]), do: c
+defp arriving([_knot, arrive, _leave]), do: arrive
+```
+
+```elixir
+# 1.0.0-rc.1
+Curves.define_bezier_spline([
+  [{5.0, 10.0}, {10.0, 10.0}],
+  [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
+  [{30.0, 10.0}, {32.0, 5.0}]
+])
+```
+
+```elixir
+# 1.0.0-rc.2: the same curve
+Curves.define_bezier_spline([
+  [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+  [{10.0, 5.0}, {15.0, 5.0}, {32.0, 5.0}],
+  [{30.0, 10.0}]
+])
+```
+
+`Curves.Svg` now draws the dashed lines of beziers and bezier splines from each control point to the knot it
+pulls on, instead of one line through all the points.
+
 ## Everything else
 
 Everything else is either new or a bug fix that doesn't need code changes. See the [changelog](changelog.html) for the full list.

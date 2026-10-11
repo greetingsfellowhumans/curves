@@ -52,6 +52,10 @@ defmodule Curves.Spline.Type do
 
   @callback define(points :: list(tuple() | list()), opts :: list()) :: Curves.Spline.Curve.t()
 
+  # The dashed lines Curves.Svg draws, from the same points define_spline/3 gets. The default is
+  # one line through every point in order.
+  @callback control_lines(points :: list(list(tuple()))) :: list(list(tuple()))
+
   @doc false
   @spec get_mod(atom() | {:module, module()}) :: module()
   defdelegate get_mod(key), to: Curves.Spline.TypeIndex, as: :get
@@ -80,6 +84,13 @@ defmodule Curves.Spline.Type do
       @impl true
       def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2
+
+      @doc false
+      @impl true
+      def control_lines(points),
+        do: [points |> List.flatten() |> Enum.map(&Curves.Utils.Vec.new/1)]
+
+      defoverridable control_lines: 1
     end
   end
 end

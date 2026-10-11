@@ -86,13 +86,14 @@ defmodule Curves.RegressionTest do
       end
     end
 
-    # The control points used to become the ends of the only segment, so the curve went from
-    # one control point to the other and never reached the knot.
-    test "a one-knot bezier spline with control points is just its knot" do
+    # A single knot is also the last point, which only ends the curve, so control points are an error.
+    test "a one-knot bezier spline with control points raises" do
       for point <- [[{5, 5}, {0, 0}], [{5, 5}, {0, 0}, {10, 0}]] do
-        curve = Curves.define_bezier_spline([point])
-        assert Curves.solve!(curve, 0.0) == {5.0, 5.0}
-        assert Curves.take!(curve, 3) == [{5.0, 5.0}, {5.0, 5.0}, {5.0, 5.0}]
+        assert_raise ArgumentError,
+                     ~r/the last point of a bezier spline only ends the curve/,
+                     fn ->
+                       Curves.define_bezier_spline([point])
+                     end
       end
     end
   end

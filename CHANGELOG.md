@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking:** Bezier spline points are SVG-style. Each point is a knot, then the control points of the curve *to the next knot*: `[knot]` is a straight line (SVG `L`), `[knot, c]` a quadratic curve (`Q`) and `[knot, c0, c1]` a cubic curve (`C`). They used to be the two handles of the knot itself (the control point the curve arrives from, and the one it leaves towards). The last point only ends the curve, so control points there (including on a single knot) raise an `ArgumentError`. Old points without them still work, but draw a different curve. The [upgrade guide](upgrading.html) has a function that converts old points to new ones exactly.
+- `Curves.Svg` draws the dashed lines of beziers and bezier splines from each control point to the knot it pulls on, instead of one line through every point. A straight line has none.
 - `Curves.Svg` images now include the axes grid by default (see `:show_axes` above).
 - Passing something that isn't a curve to `Curves.solve/3`, `solve!/3`, `take/3`, `take!/3`, the `Curves.Transform` functions, or `Curves.Svg.render/2` and `save!/3` now raises an `ArgumentError` such as `expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: :nope`. It used to raise a `CaseClauseError`, `FunctionClauseError`, `KeyError` or `UndefinedFunctionError`, depending on the function and the input.
 - Other invalid input now raises an `ArgumentError` that says what was expected, instead of an error from deep inside the library:
@@ -28,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dialyzer no longer warns about breaking the opaqueness of `Curves.Bezier.Curve.t()` and `Curves.Spline.Curve.t()` inside the library. Code outside the two curve modules no longer reads or matches their fields.
 - Bezier `take/3` and `take!/3` end exactly at the end of the curve. For some `n` (e.g. 49) the last sample used to be at `t = 0.9999999999999999`, so it was very slightly short of the last point.
-- A bezier spline with a single knot is now just that knot, as it already was without control points. With control points (e.g. `[[{5, 5}, {0, 0}, {10, 0}]]`), it used to run from one control point to the other and never reach the knot.
 
 ## [1.0.0-rc.1] - 2026-10-10
 

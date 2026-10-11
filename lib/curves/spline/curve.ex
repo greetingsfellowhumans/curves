@@ -21,6 +21,7 @@ defmodule Curves.Spline.Curve do
     :max_u,
     :scale,
     :rotation,
+    lines: [],
     opts: [],
     origin: {0.0, 0.0}
   ]
@@ -43,6 +44,7 @@ defmodule Curves.Spline.Curve do
             ymin: T.coord(),
             scale: float(),
             rotation: float(),
+            lines: list(T.point_list()),
             opts: T.opts(),
             origin: T.point_tuple()
           }
@@ -72,6 +74,7 @@ defmodule Curves.Spline.Curve do
           mod: mod,
           points: points,
           segments: segments,
+          lines: mod.control_lines(coords),
           transformations: [],
           scale: 1.0,
           rotation: 0.0,
@@ -133,6 +136,15 @@ defmodule Curves.Spline.Curve do
     curve
     |> Curves.Transform.apply_all_transformations()
     |> Curves.Transform.transform_points(points)
+  end
+
+  # The dashed lines Curves.Svg draws (see Curves.Spline.Type's control_lines/1), moved, scaled
+  # and rotated like the curve.
+  @doc false
+  @spec control_lines(t()) :: list(T.point_list())
+  def control_lines(%__MODULE__{lines: lines} = curve) do
+    curve = Curves.Transform.apply_all_transformations(curve)
+    Enum.map(lines, &Curves.Transform.transform_points(curve, &1))
   end
 
   @doc false

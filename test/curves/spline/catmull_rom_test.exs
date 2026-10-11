@@ -19,14 +19,16 @@ defmodule Curves.Spline.CatmullRomTest do
       assert is_struct(curve, Curves.Spline.Curve)
       assert is_list(segments_list)
       [{hd, 0} | _] = segments_list
-      assert hd == [{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}]
+
+      # Bare knots make straight bezier-spline segments, with control points at a third and two thirds.
+      assert hd == [{0.0, 0.0}, {1 / 3, 0.0}, {2 / 3, 0.0}, {1.0, 0.0}]
     end
 
     test "get_prev and get_next", ctx do
       {segments_list, _curve} = initial_args(ctx)
       [{first, 0}, {second, 1} | _] = segments_list
-      assert first == [{0.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {1.0, 0.0}]
-      assert second == [{1.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {1.0, 1.0}]
+      assert first == [{0.0, 0.0}, {1 / 3, 0.0}, {2 / 3, 0.0}, {1.0, 0.0}]
+      assert second == [{1.0, 0.0}, {1.0, 1 / 3}, {1.0, 2 / 3}, {1.0, 1.0}]
 
       assert get_prev_coord(segments_list, 1, second) == {0.0, 0.0}
       assert get_prev_coord(segments_list, 0, first) == {-1.0, 0.0}

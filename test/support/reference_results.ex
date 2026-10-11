@@ -21,12 +21,14 @@ defmodule Curves.Support.ReferenceResults do
     [{30, 15}, {5, 10}]
   ]
   @b_spline [{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]
+  # SVG-style: each knot, then the control points of the curve to the next knot.
+  # These are the rc.1 points converted (see guides/upgrading.md), so the results are unchanged.
   @bezier_spline [
-    [{5.0, 10.0}, {10.0, 10.0}],
-    [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
-    [{15.0, 10.0}, {15.0, 6.0}, {15.0, 14.0}],
-    [{20.0, 15.0}, {18.0, 15.0}, {23.0, 15.0}],
-    [{30.0, 10.0}, {32.0, 5.0}]
+    [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+    [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+    [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+    [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+    [{30.0, 10.0}]
   ]
 
   # Transforms applied on top of a defined curve. `{:origin, xy}` is a define option instead.
@@ -71,7 +73,7 @@ defmodule Curves.Support.ReferenceResults do
       {"bezier_spline 5 points",
        fn opts -> Curves.define_bezier_spline(@bezier_spline, opts) end},
       {"bezier_spline 2 points",
-       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}], [{3, 0}, {2, 2}]], opts) end}
+       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}, {2, 2}], [{3, 0}]], opts) end}
     ]
 
     transformed =

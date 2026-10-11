@@ -37,10 +37,14 @@ defmodule Curves.PropertiesTest do
   defp hermite(knots),
     do: knots |> Enum.map(fn {x, y} -> [{x, y}, {y / 2, -x / 2}] end) |> Curves.define_hermite()
 
+  # Every knot but the last gets the two control points of the curve to the next knot.
   @spec bezier_spline(list({float(), float()})) :: Curves.Spline.Curve.t()
   defp bezier_spline(knots) do
-    knots
-    |> Enum.map(fn {x, y} -> [{x, y}, {x - 1.0, y + 2.0}, {x + 1.0, y - 2.0}] end)
+    {curves, [last]} = Enum.split(knots, -1)
+
+    curves
+    |> Enum.map(fn {x, y} -> [{x, y}, {x + 1.0, y - 2.0}, {x - 1.0, y + 2.0}] end)
+    |> Kernel.++([[last]])
     |> Curves.define_bezier_spline()
   end
 
@@ -57,11 +61,17 @@ defmodule Curves.PropertiesTest do
            "#{inspect({ax, ay})} is not within #{tolerance} of #{inspect({bx, by})}"
   end
 
+  # Each point but the last is a line, a quadratic or a cubic to the next knot (SVG L, Q or C).
   property "a bezier spline passes through every knot, at u = 0, 1, 2, ..." do
-    check all(knots <- points(1, 8), offset <- point()) do
+    check all(knots <- points(1, 8), offset <- point(), controls <- StreamData.integer(0..2)) do
+      {curves, [last]} = Enum.split(knots, -1)
+
       curve =
-        knots
-        |> Enum.map(fn {x, y} -> [{x, y}, Curves.Utils.Vec.add({x, y}, offset)] end)
+        curves
+        |> Enum.map(fn knot ->
+          [knot | List.duplicate(Curves.Utils.Vec.add(knot, offset), controls)]
+        end)
+        |> Kernel.++([[last]])
         |> Curves.define_bezier_spline()
 
       for {knot, u} <- Enum.with_index(knots) do

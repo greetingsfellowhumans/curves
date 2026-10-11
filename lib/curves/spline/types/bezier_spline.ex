@@ -1,35 +1,26 @@
 defmodule Curves.Spline.Type.BezierSpline do
   @moduledoc ~s"""
-  The Bezier Spline is basically a series of Bezier Curves linked together.
+  A chain of Bezier curves, each one starting where the last one ended.
 
-  To define one, you pass in a list of curves, but without the endpoint, which is automatically calculated from the next curve
+  Each point is a list: a knot, then the control points of the curve from that knot to the next one,
+  just like the commands in an SVG path (or `bezierCurveTo` on a canvas):
 
+  | Point | Curve to the next knot | SVG |
+  | --- | --- | --- |
+  | `[knot]` | a straight line | `L` |
+  | `[knot, c]` | a quadratic curve pulled towards `c` | `Q` |
+  | `[knot, c0, c1]` | a cubic curve: leaves `knot` towards `c0`, arrives at the next knot from `c1` | `C` |
+
+  The last point only ends the curve, so it must be `[knot]`.
 
   ```elixir
   points = [
-    # P0
-    [{5.0, 10.0},  # Knot
-    {10.0, 10.0}], # control point 0
-
-    # P1
-    [{10.0, 5.0},  # Knot
-      {5.0, 5.0},  # control point 0
-      {15.0, 5.0}],# control point 1
-
-    # P2
-    [{15.0, 10.0}, # Knot
-    {15.0, 6.0},  # control point 0
-    {15.0, 14.0}  # control point 1
-    ],
-
-    # P3
-    [{20.0, 15.0}, # Knot
-    {18.0, 15.0}, # control point 0
-    {23.0, 15.0}],# control point 1
-
-    # P4
-    [{30.0, 10.0}, # Knot
-      {32.0, 5.0}] # control point 0
+    # Each point: a knot, then the control points of the curve to the next knot.
+    [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],    # cubic to {10, 5}   (SVG C)
+    [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],    # cubic to {15, 10}
+    [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}], # cubic to {20, 15}
+    [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],  # cubic to {30, 10}
+    [{30.0, 10.0}]                              # the last knot only ends the curve
   ]
   curve = Curves.define_bezier_spline(points)
 
@@ -56,4 +47,9 @@ defmodule Curves.Spline.Type.BezierSpline do
   @doc false
   @impl true
   def blending_function(), do: @matrix
+
+  # Lines from each control point to the knot it pulls on, rather than one line through every point.
+  @doc false
+  @impl true
+  def control_lines(points), do: Curves.Utils.Segment.control_lines(points)
 end

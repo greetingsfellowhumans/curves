@@ -6,57 +6,96 @@ defmodule Curves.Utils.Segment do
   alias Curves.Types, as: T
   alias Curves.Utils.Vec
 
-  @type map_format() :: %{knot: T.point_tuple(), c0: T.point_tuple(), c1: T.point_tuple()}
   # Exactly 4 points.
   @type t() :: list(T.point_tuple())
 
-  # Builds cubic segments from a bezier spline's points, each given as [knot], [knot, c] or [knot, c0, c1].
-  # Coordinates are turned into floats.
+  # One point of a bezier spline, checked and turned into floats: its knot and the 0 to 2
+  # control points of the curve from this knot to the next one.
+  @typep parsed_point() :: {T.point_tuple(), list(T.point_tuple())}
+
+  # Builds cubic segments from a bezier spline's points, the way SVG path data works: each point
+  # is a knot plus the control points of the curve to the next knot, and the next point's knot
+  # ends that curve. [knot] is a straight line (SVG L), [knot, c] a quadratic curve (SVG Q) and
+  # [knot, c0, c1] a cubic curve (SVG C). Lines and quadratics are turned into the exact same
+  # curve written as a cubic, so every segment has 4 points.
+  # The last point only ends the curve, so it must be [knot]. A single knot is one segment that
+  # stays on that point. Coordinates are turned into floats.
   @spec new_segments(list(list(T.point_tuple()))) :: list(t())
+  def new_segments([]), do: raise(ArgumentError, "a spline needs at least 1 point, got none")
+
   def new_segments(lists) do
     lists
-    |> Enum.map(&to_map_format(&1))
-    |> normalize_length()
-    |> Enum.reverse()
-    |> Enum.map(fn segment -> Enum.map(segment, &Vec.new/1) end)
+    |> parse_points()
+    |> to_segments()
   end
 
-  # Turns each pair of neighbouring points into a 4-point segment, [knot, c1, next c0, next knot].
-  # The result is built back to front, so new_segments/1 reverses it.
-  @spec normalize_length(list(map_format())) :: list(t())
-  defp normalize_length(coords) do
-    coords
-    |> normalize_length([])
+  # The dashed lines Curves.Svg draws for a bezier spline: from each control point to the knot
+  # it pulls the curve towards (see handle_lines/3). Takes the same points as new_segments/1.
+  @spec control_lines(list(list(T.point_tuple()))) :: list(T.point_list())
+  def control_lines(lists) do
+    lists
+    |> parse_points()
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.flat_map(fn [{knot, controls}, {next, _}] -> handle_lines(knot, controls, next) end)
   end
 
-  @spec normalize_length(list(map_format()), list(t())) :: list(t())
-  defp normalize_length([], _acc),
-    do: raise(ArgumentError, "a spline needs at least 1 point, got none")
+  # The lines from a curve's control points to the knots they pull on, e.g. for SVG's C
+  # (start, c0, c1, end) that is start to c0 and c1 to end. A quadratic's one control pulls on
+  # both ends, so it is start to c to end. A straight line has no control points, so no lines.
+  @spec handle_lines(T.point_tuple(), T.point_list(), T.point_tuple()) :: list(T.point_list())
+  def handle_lines(_start, [], _finish), do: []
+  def handle_lines(start, [c], finish), do: [[start, c, finish]]
+  def handle_lines(start, [c0, c1], finish), do: [[start, c0], [c1, finish]]
 
-  # A single knot has nothing to curve towards, so its segment is just the knot: control points
-  # given with it are ignored. (They used to become the ends of the segment, so the curve
-  # never reached the knot.)
-  defp normalize_length([hd], acc) do
-    [[hd.knot, hd.knot, hd.knot, hd.knot] | acc]
+  # Checks every point's shape and that the last one has no control points.
+  @spec parse_points(list(term())) :: list(parsed_point())
+  defp parse_points(lists) do
+    parsed = Enum.map(lists, &parse_point/1)
+    check_last(List.last(parsed), List.last(lists))
+    parsed
   end
 
-  defp normalize_length([hd, next], acc) do
-    [[hd.knot, hd.c1, next.c0, next.knot] | acc]
+  @spec check_last(parsed_point(), term()) :: :ok
+  defp check_last({_knot, []}, _given), do: :ok
+
+  defp check_last(_parsed, given) do
+    raise ArgumentError,
+          "the last point of a bezier spline only ends the curve, so it must be [knot], " <>
+            "got: #{inspect(given)}. Control points belong to the point before the curve they shape. " <>
+            "See Curves.define_bezier_spline/2."
   end
 
-  defp normalize_length([hd, next | tl], acc) do
-    acc = [[hd.knot, hd.c1, next.c0, next.knot] | acc]
-    normalize_length([next | tl], acc)
+  @spec to_segments(list(parsed_point())) :: list(t())
+  defp to_segments([{knot, []}]), do: [[knot, knot, knot, knot]]
+
+  defp to_segments(points) do
+    points
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.map(fn [{knot, controls}, {next, _}] -> cubic(knot, controls, next) end)
   end
 
-  # A missing control point defaults to the one given, or to the knot itself.
-  @spec to_map_format(term()) :: map_format()
-  defp to_map_format([knot]), do: %{knot: knot, c0: knot, c1: knot}
-  defp to_map_format([knot, c]), do: %{knot: knot, c0: c, c1: c}
-  defp to_map_format([knot, c0, c1]), do: %{knot: knot, c0: c0, c1: c1}
+  # The same curve as a cubic. A line gets control points a third and two thirds of the way
+  # along, so it is also travelled at a steady speed. A quadratic with control point c gets
+  # control points two thirds of the way from each end towards c (exact degree elevation).
+  @spec cubic(T.point_tuple(), T.point_list(), T.point_tuple()) :: t()
+  defp cubic(start, [], finish),
+    do: [start, towards(start, finish, 1 / 3), towards(start, finish, 2 / 3), finish]
+
+  defp cubic(start, [c], finish),
+    do: [start, towards(start, c, 2 / 3), towards(finish, c, 2 / 3), finish]
+
+  defp cubic(start, [c0, c1], finish), do: [start, c0, c1, finish]
+
+  # The point `fraction` of the way from `a` to `b`.
+  @spec towards(T.point_tuple(), T.point_tuple(), float()) :: T.point_tuple()
+  defp towards(a, b, fraction), do: Vec.add(a, Vec.scale(Vec.subtract(b, a), fraction))
+
+  @spec parse_point(term()) :: parsed_point()
+  defp parse_point([knot | controls] = point) when length(point) in 1..3,
+    do: {Vec.new(knot), Enum.map(controls, &Vec.new/1)}
 
   # Anything else is a malformed input to define_bezier_spline/2, e.g. a plain {x, y} instead of [{x, y}].
-  defp to_map_format(other) do
+  defp parse_point(other) do
     raise ArgumentError,
           "each point of a bezier spline must be a list of 1 to 3 {x, y} tuples: " <>
             "[knot], [knot, control_point] or [knot, control_point0, control_point1]. " <>

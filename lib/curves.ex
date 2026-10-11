@@ -101,16 +101,18 @@ defmodule Curves do
   ## Options
   See [available opts](#module-options)
 
-  Each point is a list: its knot, then up to two control points (`[knot]`, `[knot, c]` or `[knot, c0, c1]`).
+  Each point is a knot, then the control points of the curve to the next knot, like an SVG path:
+  `[knot]` is a straight line (SVG `L`), `[knot, c]` a quadratic curve (`Q`) and `[knot, c0, c1]`
+  a cubic curve (`C`). The last point only ends the curve, so it must be `[knot]`.
   Any other shape, or an empty list, raises an `ArgumentError`.
 
   ## Examples
       iex> curve = Curves.define_bezier_spline([
-      ...>   [{5.0, 10.0}, {10.0, 10.0}],
-      ...>   [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
-      ...>   [{15.0, 10.0}, {15.0, 6.0}, {15.0, 14.0}],
-      ...>   [{20.0, 15.0}, {18.0, 15.0}, {23.0, 15.0}],
-      ...>   [{30.0, 10.0}, {32.0, 5.0}]
+      ...>   [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+      ...>   [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+      ...>   [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+      ...>   [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+      ...>   [{30.0, 10.0}]
       ...> ])
       iex> Curves.max_u(curve)
       4.0

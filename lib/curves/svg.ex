@@ -24,7 +24,7 @@ defmodule Curves.Svg do
   | `:show_points` | `true` | Draw the curve's own points as dots. |
   | `:point_color` | `"#d9480f"` | Colour of the dots. |
   | `:point_radius` | `5` | Size of the dots. |
-  | `:show_polygon` | `true` | Draw a dashed line joining the curve's own points in order. |
+  | `:show_polygon` | `true` | Draw dashed lines showing how the curve's points shape it. For beziers and bezier splines they go from each control point to the knot it pulls on; for other splines one line joins the points in order. |
   | `:polygon_color` | `"#adb5bd"` | Colour of that dashed line. |
   | `:title` | `nil` | Text drawn in the top-left corner. |
   | `:show_axes` | `true` | Draw a grid with the x and y values along the bottom and left edges, like a ruler. The lines at x = 0 and y = 0 are darker. The image is always scaled to fit, so without the grid a curve looks the same at any size. The numbers sit in the padding, so a small `:padding` hides them. `false` turns the grid off. |
@@ -104,7 +104,7 @@ defmodule Curves.Svg do
       ~s(<svg xmlns="http://www.w3.org/2000/svg" width="#{opts[:width]}" height="#{opts[:height]}" viewBox="0 0 #{opts[:width]} #{opts[:height]}">\n),
       background(opts[:background]),
       axes(opts[:show_axes], view, opts),
-      polygon(opts[:show_polygon], points, to_pixels, opts),
+      polygon(opts[:show_polygon], control_lines(curve), to_pixels, opts),
       ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:curve_color])}" stroke-width="#{opts[:curve_width]}" stroke-linejoin="round" stroke-linecap="round"/>\n),
       dots(opts[:show_points], points, to_pixels, opts),
       title(opts[:title], opts),
@@ -158,6 +158,19 @@ defmodule Curves.Svg do
       true -> Errors.raise_not_a_curve(curve)
     end
     |> Enum.dedup()
+  end
+
+  # The dashed lines, moved, scaled and rotated like the curve: for beziers and bezier splines,
+  # from each control point to the knot it pulls on; for other splines, one line through all
+  # their points. Repeated neighbours are drawn once.
+  @spec control_lines(T.curve_struct()) :: list(T.point_list())
+  defp control_lines(curve) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.control_lines(curve)
+      is_struct(curve, Spline) -> Spline.control_lines(curve)
+      true -> Errors.raise_not_a_curve(curve)
+    end
+    |> Enum.map(&Enum.dedup/1)
   end
 
   # Where the curve sits in the image: how many pixels per unit (the same on both axes, so the
@@ -214,13 +227,16 @@ defmodule Curves.Svg do
   defp background(nil), do: []
   defp background(color), do: ~s(  <rect width="100%" height="100%" fill="#{escape(color)}"/>\n)
 
-  @spec polygon(term(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
+  # One dashed polyline per control line.
+  @spec polygon(term(), list(T.point_list()), (T.point_tuple() -> T.point_tuple()), keyword()) ::
           iodata()
-  defp polygon(show, _points, _to_pixels, _opts) when show in [false, nil], do: []
+  defp polygon(show, _lines, _to_pixels, _opts) when show in [false, nil], do: []
 
-  defp polygon(_show, points, to_pixels, opts),
-    do:
-      ~s(  <polyline points="#{polyline(points, to_pixels)}" fill="none" stroke="#{escape(opts[:polygon_color])}" stroke-width="1.5" stroke-dasharray="6 4"/>\n)
+  defp polygon(_show, lines, to_pixels, opts) do
+    for line <- lines do
+      ~s(  <polyline points="#{polyline(line, to_pixels)}" fill="none" stroke="#{escape(opts[:polygon_color])}" stroke-width="1.5" stroke-dasharray="6 4"/>\n)
+    end
+  end
 
   @spec dots(term(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
           iodata()

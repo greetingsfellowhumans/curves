@@ -88,43 +88,28 @@ curve = Curves.define_bezier(points)
 
 ## Spline examples
 
-The simplest spline is basically just a series of bezier curves connected to each other.
-Notice we are no longer using `define_bezier`, but `define_bezier_spline`. Now it is a list of lists with 1, 2, or 3 tuples in each segment.
+The simplest spline is a chain of bezier curves, each one starting where the last one ended.
+Notice we are no longer using `define_bezier`, but `define_bezier_spline`. Each point is a list: a knot, then the control points of the curve from that knot to the next one,
+just like the commands in an SVG path (or `bezierCurveTo` on a canvas):
 
-```elixir
-# points format for `define_bezier_spline/2`
-[{knot_x, knot_y}]
-[{knot_x, knot_y}, {cp0_x, cp0_y}]
-[{knot_x, knot_y}, {cp0_x, cp0_y}, {cp1_x, cp1_y}]
-```
+| Point | Curve to the next knot | SVG |
+| --- | --- | --- |
+| `[knot]` | a straight line | `L` |
+| `[knot, c]` | a quadratic curve pulled towards `c` | `Q` |
+| `[knot, c0, c1]` | a cubic curve: leaves `knot` towards `c0`, arrives at the next knot from `c1` | `C` |
+
+The last point only ends the curve, so it must be `[knot]`.
 
 ### Bezier Spline
 
 ```elixir
 points = [
-  # P0
-  [{5.0, 10.0},  # Knot
-  {10.0, 10.0}], # control point 0
-
-  # P1
-  [{10.0, 5.0},  # Knot
-    {5.0, 5.0},  # control point 0
-    {15.0, 5.0}],# control point 1
-
-  # P2
-  [{15.0, 10.0}, # Knot
-   {15.0, 6.0},  # control point 0
-   {15.0, 14.0}  # control point 1
-  ],
-
-  # P3
-  [{20.0, 15.0}, # Knot
-   {18.0, 15.0}, # control point 0
-   {23.0, 15.0}],# control point 1
-
-  # P4
-  [{30.0, 10.0}, # Knot
-    {32.0, 5.0}] # control point 0
+  # Each point: a knot, then the control points of the curve to the next knot.
+  [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],    # cubic to {10, 5}   (SVG C)
+  [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],    # cubic to {15, 10}
+  [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}], # cubic to {20, 15}
+  [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],  # cubic to {30, 10}
+  [{30.0, 10.0}]                              # the last knot only ends the curve
 ]
 curve = Curves.define_bezier_spline(points)
 ```

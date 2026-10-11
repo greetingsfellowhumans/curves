@@ -41,15 +41,16 @@ defmodule Curves.Bench.Helper do
     ]
   end
 
-  # Knots with control points, in the format `define_bezier_spline/2` expects.
+  # Knots with control points, in the format `define_bezier_spline/2` expects: each knot, then the
+  # control points of the curve to the next knot. The last knot only ends the curve.
   @spec bezier_spline_points() :: list(Curves.Types.point_list())
   def bezier_spline_points() do
     [
-      [{5.0, 10.0}, {10.0, 10.0}],
-      [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
-      [{15.0, 10.0}, {15.0, 6.0}, {15.0, 14.0}],
-      [{20.0, 15.0}, {18.0, 15.0}, {23.0, 15.0}],
-      [{30.0, 10.0}, {32.0, 5.0}]
+      [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+      [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+      [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+      [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+      [{30.0, 10.0}]
     ]
   end
 
