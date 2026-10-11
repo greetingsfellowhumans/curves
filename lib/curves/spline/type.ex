@@ -84,7 +84,6 @@ defmodule Curves.Spline.Type do
       import Nx, only: :sigils
       import Curves.Spline.Type, only: [d: 2]
       @behaviour Curves.Spline.Type
-      @derivatives Keyword.get(unquote(opts), :derivatives, [0, 0, 0, 0])
       @derivative Keyword.get(unquote(opts), :derivative, 0)
 
       @doc false
@@ -96,10 +95,6 @@ defmodule Curves.Spline.Type do
       @impl true
       def power_series(t), do: Curves.Formula.build_power_series(t, @derivative)
       defoverridable power_series: 1
-
-      @doc false
-      @spec point_derivatives() :: list(term())
-      def point_derivatives(), do: @derivatives
 
       @doc false
       @impl true

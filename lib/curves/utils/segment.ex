@@ -13,9 +13,6 @@ defmodule Curves.Utils.Segment do
 
   alias Curves.Utils.Points
 
-  defguard is_segment(p)
-           when is_struct(p, Nx.Tensor) and elem(p.shape, 0) == 2 and elem(p.shape, 1) == 4
-
   # Builds cubic segments from a bezier spline's points, each given as [knot], [knot, c] or [knot, c0, c1].
   @spec new_segments(list(list(T.point_tuple())), T.opts()) :: TensorT.cubic_segments()
   def new_segments(lists, opts \\ []) do
@@ -88,16 +85,6 @@ defmodule Curves.Utils.Segment do
   @spec get_knot0(TensorT.cubic_segment()) :: TensorT.point()
   def get_knot0(segment) do
     Nx.slice(segment, [0, 0], [2, 1])
-  end
-
-  @spec get_control_point0(TensorT.cubic_segment()) :: TensorT.point()
-  def get_control_point0(segment) do
-    Nx.slice(segment, [0, 1], [2, 1])
-  end
-
-  @spec get_control_point1(TensorT.cubic_segment()) :: TensorT.point()
-  def get_control_point1(segment) do
-    Nx.slice(segment, [0, 2], [2, 1])
   end
 
   @spec get_knot1(TensorT.cubic_segment()) :: TensorT.point()
