@@ -5,16 +5,12 @@ defmodule Curves.Formula.CubicBezierTest do
   # alias Curves.Bezier.{Cubic}
   # import Mod
   # doctest Mod
+  # At t = 0.5 a cubic bezier is (p0 + 3 * p1 + 3 * p2 + p3) / 8, which gives {27.5, 46.25} here.
   @points [
     {0, 0},
-    {25, 25},
-    {50, 50},
-    {75, 75},
-    {100, 100},
-    {125, 125},
-    {150, 150},
-    {175, 175},
-    {200, 200}
+    {10, 30},
+    {30, 60},
+    {100, 100}
   ]
 
   def repeat(cb, count) do
@@ -24,7 +20,6 @@ defmodule Curves.Formula.CubicBezierTest do
   end
 
   describe "Opts" do
-    @tag skip: true
     test "get the correct options" do
       curve = Curves.define_bezier(@points)
       t = 0.5
