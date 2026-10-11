@@ -65,6 +65,8 @@ defmodule Curves.Utils.Segment do
 
   # Turns a spline's u (e.g. 2.25) into the segment it falls in and how far along it is: {segment 2, t 0.25}.
   # A whole number u is the end of the previous segment (t = 1.0), except u = 0.
+  # A small negative u (Spline.solve/3 allows down to -0.001) gives segment 0 with a negative t,
+  # which extends the first segment slightly before the start.
   # u must be a float (Numbers.split_float/1 only takes floats); Spline.solve/3 converts it first.
   @spec split_u(Curves.Spline.Curve.t() | TensorT.cubic_segments(), float()) ::
           {TensorT.cubic_segment(), float()}

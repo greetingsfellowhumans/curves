@@ -19,6 +19,22 @@ defmodule Curves.RegressionTest do
   end
 
   describe "spline u values" do
+    test "a u within 0.0001 of the start is not rounded to the start" do
+      curve = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}])
+      {x0, _} = Curves.solve!(curve, 0.0)
+      {x, _} = Curves.solve!(curve, 1.0e-5)
+      {x1, _} = Curves.solve!(curve, 1.0e-3)
+      assert x > x0 and x < x1
+    end
+
+    test "a small negative u extends slightly before the start" do
+      curve = Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}])
+      {before_x, before_y} = Curves.solve!(curve, -0.0005)
+      {after_x, after_y} = Curves.solve!(curve, 0.0005)
+      assert before_x < 0.0 and after_x > 0.0
+      assert before_y < 0.0 and after_y > 0.0
+    end
+
     test "accept integers" do
       curve = Curves.define_hermite(@spline_points)
       assert {:ok, {x, y}} = Curves.solve(curve, 1)
