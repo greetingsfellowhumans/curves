@@ -29,7 +29,7 @@ defmodule Curves.Spline.Curve do
   @typedoc ~s"""
   | field  	| description                                    	|
   |--------	|------------------------------------------------	|
-  | `:points` 	| A tensor representing 2D points                	|
+  | `:points` 	| The knots and control points the spline is built from, before any transforms. Catmull-Rom and Hermite splines store only their knots. B-splines store Bezier points generated from the ones you give.	|
   | `:xmax`   	| the highest x coord in the tensor, before any transforms	|
   | `:xmin`   	| the lowest x coord in the tensor, before any transforms	|
   | `:ymin`   	| the lowest y coord in the tensor, before any transforms	|
