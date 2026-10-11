@@ -243,6 +243,22 @@ defmodule Curves do
   end
 
   @doc ~s"""
+  The highest `t` (bezier) or `u` (spline) that `solve/3` accepts. Every curve starts at `0.0`.
+
+  Beziers always end at `1.0`. A spline ends at one unit per segment,
+  so `u = 1.0` is the end of its first segment and `u = max_u(curve)` is the end of the curve.
+
+  ## Examples
+      iex> Curves.max_u(Curves.define_bezier(:ease_in))
+      1.0
+      iex> Curves.max_u(Curves.define_catmull_rom([{0, 0}, {10, 100}, {20, 0}, {30, 100}]))
+      3.0
+  """
+  @spec max_u(Bezier.t() | Spline.t()) :: float()
+  def max_u(%Bezier{}), do: 1.0
+  def max_u(%Spline{max_u: max_u}), do: max_u
+
+  @doc ~s"""
   Take `n` samples, evenly spaced, from the curve.
   """
   @spec take(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) ::

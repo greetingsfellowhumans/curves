@@ -23,33 +23,23 @@ defmodule Curves.Bezier.Curve do
   ]
 
   @typedoc ~s"""
-  | field  	| description                                    	|
-  |--------	|------------------------------------------------	|
-  | `:points` 	| A tensor representing 2D points                	|
-  | `:xmax`   	| the highest x coord in the tensor, before any transforms	|
-  | `:xmin`   	| the lowest x coord in the tensor, before any transforms	|
-  | `:ymin`   	| the lowest y coord in the tensor, before any transforms	|
-  | `:ymax`   	| the highest y coord in the tensor, before any transforms	|
-  | `:origin` 	| the origin of the graph.                       	|
-  | `:rotation` 	| the degrees by which the curve is rotated.   	|
-  | `:transformations` 	| The list of transformations applied to this curve.                       	|
-  | `:compressed` 	| A preprocessed function for fast solving.                       	|
-  | `:opts`   	| The keyword list of options                    	|
+  A bezier curve. Its fields are internal and may change in any 1.x release,
+  so use the functions in `Curves` (e.g. `Curves.solve/3`, `Curves.max_u/1`) instead of reading them.
   """
-  @type t :: %__MODULE__{
-          points: TensorT.points(),
-          xmax: T.coord(),
-          xmin: T.coord(),
-          ymax: T.coord(),
-          ymin: T.coord(),
-          scale: float(),
-          rotation: float(),
-          transformations: list(),
-          compressed: (t :: float(), opts :: T.opts() ->
-                         {:ok, T.point_tuple()} | {:error, tuple()}),
-          opts: T.opts(),
-          origin: TensorT.point()
-        }
+  @opaque t :: %__MODULE__{
+            points: TensorT.points(),
+            xmax: T.coord(),
+            xmin: T.coord(),
+            ymax: T.coord(),
+            ymin: T.coord(),
+            scale: float(),
+            rotation: float(),
+            transformations: list(),
+            compressed: (t :: float(), opts :: T.opts() ->
+                           {:ok, T.point_tuple()} | {:error, tuple()}),
+            opts: T.opts(),
+            origin: TensorT.point()
+          }
 
   @doc false
   @spec define(T.point_list() | Predefined.curve_key() | TensorT.points(), T.opts()) :: t()

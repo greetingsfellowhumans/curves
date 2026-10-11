@@ -17,7 +17,7 @@ defmodule Curves.Spline.Type.CatmullRom do
     {1, 2},
   ])
 
-  # Find any point along the curve (u goes from 0.0 to curve.max_u)...
+  # Find any point along the curve (u goes from 0.0 to Curves.max_u(curve))...
   Curves.solve!(curve, 1.5)
 
   # ...or draw the whole curve as an SVG image

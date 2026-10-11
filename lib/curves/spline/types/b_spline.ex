@@ -13,7 +13,7 @@ defmodule Curves.Spline.Type.BSpline do
       {12, 9}
   ])
 
-  # Find any point along the curve (u goes from 0.0 to curve.max_u)...
+  # Find any point along the curve (u goes from 0.0 to Curves.max_u(curve))...
   Curves.solve!(curve, 1.5)
 
   # ...or draw the whole curve as an SVG image
@@ -31,11 +31,10 @@ defmodule Curves.Spline.Type.BSpline do
 
   ## Stored points
 
-  `curve.points` holds those generated Bezier points, not the points you passed in:
+  The curve stores those generated Bezier points, not the points you passed in:
   4 per segment, with each joint stored twice. For example, 6 points become 12.
   This also affects:
 
-  * `:xmin`, `:xmax`, `:ymin` and `:ymax`, which are measured from the generated points.
   * `:force_percent`, which rescales between those bounds instead of between your points.
   * `Curves.Svg`, which draws the generated points as its dots.
   """

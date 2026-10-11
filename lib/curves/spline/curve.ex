@@ -27,38 +27,26 @@ defmodule Curves.Spline.Curve do
   ]
 
   @typedoc ~s"""
-  | field  	| description                                    	|
-  |--------	|------------------------------------------------	|
-  | `:points` 	| The knots and control points the spline is built from, before any transforms. Catmull-Rom and Hermite splines store only their knots. B-splines store Bezier points generated from the ones you give.	|
-  | `:xmax`   	| the highest x coord in the tensor, before any transforms	|
-  | `:xmin`   	| the lowest x coord in the tensor, before any transforms	|
-  | `:ymin`   	| the lowest y coord in the tensor, before any transforms	|
-  | `:ymax`   	| the highest y coord in the tensor, before any transforms	|
-  | `:max_u`   	| maximum allowable u value.              	|
-  | `:scale`   	| multiplier for resizing curve.              	|
-  | `:transformations` 	| list of transformations that have been applied |
-  | `:rotation` 	| the degrees by which the curve is rotated.   	|
-  | `:compressed` 	| A preprocessed function for fast solving |
-  | `:origin` 	| the origin of the graph.                       	|
-  | `:opts`   	| The keyword list of options                    	|
+  A spline. Its fields are internal and may change in any 1.x release,
+  so use the functions in `Curves` (e.g. `Curves.solve/3`, `Curves.max_u/1`) instead of reading them.
   """
-  @type t :: %__MODULE__{
-          points: TensorT.points(),
-          segments: TensorT.cubic_segments(),
-          transformations: list(),
-          compressed: (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()}),
-          max_u: float(),
-          type: atom(),
-          mod: module(),
-          xmax: T.coord(),
-          xmin: T.coord(),
-          ymax: T.coord(),
-          ymin: T.coord(),
-          scale: float(),
-          rotation: float(),
-          opts: T.opts(),
-          origin: TensorT.point()
-        }
+  @opaque t :: %__MODULE__{
+            points: TensorT.points(),
+            segments: TensorT.cubic_segments(),
+            transformations: list(),
+            compressed: (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()}),
+            max_u: float(),
+            type: atom(),
+            mod: module(),
+            xmax: T.coord(),
+            xmin: T.coord(),
+            ymax: T.coord(),
+            ymin: T.coord(),
+            scale: float(),
+            rotation: float(),
+            opts: T.opts(),
+            origin: TensorT.point()
+          }
 
   # Each spline type's define/2 prepares `coords` first (e.g. wrapping each point in a list),
   # so the shape of `coords` depends on the type.
