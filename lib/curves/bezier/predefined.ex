@@ -1,17 +1,4 @@
 defmodule Curves.Bezier.Predefined do
-  @moduledoc ~s"""
-  Shortcuts for quickly getting a list of points that can be passed into `Curves.define_bezier/1`
-
-  ## Usage
-  ```elixir
-      iex> alias Curves.Bezier.Predefined
-      iex> Predefined.get_coords(:linear_up_right)
-      [{0.0, 0.0}, {1.0, 1.0}]
-      iex> [:ease | _] = Predefined.list()
-      iex> Predefined.get_coords(:ease_in_out_cubic)
-      [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
-  ```
-  """
   alias Curves.Types, as: T
 
   @order1 %{
@@ -70,6 +57,47 @@ defmodule Curves.Bezier.Predefined do
        |> Map.new(fn {k, li} ->
          {k, Enum.map(li, fn {x, y} -> {x * 1.0, y * 1.0} end)} # Coerce to floats
        end)
+
+  # The moduledoc needs the curve names, so it comes after them. Its gallery uses the pictures that
+  # guides/images/generate.exs draws for every predefined curve.
+  gallery = fn curves ->
+    rows =
+      curves
+      |> Map.keys()
+      |> Enum.sort()
+      |> Enum.map(&"![#{inspect(&1)}](images/predefined_#{&1}.svg)")
+      |> Enum.chunk_every(3, 3, ["", ""])
+      |> Enum.map_join("\n", &"| #{Enum.join(&1, " | ")} |")
+
+    "| | | |\n| --- | --- | --- |\n" <> rows
+  end
+
+  @moduledoc ~s"""
+  Shortcuts for quickly getting a list of points that can be passed into `Curves.define_bezier/1`
+
+  ## Usage
+  ```elixir
+      iex> alias Curves.Bezier.Predefined
+      iex> Predefined.get_coords(:linear_up_right)
+      [{0.0, 0.0}, {1.0, 1.0}]
+      iex> [:ease | _] = Predefined.list()
+      iex> Predefined.get_coords(:ease_in_out_cubic)
+      [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
+  ```
+
+  ## Gallery
+
+  Each picture shows the curve in blue and the points that shape it in orange.
+
+  ### Cubic
+  #{gallery.(@order3)}
+
+  ### Quadratic
+  #{gallery.(@order2)}
+
+  ### Linear
+  #{gallery.(@order1)}
+  """
 
   @typedoc ~s"""
   ### Cubic

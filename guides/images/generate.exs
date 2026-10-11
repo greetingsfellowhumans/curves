@@ -39,21 +39,10 @@ shape = Curves.define_bezier([{0, 0}, {1, 3}, {3, 3}, {4, 0}])
 # One fixed area for the three rotation pictures, so you can compare where the shape ends up.
 pivot_view = {{-4, -1}, {5, 5}}
 
+# Every predefined curve. The tutorial shows some of them and the Curves.Bezier.Predefined
+# moduledoc shows them all.
 predefined_gallery =
-  for key <- [
-        :linear,
-        :ease,
-        :ease_in,
-        :ease_out,
-        :ease_in_out,
-        :ease_in_back,
-        :ease_out_back,
-        :ease_in_out_back,
-        :ease_in_expo,
-        :ease_out_circ,
-        :ease_in_out_cubic,
-        :quadratic_down
-      ] do
+  for key <- Curves.Bezier.Predefined.list() do
     {"#{guides}/predefined_#{key}.svg", Curves.define_bezier(key),
      small ++ [title: inspect(key), show_axes: false]}
   end
