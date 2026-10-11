@@ -10,10 +10,6 @@ defmodule Curves.Utils.Opts do
     }
   ]
 
-  _todo = ~s"""
-  @TODO auto generate docs for all the config options
-  """
-
   def merge_opts(user_opts, default_opts \\ [])
       when is_list(user_opts) and is_list(default_opts) do
     default_opts
