@@ -11,6 +11,8 @@ defmodule Curves.Utils.Opts do
     }
   ]
 
+  @force_percent_default @config_opts[:force_percent].default
+
   # Fills in every config option. Precedence: user_opts, then the app config, then default_opts.
   @spec merge_opts(T.opts(), T.opts()) :: T.opts()
   def merge_opts(user_opts, default_opts \\ [])
@@ -23,16 +25,23 @@ defmodule Curves.Utils.Opts do
   # Returns `call_opts` with :force_percent set to the value that applies right now.
   # Precedence: call_opts, then curve_opts (given at define), then the app config, then the default.
   # Called on every solve/take, so a change to the app config after define still applies.
+  # This runs on every solve, so it looks the one option up directly instead of merging every option:
+  # the app config is only read when neither the call nor the define opts set it.
   @spec put_force_percent(T.opts(), T.opts()) :: T.opts()
-  def put_force_percent(curve_opts, call_opts) do
-    force_percent =
-      curve_opts
-      |> Keyword.merge(call_opts)
-      |> merge_opts()
-      |> Keyword.get(:force_percent)
+  def put_force_percent(curve_opts, call_opts),
+    do: put_force_percent(curve_opts, call_opts, Keyword.fetch(call_opts, :force_percent))
 
-    Keyword.put(call_opts, :force_percent, force_percent)
+  @spec put_force_percent(T.opts(), T.opts(), {:ok, term()} | :error) :: T.opts()
+  defp put_force_percent(_curve_opts, call_opts, {:ok, _given}), do: call_opts
+
+  defp put_force_percent(curve_opts, call_opts, :error) do
+    value = Keyword.get_lazy(curve_opts, :force_percent, &app_force_percent/0)
+    Keyword.put(call_opts, :force_percent, value)
   end
+
+  # The app-wide :force_percent setting, or its default.
+  @spec app_force_percent() :: term()
+  defp app_force_percent, do: Application.get_env(:curves, :force_percent, @force_percent_default)
 
   # Each config option's value from the app config, or its default when it isn't set.
   @spec config_opts() :: T.opts()

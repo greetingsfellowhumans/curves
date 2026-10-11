@@ -17,5 +17,13 @@ defmodule Curves.Utils.OptsTest do
       assert put_force_percent([force_percent: true], [])[:force_percent] == true
       assert put_force_percent([], [])[:force_percent] == false
     end
+
+    test "put_force_percent/2: an explicit nil wins over the app config" do
+      Application.put_env(:curves, :force_percent, true)
+      on_exit(fn -> Application.delete_env(:curves, :force_percent) end)
+      assert put_force_percent([], [])[:force_percent] == true
+      assert put_force_percent([force_percent: nil], [])[:force_percent] == nil
+      assert put_force_percent([], force_percent: nil)[:force_percent] == nil
+    end
   end
 end
