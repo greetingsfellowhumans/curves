@@ -212,9 +212,12 @@ defmodule Curves do
   @spec solve(Bezier.t() | Spline.t(), T.t(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, term()}
   def solve(curve, t, opts \\ []) do
-    case curve do
-      %Bezier{} -> Bezier.solve(curve, t, opts)
-      %Spline{} -> Spline.solve(curve, t, opts)
+    # Dispatch with is_struct/2, not a %Bezier{} pattern (same in solve!/3, take/3, take!/3).
+    # A pattern turns the opaque curve into a plain map in Dialyzer's eyes, and passing
+    # that on to Bezier/Spline warns "call without opaqueness".
+    cond do
+      is_struct(curve, Bezier) -> Bezier.solve(curve, t, opts)
+      is_struct(curve, Spline) -> Spline.solve(curve, t, opts)
     end
   end
 
@@ -228,9 +231,9 @@ defmodule Curves do
   """
   @spec solve!(Bezier.t() | Spline.t(), T.t(), T.opts()) :: T.point_tuple()
   def solve!(curve, t, opts \\ []) do
-    case curve do
-      %Bezier{} -> Bezier.solve!(curve, t, opts)
-      %Spline{} -> Spline.solve!(curve, t, opts)
+    cond do
+      is_struct(curve, Bezier) -> Bezier.solve!(curve, t, opts)
+      is_struct(curve, Spline) -> Spline.solve!(curve, t, opts)
     end
   end
 
@@ -269,8 +272,13 @@ defmodule Curves do
           {:ok, T.point_list()} | {:error, term()}
   def take(curve, n, opts \\ [])
   def take(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
-  def take(%Bezier{} = curve, n, opts), do: Bezier.take(curve, n, opts)
-  def take(%Spline{} = curve, n, opts), do: Spline.take(curve, n, opts)
+
+  def take(curve, n, opts) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.take(curve, n, opts)
+      is_struct(curve, Spline) -> Spline.take(curve, n, opts)
+    end
+  end
 
   @doc ~s"""
   The raising version of `take/3`: returns the list of points, or raises one of the `Curves.Exceptions` errors.
@@ -282,8 +290,13 @@ defmodule Curves do
   @spec take!(Bezier.t() | Spline.t(), n :: pos_integer(), T.opts()) :: T.point_list()
   def take!(curve, n, opts \\ [])
   def take!(_curve, n, _opts) when not is_integer(n) or n < 1, do: raise_bad_count(n)
-  def take!(%Bezier{} = curve, n, opts), do: Bezier.take!(curve, n, opts)
-  def take!(%Spline{} = curve, n, opts), do: Spline.take!(curve, n, opts)
+
+  def take!(curve, n, opts) do
+    cond do
+      is_struct(curve, Bezier) -> Bezier.take!(curve, n, opts)
+      is_struct(curve, Spline) -> Spline.take!(curve, n, opts)
+    end
+  end
 
   # take/3 and take!/3 divide by n, and 1..n counts down when n < 1, so anything but a
   # positive integer is rejected up front.
