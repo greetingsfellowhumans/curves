@@ -30,6 +30,7 @@ The first release candidate for 1.0. Version 0.3.0 was never released; its chang
 
 ### Fixed
 
+- The exceptions (`OutOfBoundT`, `OutOfBoundU`, `TooFewPoints`, `TooManyPoints`) now fill in their fields (`t`, `u`, `max`, `n`, `min`) instead of leaving them `nil`, and are documented.
 - Spline `solve/3` and `solve!/3` accept integer `u` values instead of raising `FunctionClauseError`.
 - Spline `take!/3` raises `Curves.Exceptions.OutOfBoundU` instead of a `MatchError`.
 - Spline `take/3` no longer fails when float rounding pushes the final sample past the last segment.
