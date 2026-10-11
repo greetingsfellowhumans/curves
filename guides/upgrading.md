@@ -1,17 +1,29 @@
 # Upgrading from 0.2.x to 1.0
 
 Version 1.0 makes the API stable: after 1.0.0, breaking changes wait for 2.0.
-To get there, a few things changed from 0.2.x. Most code only needs the steps in sections 1 to 4.
-Each section shows the 0.2.x code, then the 1.0 code.
+To get there, a few things changed from 0.2.x. Most code only needs the steps in sections 1 to 4,
+plus section 10 if you use bezier splines and section 11 if you scale curves that you also move.
+Each section shows the old code, then the 1.0 code.
 
 ```elixir
 # mix.exs
 def deps do
   [
-    {:curves, "~> 1.0.0-rc.1"}
+    {:curves, "~> 1.0.0-rc.2"}
   ]
 end
 ```
+
+### Coming from 1.0.0-rc.1
+
+Three breaking changes landed in 1.0.0-rc.2:
+
+- [Section 10](#10-bezier-spline-points-are-svg-style): bezier spline points are SVG-style. Convert your points.
+- [Section 11](#11-scaling-no-longer-moves-a-curve): scaling no longer moves a curve.
+- [Section 12](#12-predefined-get_coords-1-raises-for-an-unknown-name): `Predefined.get_coords/1` raises for an unknown name.
+
+`Curves.Svg` also draws an axes grid by default now (`show_axes: false` turns it off), and invalid input raises
+clearer `ArgumentError`s. See the [changelog](changelog.html).
 
 ## 1. No more Nx: results are plain 64-bit floats
 

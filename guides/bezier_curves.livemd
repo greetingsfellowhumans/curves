@@ -3,7 +3,7 @@
 ```elixir
 Mix.install(
   [
-    {:curves, "~> 1.0.0-rc.1"},
+    {:curves, "~> 1.0.0-rc.2"},
     {:kino, "~> 0.19"},
   ])
 ```

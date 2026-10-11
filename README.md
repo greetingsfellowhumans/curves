@@ -21,7 +21,7 @@ Add `curves` to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:curves, "~> 1.0.0-rc.1"}
+    {:curves, "~> 1.0.0-rc.2"}
   ]
 end
 ```
