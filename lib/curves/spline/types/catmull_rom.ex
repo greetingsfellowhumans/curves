@@ -24,7 +24,7 @@ defmodule Curves.Spline.Type.CatmullRom do
   Curves.Svg.save!(curve, 300, "catmull_rom.svg")
   ```
 
-  ![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.png)
+  ![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.svg)
   """
   use Curves.Spline.Type
 

@@ -42,7 +42,7 @@ Curves.solve!(curve, 0.25)
 Curves.Svg.save!(curve, 300, "ease_in_out.svg")
 ```
 
-![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.png)
+![Ease In Out](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ease_in_out.svg)
 
 ### Quadratic Bezier
 
@@ -57,7 +57,7 @@ points = [
 curve = Curves.define_bezier(points)
 ```
 
-![Quadratic](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/quadratic.png)
+![Quadratic](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/quadratic.svg)
 
 ### Custom 4-point Bezier
 
@@ -71,7 +71,7 @@ points = [
 curve = Curves.define_bezier(points)
 ```
 
-![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.png)
+![Custom Bezier](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/custom_bezier.svg)
 
 ## Spline examples
 
@@ -116,7 +116,7 @@ points = [
 curve = Curves.define_bezier_spline(points)
 ```
 
-![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)
+![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.svg)
 
 ### Cubic Hermite Spline
 
@@ -134,7 +134,7 @@ curve = Curves.define_hermite([
 ])
 ```
 
-![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.png)
+![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.svg)
 
 ### Catmull-Rom Spline
 
@@ -151,7 +151,7 @@ curve = Curves.define_catmull_rom([
 ])
 ```
 
-![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.png)
+![Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/catmull_rom.svg)
 
 ### B-Spline
 
@@ -169,7 +169,7 @@ curve = Curves.define_b_spline([
 ])
 ```
 
-![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.png)
+![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.svg)
 
 ## Benchmarks
 

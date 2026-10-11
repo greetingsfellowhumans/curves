@@ -24,7 +24,7 @@ defmodule Curves.Spline.Type.Hermite do
   Curves.Svg.save!(curve, 300, "hermite.svg")
   ```
 
-  ![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.png)
+  ![Hermite Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/hermite.svg)
 
   """
   use Curves.Spline.Type,

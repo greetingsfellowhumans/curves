@@ -20,7 +20,7 @@ defmodule Curves.Spline.Type.BSpline do
   Curves.Svg.save!(curve, 300, "b_spline.svg")
   ```
 
-  ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.png)
+  ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.svg)
 
   ## How it is built
 

@@ -40,7 +40,7 @@ defmodule Curves.Spline.Type.BezierSpline do
   Curves.Svg.save!(curve, 300, "bezier_spline.svg")
   ```
 
-  ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.png)
+  ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.svg)
 
   """
   use Curves.Spline.Type
