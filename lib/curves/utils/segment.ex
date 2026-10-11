@@ -28,13 +28,13 @@ defmodule Curves.Utils.Segment do
       |> normalize_length([])
   end
   defp normalize_length([hd], acc) do
-    [[ hd.c0, hd.knot, hd.knot, hd.c1 ] | acc]
+    [[hd.c0, hd.knot, hd.knot, hd.c1] | acc]
   end
   defp normalize_length([hd, next], acc) do
-    [[ hd.knot, hd.c1, next.c0, next.knot ] | acc]
+    [[hd.knot, hd.c1, next.c0, next.knot] | acc]
   end
   defp normalize_length([hd, next | tl], acc) do
-    acc = [[ hd.knot, hd.c1, next.c0, next.knot ] | acc]
+    acc = [[hd.knot, hd.c1, next.c0, next.knot] | acc]
     normalize_length([next | tl], acc)
   end
 

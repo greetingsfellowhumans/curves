@@ -25,11 +25,11 @@ defmodule Curves.Transform do
   end
 
   defp apply_scale(%Bezier{points: points, scale: scale, origin: _origin} = curve) do
-    points = Nx.multiply(points, Nx.tensor([ [scale] ]))
+    points = Nx.multiply(points, Nx.tensor([[scale]]))
     Map.put(curve, :points, points)
   end
   defp apply_scale(%Spline{segments: segments, scale: scale, origin: _origin} = curve) do
-    segments = Nx.multiply(segments, Nx.tensor([ [ [scale] ] ]))
+    segments = Nx.multiply(segments, Nx.tensor([[[scale]]]))
     Map.put(curve, :segments, segments)
   end
 

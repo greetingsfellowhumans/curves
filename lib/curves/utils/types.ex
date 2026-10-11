@@ -38,7 +38,7 @@ defmodule Curves.Utils.Types do
   @type opts :: keyword()
 
   @typedoc "Provides a formal structure for the {2, n} Tensors that represent a series of n points with two dimension values (x and y)"
-  @type point_names :: list( :dimension | :point )
+  @type point_names :: list(:dimension | :point)
 
   @typedoc "An Nx tensor representing a single point"
   @type point :: %Nx.Tensor{shape: {2, 1}, names: point_names(), type: {:f, pos_integer()}}

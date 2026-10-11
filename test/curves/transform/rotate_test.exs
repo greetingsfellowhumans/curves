@@ -40,7 +40,7 @@ defmodule Curves.Transform.RotateTest do
   test "should rotate a list of points" do
     origin = Point.new_point({0, 0})
     rad = Rotate.degrees_to_radians(90)
-    list = Points.new_points([ {1.0, 1.0}, {0.5, 0.5}, {-0.5, 0.25}])
+    list = Points.new_points([{1.0, 1.0}, {0.5, 0.5}, {-0.5, 0.25}])
     assert list == Nx.subtract(list, origin)
     tuples = Rotate.rotate_points(list, rad, origin) |> Points.to_tuples()
             |> Enum.map(fn {x, y} -> {Float.round(x, 5), Float.round(y, 5)} end)

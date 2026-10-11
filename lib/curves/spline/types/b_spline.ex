@@ -69,7 +69,7 @@ defmodule Curves.Spline.Type.BSpline do
 
 
   defp auto_last([[p0, p1, p2], [p3 | _] = next_segment | segments], acc) do
-    acc = [ [p0, p1, p2, p3] | acc]
+    acc = [[p0, p1, p2, p3] | acc]
     segments = [next_segment | segments]
     auto_last(segments, acc)
   end

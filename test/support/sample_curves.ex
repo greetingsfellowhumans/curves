@@ -28,7 +28,7 @@ defmodule Curves.Support.SampleCurves do
     # P2
     [{15.0, 10.0},
      {15.0, 6.0},
-     {15.0, 14.0 }],
+     {15.0, 14.0}],
 
     # P3
     [{20.0, 15.0},
