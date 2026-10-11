@@ -132,6 +132,10 @@ defmodule Curves.Bezier.Predefined do
 
       3 -> @order3
       :cubic -> @order3
+
+      other ->
+        raise ArgumentError,
+              "order must be 1, 2, 3, :linear, :quad or :cubic, got: #{inspect(other)}"
     end
       |> Map.keys()
       |> Enum.sort()
@@ -146,7 +150,7 @@ defmodule Curves.Bezier.Predefined do
   """
   @spec details(curve_key()) :: curve_type_info()
   def details(k) do
-    li = Map.get(@all, k)
+    li = fetch!(k)
     order = Enum.count(li) - 1
     %{key: k, points: li, order: order}
   end
@@ -166,13 +170,13 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return the list of `{x, y}` points for a predefined curve.
+  Return the list of `{x, y}` points for a predefined curve, or `nil` for a name that isn't one.
 
   ## Examples
       iex> Curves.Bezier.Predefined.get_coords(:linear_up_right)
       [{0.0, 0.0}, {1.0, 1.0}]
   """
-  @spec get_coords(curve_key()) :: T.point_list()
+  @spec get_coords(curve_key()) :: T.point_list() | nil
   def get_coords(k) do
     Map.get(@all, k)
   end
@@ -180,7 +184,16 @@ defmodule Curves.Bezier.Predefined do
   @doc false
   @spec get(curve_key(), T.opts()) :: T.point_list()
   def get(k, _opts \\ []) do
-    Map.get(@all, k) |> Enum.map(&Curves.Utils.Vec.new/1)
+    fetch!(k) |> Enum.map(&Curves.Utils.Vec.new/1)
+  end
+
+  # The points of a predefined curve, or a clear error when `k` isn't one of the names.
+  @spec fetch!(term()) :: T.point_list()
+  defp fetch!(k) when is_map_key(@all, k), do: Map.fetch!(@all, k)
+
+  defp fetch!(k) do
+    raise ArgumentError,
+          "unknown predefined curve: #{inspect(k)}. See Curves.Bezier.Predefined.list/0 for the names"
   end
 
 end

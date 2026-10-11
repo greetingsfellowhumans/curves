@@ -332,7 +332,7 @@ defmodule Curves.RegressionTest do
 
   describe "spline types" do
     test "an unknown spline type raises with its name" do
-      assert_raise RuntimeError, "Unknown spline_type: :wavy", fn ->
+      assert_raise ArgumentError, "Unknown spline_type: :wavy", fn ->
         Curves.Spline.TypeIndex.get(:wavy)
       end
     end
@@ -445,6 +445,86 @@ defmodule Curves.RegressionTest do
       assert_raise ArgumentError, ~r/n must be a positive integer/, fn ->
         Curves.take!(:nope, 0)
       end
+    end
+  end
+
+  describe "clear errors" do
+    test "an unknown predefined curve" do
+      for name <- [:nope, nil] do
+        assert_raise ArgumentError,
+                     ~r/unknown predefined curve: #{inspect(name)}\. See Curves.Bezier.Predefined.list\/0/,
+                     fn ->
+                       Curves.define_bezier(name)
+                     end
+      end
+
+      assert_raise ArgumentError, ~r/unknown predefined curve: :nope/, fn ->
+        Curves.Bezier.Predefined.details(:nope)
+      end
+
+      # Unchanged: it never raised, so it still returns nil.
+      assert Curves.Bezier.Predefined.get_coords(:nope) == nil
+    end
+
+    test "a bad order for Predefined.list/1" do
+      assert_raise ArgumentError, "order must be 1, 2, 3, :linear, :quad or :cubic, got: 4", fn ->
+        Curves.Bezier.Predefined.list(4)
+      end
+    end
+
+    test "define_bezier with something that isn't a list of points" do
+      for bad <- ["x", %{}, {1, 2}] do
+        assert_raise ArgumentError, ~r/a bezier curve takes a list of \{x, y\} points/, fn ->
+          Curves.define_bezier(bad)
+        end
+      end
+    end
+
+    test "a point that isn't {x, y} with numbers, in any define or transform" do
+      calls = [
+        fn -> Curves.define_bezier([{0, 0}, {1, :a}]) end,
+        fn -> Curves.define_bezier([{0, 0}, [1, 1]]) end,
+        fn -> Curves.define_bezier([{0, 0}, {1, 1}], origin: :here) end,
+        fn -> Curves.define_catmull_rom([{0, 0}, {1, 1}, "x"]) end,
+        fn -> Curves.define_b_spline([{0, 0}, {1, 1}, {2, 2}, {3, nil}]) end,
+        fn -> Curves.define_b_spline([{0, 0}, {1, 1}, {2, 2}, 3]) end,
+        fn -> Curves.define_bezier_spline([[{0, 0}], [1]]) end,
+        fn -> Curves.define_hermite([[{0, 0}, {1, 1}], [{1, :a}, {1, 1}]]) end,
+        fn -> Curves.Transform.set_position(Curves.define_bezier(:linear), {1, "2"}) end,
+        fn -> Curves.Transform.inc_position(Curves.define_bezier(:linear), 5) end
+      ]
+
+      for call <- calls do
+        assert_raise ArgumentError, ~r/expected an \{x, y\} point with numbers, got: /, call
+      end
+    end
+
+    test "a t or u that isn't a number" do
+      assert_raise ArgumentError, "t must be a number, got: :x", fn ->
+        Curves.solve(Curves.define_bezier(:linear), :x)
+      end
+
+      assert_raise ArgumentError, ~s(u must be a number, got: "1"), fn ->
+        Curves.solve!(Curves.define_catmull_rom(@spline_points), "1")
+      end
+    end
+
+    test "a transform amount that isn't a number" do
+      curve = Curves.define_bezier(:linear)
+
+      for fun <- [:inc_x, :inc_y, :set_scale, :inc_scale, :set_rotation, :inc_rotation] do
+        assert_raise ArgumentError, "Curves.Transform.#{fun}/2 needs a number, got: :a", fn ->
+          apply(Curves.Transform, fun, [curve, :a])
+        end
+      end
+    end
+
+    test "Svg's show_* options treat nil like false" do
+      curve = Curves.define_bezier(:linear)
+      svg = Curves.Svg.render(curve, show_points: nil, show_polygon: nil, show_axes: nil)
+      refute svg =~ "<circle"
+      refute svg =~ "stroke-dasharray"
+      refute svg =~ "<line"
     end
   end
 end

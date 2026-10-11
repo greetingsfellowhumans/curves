@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Curves.Svg` images now include the axes grid by default (see `:show_axes` above).
 - Passing something that isn't a curve to `Curves.solve/3`, `solve!/3`, `take/3`, `take!/3`, the `Curves.Transform` functions, or `Curves.Svg.render/2` and `save!/3` now raises an `ArgumentError` such as `expected a Curves.Bezier.Curve or Curves.Spline.Curve, got: :nope`. It used to raise a `CaseClauseError`, `FunctionClauseError`, `KeyError` or `UndefinedFunctionError`, depending on the function and the input.
+- Other invalid input now raises an `ArgumentError` that says what was expected, instead of an error from deep inside the library:
+  - an unknown predefined curve name (`define_bezier(:nope)`, `Predefined.details/1`) or `Predefined.list/1` order. `Predefined.get_coords/1` still returns `nil` for an unknown name.
+  - `define_bezier/2` given something that isn't a list or a name, e.g. a single `{x, y}`.
+  - any point, `:origin`, or `Curves.Transform` position that isn't an `{x, y}` tuple of numbers, in every `define_*` function.
+  - a `t`/`u` that isn't a number in `solve/3` and `solve!/3`.
+  - a `Curves.Transform` amount (`inc_x/2`, `set_scale/2`, `set_rotation/2`, ...) that isn't a number.
+  - an unknown spline type (it was a `RuntimeError`).
+- `Curves.Svg`'s `show_points`, `show_polygon` and `show_axes` treat `nil` like `false`. `show_points: nil` used to crash, and `show_polygon: nil` drew the polygon.
 
 ### Fixed
 

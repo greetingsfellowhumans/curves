@@ -192,6 +192,28 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  property "a t that isn't a number raises an ArgumentError" do
+    check all(curve <- curve(), t <- StreamData.term(), not is_number(t)) do
+      assert_raise ArgumentError, ~r/(t|u) must be a number, got: /, fn ->
+        Curves.solve(curve, t)
+      end
+    end
+  end
+
+  property "a point that isn't {x, y} with numbers raises an ArgumentError" do
+    bad_point =
+      StreamData.one_of([
+        StreamData.term(),
+        StreamData.tuple({StreamData.term(), StreamData.term()})
+      ])
+
+    check all(point <- bad_point, not match?({x, y} when is_number(x) and is_number(y), point)) do
+      assert_raise ArgumentError, ~r/expected an \{x, y\} point with numbers, got: /, fn ->
+        Curves.define_bezier([{0, 0}, point])
+      end
+    end
+  end
+
   property "anything that isn't a curve raises an ArgumentError" do
     check all(bad <- StreamData.term()) do
       assert_raise ArgumentError, ~r/expected a Curves.Bezier.Curve or Curves.Spline.Curve/, fn ->

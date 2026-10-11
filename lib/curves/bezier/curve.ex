@@ -52,6 +52,13 @@ defmodule Curves.Bezier.Curve do
 
   def define([], _opts), do: raise(ArgumentError, "a bezier curve needs at least one point")
 
+  # Anything but a list of points or a predefined name, e.g. a single {x, y} or a map.
+  def define(points, _opts) when not is_list(points) and not is_atom(points) do
+    raise ArgumentError,
+          "a bezier curve takes a list of {x, y} points or a predefined curve name such as :ease, " <>
+            "got: #{inspect(points)}"
+  end
+
   def define(points, opts) do
     points =
       case points do
@@ -131,6 +138,9 @@ defmodule Curves.Bezier.Curve do
   @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
     do: solve_resolved(curve, t, resolve_opts(curve, opts))
+
+  def solve(_curve, t, _opts),
+    do: raise(ArgumentError, "t must be a number, got: #{inspect(t)}")
 
   # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
   # once for every point instead of once per point.

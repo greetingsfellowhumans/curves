@@ -1,6 +1,9 @@
 defmodule Curves.Transform do
   @moduledoc ~s"""
   Utility functions that allow you to resize, move, and rotate a curve.
+
+  Positions are `{x, y}` tuples of numbers, and amounts are numbers.
+  Anything else raises an `ArgumentError`.
   """
   alias Curves.Bezier.Curve, as: Bezier
   alias Curves.Spline.Curve, as: Spline
@@ -67,6 +70,13 @@ defmodule Curves.Transform do
   defp rotate(point, %{rotation: rotation}) when rotation == 0, do: point
   defp rotate(point, %{rotation: angle, origin: origin}), do: Vec.rotate(point, angle, origin)
 
+  # The amount given to inc_x/2, set_scale/2 and the like must be a number. Checked up front,
+  # because otherwise it would only fail later, deep inside the maths that redraws the curve.
+  @spec raise_not_a_number(String.t(), term()) :: no_return()
+  defp raise_not_a_number(function, value) do
+    raise ArgumentError, "Curves.Transform.#{function} needs a number, got: #{inspect(value)}"
+  end
+
   # Hands the transformation to the curve's own module, which adds it and recompresses.
   # `field` names the value the transformation changes (e.g. :origin). Only Bezier and
   # Spline may touch their (opaque) fields, so that work lives there, not here.
@@ -129,7 +139,9 @@ defmodule Curves.Transform do
       10.5
   """
   @spec inc_x(curve :: T.curve_struct(), xinc :: T.coord()) :: T.curve_struct()
-  def inc_x(curve, xinc), do: add(curve, {Move, :inc_x, [xinc]}, :origin)
+  def inc_x(curve, xinc) when is_number(xinc), do: add(curve, {Move, :inc_x, [xinc]}, :origin)
+
+  def inc_x(_curve, xinc), do: raise_not_a_number("inc_x/2", xinc)
 
   @doc ~s"""
   Using the current position increase the y coordinates.
@@ -150,7 +162,9 @@ defmodule Curves.Transform do
       0.5
   """
   @spec inc_y(curve :: T.curve_struct(), yinc :: T.coord()) :: T.curve_struct()
-  def inc_y(curve, yinc), do: add(curve, {Move, :inc_y, [yinc]}, :origin)
+  def inc_y(curve, yinc) when is_number(yinc), do: add(curve, {Move, :inc_y, [yinc]}, :origin)
+
+  def inc_y(_curve, yinc), do: raise_not_a_number("inc_y/2", yinc)
 
   @doc ~s"""
   resize the entire curve ignoring the existing scale. Default scale is 1.0. To double the curve, use 2.0. To shrink it by half, use 0.5.
@@ -170,7 +184,10 @@ defmodule Curves.Transform do
       5.0
   """
   @spec set_scale(curve :: T.curve_struct(), scale :: number()) :: T.curve_struct()
-  def set_scale(curve, scale), do: add(curve, {Scale, :set_scale, [scale]}, :scale)
+  def set_scale(curve, scale) when is_number(scale),
+    do: add(curve, {Scale, :set_scale, [scale]}, :scale)
+
+  def set_scale(_curve, scale), do: raise_not_a_number("set_scale/2", scale)
 
   @doc ~s"""
   resize the entire curve, adding to the existing scale.
@@ -190,7 +207,10 @@ defmodule Curves.Transform do
       5.5
   """
   @spec inc_scale(curve :: T.curve_struct(), amount :: number()) :: T.curve_struct()
-  def inc_scale(curve, amount), do: add(curve, {Scale, :inc_scale, [amount]}, :scale)
+  def inc_scale(curve, amount) when is_number(amount),
+    do: add(curve, {Scale, :inc_scale, [amount]}, :scale)
+
+  def inc_scale(_curve, amount), do: raise_not_a_number("inc_scale/2", amount)
 
   @doc ~s"""
   increase rotation (counter-clockwise) by the given amount.
@@ -210,8 +230,10 @@ defmodule Curves.Transform do
       0.70711
   """
   @spec inc_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def inc_rotation(curve, amount),
+  def inc_rotation(curve, amount) when is_number(amount),
     do: add(curve, {Rotate, :inc_rotation, [amount]}, :rotation)
+
+  def inc_rotation(_curve, amount), do: raise_not_a_number("inc_rotation/2", amount)
 
   @doc ~s"""
   Rotate the curve counter-clockwise around the origin (Origin defaults to {0.0, 0.0}).
@@ -231,6 +253,8 @@ defmodule Curves.Transform do
       1.0
   """
   @spec set_rotation(curve :: T.curve_struct(), number()) :: T.curve_struct()
-  def set_rotation(curve, amount),
+  def set_rotation(curve, amount) when is_number(amount),
     do: add(curve, {Rotate, :set_rotation, [amount]}, :rotation)
+
+  def set_rotation(_curve, amount), do: raise_not_a_number("set_rotation/2", amount)
 end

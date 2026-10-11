@@ -72,7 +72,9 @@ defmodule Curves do
   """
 
   @doc ~s"""
-  Build a new `Curves.Bezier.Curve`
+  Build a new `Curves.Bezier.Curve` from a list of `{x, y}` points, or from the name of a
+  predefined curve (see `Curves.Bezier.Predefined.list/0`). Anything else, or a name that
+  isn't predefined, raises an `ArgumentError`.
 
   ## Options
   See [available opts](#module-options)
@@ -191,7 +193,7 @@ defmodule Curves do
   @doc ~s"""
   Given a `Curves.Bezier.Curve` or `Curves.Spline.Curve` struct, and `t`, find the point along the curve.
 
-  For a bezier curve, `t` must be between 0.0 and 1.0.
+  For a bezier curve, `t` must be between 0.0 and 1.0. A `t` that isn't a number raises an `ArgumentError`.
 
   e.g. `t = 0.5` means the coordinate at 50% through the bezier curve.
 

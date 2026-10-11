@@ -19,7 +19,7 @@ defmodule Curves.Spline.TypeIndex do
 
   def get(key) do
     case Map.get(@all, key) do
-      nil -> raise "Unknown spline_type: #{inspect(key)}"
+      nil -> raise ArgumentError, "Unknown spline_type: #{inspect(key)}"
       mod -> mod
     end
   end

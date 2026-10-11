@@ -31,6 +31,8 @@ defmodule Curves.Svg do
   | `:axis_color` | `"#868e96"` | Colour of the grid lines and their numbers. |
   | `:solve_opts` | `[]` | Options passed to `Curves.take!/3` and `Curves.solve!/3`. |
 
+  The `show_*` options treat `nil` like `false`.
+
   The dots are the points the curve stores. For most curves these are the points you defined it with,
   but B-splines store the control points they generate from yours.
 
@@ -137,12 +139,13 @@ defmodule Curves.Svg do
     do: raise(ArgumentError, ":samples must be a positive integer, got: #{inspect(samples)}")
 
   # The curve's own points that will be drawn, so the image is only sized around what is visible.
+  # The show_* options count false and nil as off, and anything else as on.
   @spec shown_points(T.point_list(), keyword()) :: T.point_list()
   defp shown_points(points, opts),
-    do: points_if_shown(opts[:show_points] or opts[:show_polygon], points)
+    do: points_if_shown(opts[:show_points] || opts[:show_polygon], points)
 
-  @spec points_if_shown(boolean(), T.point_list()) :: T.point_list()
-  defp points_if_shown(false, _points), do: []
+  @spec points_if_shown(term(), T.point_list()) :: T.point_list()
+  defp points_if_shown(shown, _points) when shown in [false, nil], do: []
   defp points_if_shown(_shown, points), do: points
 
   # The curve's own points as {x, y} tuples, moved, scaled and rotated like the curve.
@@ -211,17 +214,17 @@ defmodule Curves.Svg do
   defp background(nil), do: []
   defp background(color), do: ~s(  <rect width="100%" height="100%" fill="#{escape(color)}"/>\n)
 
-  @spec polygon(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
+  @spec polygon(term(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
           iodata()
-  defp polygon(false, _points, _to_pixels, _opts), do: []
+  defp polygon(show, _points, _to_pixels, _opts) when show in [false, nil], do: []
 
   defp polygon(_show, points, to_pixels, opts),
     do:
       ~s(  <polyline points="#{polyline(points, to_pixels)}" fill="none" stroke="#{escape(opts[:polygon_color])}" stroke-width="1.5" stroke-dasharray="6 4"/>\n)
 
-  @spec dots(boolean(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
+  @spec dots(term(), T.point_list(), (T.point_tuple() -> T.point_tuple()), keyword()) ::
           iodata()
-  defp dots(false, _points, _to_pixels, _opts), do: []
+  defp dots(show, _points, _to_pixels, _opts) when show in [false, nil], do: []
 
   defp dots(_show, points, to_pixels, opts) do
     for point <- points do
@@ -232,8 +235,8 @@ defmodule Curves.Svg do
   end
 
   # A grid with numbered ticks along the bottom and left edges, covering the area inside the padding.
-  @spec axes(boolean(), view(), keyword()) :: iodata()
-  defp axes(false, _view, _opts), do: []
+  @spec axes(term(), view(), keyword()) :: iodata()
+  defp axes(show, _view, _opts) when show in [false, nil], do: []
 
   defp axes(_show, view, opts) do
     edges =

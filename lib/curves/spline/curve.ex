@@ -141,6 +141,9 @@ defmodule Curves.Spline.Curve do
   def solve(%__MODULE__{} = curve, u, opts) when is_number(u),
     do: solve_resolved(curve, u, resolve_opts(curve, opts))
 
+  def solve(_curve, u, _opts),
+    do: raise(ArgumentError, "u must be a number, got: #{inspect(u)}")
+
   # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
   # once for every point instead of once per point.
   @spec solve_resolved(t(), number(), T.opts()) ::
