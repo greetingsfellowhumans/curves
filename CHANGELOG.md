@@ -16,6 +16,14 @@ The second release candidate. It has three breaking changes, listed under Change
   - `flip_x/2` and `flip_y/2` mirror a curve.
   - An `around:` option on the scale, flip and rotation functions turns the curve around `:center` (the middle of its points) or any `{x, y}` point in its own coordinates, which then stays where it is.
   - `reverse/1` gives the same curve travelled the other way.
+- Five new kinds of spline. Like Catmull-Rom, you only give each one the knots, and it passes through every one of them. Each has its own module under `Curves.Spline.Type`, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`:
+  - `Curves.define_cardinal/2`: Catmull-Rom with a `:tension` option that sets how tightly it bends at each knot (d3's `curveCardinal`).
+  - `Curves.define_centripetal_catmull_rom/2`: Catmull-Rom that takes the distances between knots into account, so it never makes loops or cusps. Its `:alpha` option (default `0.5`) also gives plain (`0.0`) and chordal (`1.0`) Catmull-Rom.
+  - `Curves.define_kochanek_bartels/2`: a TCB spline, Catmull-Rom with `:tension`, `:continuity` and `:bias` dials, as used for keyframes in animation tools.
+  - `Curves.define_monotone/2`: a monotone cubic spline (Fritsch–Carlson) for chart data. It never overshoots: between two knots it only goes up, down or stays flat. Each knot's `x` must always increase (or always decrease).
+  - `Curves.define_natural_cubic/2`: the smoothest curve through every knot, with a continuous bend everywhere.
+- A new guide, [Choosing a curve](choosing_a_curve.html), compares every kind of curve, with real-world examples of where each is used. The splines tutorial, its Livebook and the README cover the new splines too.
+- `Curves.Bezier.Predefined`'s docs show a picture of every predefined curve.
 - `Curves.define_polyline/2` makes a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`. It is solved with `u` like a spline (each line adds one to `u`), at a steady speed along each line, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`.
 - A new tutorial for new users, in four chapters: your first curve, Bezier curves, splines, and transforms and drawing. The hexdocs version is full of pictures drawn with `Curves.Svg`, and its simplified first page is now the docs' landing page. Each chapter is also an interactive Livebook with sliders, animations and an easing race. They replace the two old livebooks.
 - `Curves.Svg` has a `:view` option, `{{x1, y1}, {x2, y2}}`, that draws a fixed area instead of fitting the picture to the curve, so several pictures or animation frames share the same scale.

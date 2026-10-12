@@ -29,6 +29,7 @@ end
 ## Directory
 
 - [Tutorial, with lots of pictures](https://hexdocs.pm/curves/introduction.html)
+- [Choosing a curve](https://hexdocs.pm/curves/choosing_a_curve.html): every kind of curve compared, with real-world examples
 - Interactive tutorial in Livebook (sliders, animations and races):
   1. [Your first curve](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F01_first_curve.livemd)
   2. [Bezier curves](https://livebook.dev/run?url=https%3A%2F%2Fraw.githubusercontent.com%2Fgreetingsfellowhumans%2Fcurves%2Fmain%2Fguides%2Flivebooks%2F02_bezier_curves.livemd)
@@ -182,6 +183,69 @@ curve = Curves.define_b_spline([
 ```
 
 ![B-Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/b_spline.svg)
+
+### Cardinal Spline
+
+A Catmull-Rom spline with a `:tension` option: `0.0` is Catmull-Rom, and higher values bend more tightly at each knot.
+
+```elixir
+curve = Curves.define_cardinal([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}], tension: 0.5)
+```
+
+![Cardinal Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/cardinal.svg)
+
+### Centripetal Catmull-Rom Spline
+
+A Catmull-Rom spline that takes the distances between the knots into account, so it never makes loops or sharp points, even when some knots are bunched up.
+
+```elixir
+curve = Curves.define_centripetal_catmull_rom([{0, 0}, {10, 10}, {10.5, 10}, {20, 0}])
+```
+
+![Centripetal Catmull-Rom Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/centripetal_catmull_rom.svg)
+
+### Kochanek-Bartels Spline
+
+Also called a TCB spline: a Catmull-Rom spline with `:tension`, `:continuity` and `:bias` dials, as used for keyframes in animation tools.
+
+```elixir
+curve = Curves.define_kochanek_bartels(
+  [{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}],
+  tension: 0.2,
+  continuity: -0.3,
+  bias: 0.4
+)
+```
+
+![Kochanek-Bartels Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/kochanek_bartels.svg)
+
+### Monotone Spline
+
+A smooth line through data points that never overshoots them, for charts. Each knot's `x` must be bigger than the one before.
+
+```elixir
+curve = Curves.define_monotone([{0, 2}, {1, 2}, {2, 2}, {3, 8}, {4, 8.5}, {5, 3}, {6, 3}])
+```
+
+![Monotone Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/monotone.svg)
+
+### Natural Cubic Spline
+
+The smoothest curve that still passes through every knot.
+
+```elixir
+curve = Curves.define_natural_cubic([
+    {0, -2},
+    {3, 4},
+    {6, 5},
+    {7, -1},
+    {10, 3},
+    {5, 1},
+    {12, 9}
+])
+```
+
+![Natural Cubic Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/natural_cubic.svg)
 
 ## Benchmarks
 

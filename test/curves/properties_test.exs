@@ -18,18 +18,86 @@ defmodule Curves.PropertiesTest do
   defp bezier, do: StreamData.map(points(2, 4), &Curves.define_bezier/1)
 
   # Every spline type, from 4 to 8 points. A bezier spline gets a control point either side of each
-  # knot, and a Hermite spline a tangent at each knot.
+  # knot, and a Hermite spline a tangent at each knot. A monotone spline's knots are data points.
   @spec spline() :: StreamData.t(Curves.Spline.Curve.t())
   defp spline do
     StreamData.bind(
-      StreamData.member_of([:catmull_rom, :hermite, :b_spline, :bezier_spline]),
+      StreamData.member_of([
+        :catmull_rom,
+        :hermite,
+        :b_spline,
+        :bezier_spline,
+        :cardinal,
+        :centripetal_catmull_rom,
+        :kochanek_bartels,
+        :monotone,
+        :natural_cubic
+      ]),
       fn
         :catmull_rom -> StreamData.map(points(4, 8), &Curves.define_catmull_rom/1)
         :hermite -> StreamData.map(points(4, 8), &hermite/1)
         :b_spline -> StreamData.map(points(4, 8), &Curves.define_b_spline/1)
         :bezier_spline -> StreamData.map(points(4, 8), &bezier_spline/1)
+        :cardinal -> cardinal(points(4, 8))
+        :centripetal_catmull_rom -> centripetal(points(4, 8))
+        :kochanek_bartels -> kochanek_bartels(points(4, 8))
+        :monotone -> StreamData.map(data_points(4, 8), &Curves.define_monotone/1)
+        :natural_cubic -> StreamData.map(points(4, 8), &Curves.define_natural_cubic/1)
       end
     )
+  end
+
+  # A dial for the tension, continuity or bias of a spline, -1..1.
+  @spec dial() :: StreamData.t(float())
+  defp dial, do: StreamData.float(min: -1.0, max: 1.0)
+
+  @spec cardinal(StreamData.t(list({float(), float()}))) :: StreamData.t(Curves.Spline.Curve.t())
+  defp cardinal(knots) do
+    StreamData.bind(knots, fn knots ->
+      StreamData.map(dial(), &Curves.define_cardinal(knots, tension: &1))
+    end)
+  end
+
+  @spec centripetal(StreamData.t(list({float(), float()}))) ::
+          StreamData.t(Curves.Spline.Curve.t())
+  defp centripetal(knots) do
+    StreamData.bind(knots, fn knots ->
+      StreamData.map(
+        StreamData.float(min: 0.0, max: 1.0),
+        &Curves.define_centripetal_catmull_rom(knots, alpha: &1)
+      )
+    end)
+  end
+
+  @spec kochanek_bartels(StreamData.t(list({float(), float()}))) ::
+          StreamData.t(Curves.Spline.Curve.t())
+  defp kochanek_bartels(knots) do
+    StreamData.bind(knots, fn knots ->
+      StreamData.map(StreamData.tuple({dial(), dial(), dial()}), fn {t, c, b} ->
+        Curves.define_kochanek_bartels(knots, tension: t, continuity: c, bias: b)
+      end)
+    end)
+  end
+
+  # Data points for a monotone spline: x always increasing, by 0.01 to 20 each time.
+  @spec data_points(pos_integer(), pos_integer()) :: StreamData.t(list({float(), float()}))
+  defp data_points(min, max) do
+    steps =
+      StreamData.list_of(
+        StreamData.tuple({StreamData.float(min: 0.01, max: 20.0), coord()}),
+        min_length: min,
+        max_length: max
+      )
+
+    StreamData.bind(coord(), fn start -> StreamData.map(steps, &add_up_x(&1, start)) end)
+  end
+
+  # Turns {gap, y} steps into points, each x `gap` past the one before, starting from `start`.
+  @spec add_up_x(list({float(), float()}), float()) :: list({float(), float()})
+  defp add_up_x(steps, start) do
+    steps
+    |> Enum.map_reduce(start, fn {gap, y}, x -> {{x + gap, y}, x + gap} end)
+    |> elem(0)
   end
 
   # A Hermite spline with tangents taken from each knot's own coordinates, so they vary.
@@ -261,7 +329,8 @@ defmodule Curves.PropertiesTest do
   end
 
   # Beziers, B-splines, bezier splines and Hermite splines stay inside their own (stored) points,
-  # so force_percent stays in 0..1. Catmull-Rom can bend outside its knots, so it's left out.
+  # and a monotone spline never overshoots its knots, so force_percent stays in 0..1. Catmull-Rom
+  # and the other splines through their knots can bend outside them, so they're left out.
   property "force_percent stays within 0..1 for curves that stay inside their points" do
     check all(
             curve <-
@@ -269,7 +338,8 @@ defmodule Curves.PropertiesTest do
                 bezier(),
                 StreamData.map(points(4, 8), &Curves.define_b_spline/1),
                 StreamData.map(points(4, 8), &bezier_spline/1),
-                StreamData.map(points(4, 8), &hermite/1)
+                StreamData.map(points(4, 8), &hermite/1),
+                StreamData.map(data_points(4, 8), &Curves.define_monotone/1)
               ]),
             f <- fraction()
           ) do
@@ -359,6 +429,156 @@ defmodule Curves.PropertiesTest do
                    fn ->
                      Curves.Transform.inc_x(bad, 1)
                    end
+    end
+  end
+
+  # The splines that are built from knots alone, and pass through every one of them.
+  @spec through_knots(list({float(), float()})) :: StreamData.t(Curves.Spline.Curve.t())
+  defp through_knots(knots) do
+    StreamData.member_of([
+      Curves.define_catmull_rom(knots),
+      Curves.define_cardinal(knots, tension: 0.3),
+      Curves.define_centripetal_catmull_rom(knots),
+      Curves.define_kochanek_bartels(knots, tension: 0.2, continuity: -0.4, bias: 0.6),
+      Curves.define_natural_cubic(knots)
+    ])
+  end
+
+  @spec assert_close({float(), float()}, {float(), float()}) :: true
+  defp assert_close({ax, ay} = a, {bx, by} = b) do
+    scale = Enum.max([1.0, abs(ax), abs(ay), abs(bx), abs(by)])
+    assert_near(a, b, 1.0e-9 * scale)
+  end
+
+  property "splines built from knots pass through every knot, at u = 0, 1, 2, ..." do
+    check all(knots <- points(2, 8), curve <- through_knots(knots)) do
+      knots
+      |> Enum.with_index()
+      |> Enum.each(fn {knot, i} -> assert_close(Curves.solve!(curve, i * 1.0), knot) end)
+    end
+
+    check all(knots <- data_points(2, 8)) do
+      curve = Curves.define_monotone(knots)
+
+      knots
+      |> Enum.with_index()
+      |> Enum.each(fn {knot, i} -> assert_close(Curves.solve!(curve, i * 1.0), knot) end)
+    end
+  end
+
+  property "cardinal, Kochanek-Bartels and centripetal splines at their plainest are Catmull-Rom" do
+    check all(knots <- points(2, 8), f <- fraction()) do
+      catmull_rom = Curves.define_catmull_rom(knots)
+      u = f * Curves.max_u(catmull_rom)
+      expected = Curves.solve!(catmull_rom, u)
+
+      assert_close(Curves.solve!(Curves.define_cardinal(knots), u), expected)
+      assert_close(Curves.solve!(Curves.define_kochanek_bartels(knots), u), expected)
+
+      assert_close(
+        Curves.solve!(Curves.define_centripetal_catmull_rom(knots, alpha: 0.0), u),
+        expected
+      )
+    end
+  end
+
+  property "a Kochanek-Bartels spline with only tension is a cardinal spline" do
+    check all(knots <- points(2, 8), tension <- dial(), f <- fraction()) do
+      cardinal = Curves.define_cardinal(knots, tension: tension)
+      u = f * Curves.max_u(cardinal)
+
+      assert_close(
+        Curves.solve!(Curves.define_kochanek_bartels(knots, tension: tension), u),
+        Curves.solve!(cardinal, u)
+      )
+    end
+  end
+
+  property "a Kochanek-Bartels spline with continuity -1 is a polyline" do
+    check all(knots <- points(2, 8), f <- fraction()) do
+      polyline = Curves.define_polyline(knots)
+      u = f * Curves.max_u(polyline)
+
+      assert_close(
+        Curves.solve!(Curves.define_kochanek_bartels(knots, continuity: -1), u),
+        Curves.solve!(polyline, u)
+      )
+    end
+  end
+
+  property "a monotone spline never overshoots its data, and x moves at a steady speed" do
+    check all(knots <- data_points(2, 8), f <- fraction(), reversed? <- StreamData.boolean()) do
+      # Decreasing x works too.
+      knots = if reversed?, do: Enum.reverse(knots), else: knots
+      curve = Curves.define_monotone(knots)
+
+      knots
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.with_index()
+      |> Enum.each(fn {[{x0, y0}, {x1, y1}], i} ->
+        {x, y} = Curves.solve!(curve, i + f)
+        assert abs(x - (x0 + f * (x1 - x0))) <= 1.0e-9 * max(1.0, abs(x))
+        tolerance = 1.0e-9 * max(1.0, abs(y))
+        assert y >= min(y0, y1) - tolerance and y <= max(y0, y1) + tolerance
+      end)
+    end
+  end
+
+  # The bend of a cubic Bezier segment [p0, p1, p2, p3] at its start and end (its second derivative).
+  @spec bend_at_start(list({float(), float()})) :: {float(), float()}
+  defp bend_at_start([p0, p1, p2, _p3]), do: second_difference(p0, p1, p2)
+
+  @spec bend_at_end(list({float(), float()})) :: {float(), float()}
+  defp bend_at_end([_p0, p1, p2, p3]), do: second_difference(p1, p2, p3)
+
+  @spec second_difference({float(), float()}, {float(), float()}, {float(), float()}) ::
+          {float(), float()}
+  defp second_difference({ax, ay}, {bx, by}, {cx, cy}),
+    do: {6 * (ax - 2 * bx + cx), 6 * (ay - 2 * by + cy)}
+
+  property "a natural cubic spline bends smoothly at every knot, and not at all at its ends" do
+    check all(knots <- points(2, 8)) do
+      # The segments field is internal; this test checks the maths behind it.
+      segments = Curves.define_natural_cubic(knots).segments
+      tolerance = 1.0e-9 * 1000
+
+      assert_near(bend_at_start(hd(segments)), {0.0, 0.0}, tolerance)
+      assert_near(bend_at_end(List.last(segments)), {0.0, 0.0}, tolerance)
+
+      segments
+      |> Enum.chunk_every(2, 1, :discard)
+      |> Enum.each(fn [left, right] ->
+        assert_near(bend_at_end(left), bend_at_start(right), tolerance)
+      end)
+    end
+  end
+
+  # Knots picked from a few places, so several often land on the same spot.
+  property "splines built from knots handle knots in the same place" do
+    check all(
+            knots <-
+              StreamData.list_of(StreamData.member_of([{0, 0}, {3, 1}, {1, 4}]),
+                min_length: 1,
+                max_length: 8
+              ),
+            alpha <- StreamData.float(min: 0.0, max: 1.0),
+            f <- fraction()
+          ) do
+      for curve <- [
+            Curves.define_centripetal_catmull_rom(knots, alpha: alpha),
+            Curves.define_cardinal(knots, tension: 0.5),
+            Curves.define_kochanek_bartels(knots, bias: 0.5),
+            Curves.define_natural_cubic(knots)
+          ] do
+        {x, y} = Curves.solve!(curve, f * Curves.max_u(curve))
+        assert is_float(x) and is_float(y)
+
+        knots
+        |> Enum.with_index()
+        |> Enum.each(fn {{kx, ky}, i} ->
+          assert_close(Curves.solve!(curve, i * 1.0), {kx * 1.0, ky * 1.0})
+        end)
+      end
     end
   end
 end

@@ -43,10 +43,31 @@ defmodule Curves.SvgTest do
       for define <- [
             &Curves.define_b_spline/1,
             &Curves.define_catmull_rom/1,
-            hermite
+            hermite,
+            &Curves.define_cardinal/1,
+            &Curves.define_centripetal_catmull_rom/1,
+            &Curves.define_kochanek_bartels/1,
+            &Curves.define_natural_cubic/1
           ] do
         svg = Svg.render(define.(@b_spline))
         assert length(line_points(svg)) == 101
+      end
+
+      # A monotone spline's knots are data points, with x always increasing.
+      svg = Svg.render(Curves.define_monotone([{0, 0}, {1, 2}, {2, 1}, {3, 3}]))
+      assert length(line_points(svg)) == 101
+    end
+
+    test "the splines built from knots draw one dot per knot, and a dashed line through them" do
+      for define <- [
+            &Curves.define_cardinal/1,
+            &Curves.define_centripetal_catmull_rom/1,
+            &Curves.define_kochanek_bartels/1,
+            &Curves.define_natural_cubic/1
+          ] do
+        svg = Svg.render(define.(@b_spline), samples: 10)
+        assert count(svg, "<circle") == 6
+        assert count(svg, "stroke-dasharray") == 1
       end
     end
 

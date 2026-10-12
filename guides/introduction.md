@@ -59,8 +59,11 @@ The tutorial takes about 15 minutes and is full of pictures:
 
 1. [Your first curve](tutorial/first_curve.md): `t`, `solve`, `take`, and the ready-made curves.
 2. [Bezier curves](tutorial/bezier_curves.md): how control points shape a curve.
-3. [Splines](tutorial/splines.md): polylines and the four kinds of spline, and when to use each.
+3. [Splines](tutorial/splines.md): polylines and the nine kinds of spline, and when to use each.
 4. [Transforms and drawing](tutorial/transforms.md): moving, scaling and rotating curves, and drawing them.
+
+Not sure which curve you need? [Choosing a curve](choosing_a_curve.md) compares them all, with real-world
+examples of where each one is used.
 
 Prefer to play? Each chapter is also an **interactive Livebook** with sliders and animations; look for the
 "Run in Livebook" button on [the interactive version of chapter 1](livebooks/01_first_curve.livemd).

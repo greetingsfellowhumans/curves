@@ -20,7 +20,13 @@ defmodule Curves.Bench.Helper do
       "spline hermite" => Curves.define_hermite(hermite_points()),
       "spline catmull_rom" => Curves.define_catmull_rom(spline_points()),
       "spline b_spline" => Curves.define_b_spline(spline_points()),
-      "spline bezier_spline" => Curves.define_bezier_spline(bezier_spline_points())
+      "spline bezier_spline" => Curves.define_bezier_spline(bezier_spline_points()),
+      "spline cardinal" => Curves.define_cardinal(spline_points(), tension: 0.5),
+      "spline centripetal_catmull_rom" => Curves.define_centripetal_catmull_rom(spline_points()),
+      "spline kochanek_bartels" =>
+        Curves.define_kochanek_bartels(spline_points(), tension: 0.2, continuity: -0.3, bias: 0.4),
+      "spline monotone" => Curves.define_monotone(spline_points()),
+      "spline natural_cubic" => Curves.define_natural_cubic(spline_points())
     }
   end
 
@@ -40,6 +46,10 @@ defmodule Curves.Bench.Helper do
       {30.0, 15.0}
     ]
   end
+
+  # `n` knots along a wave, with x always increasing (so they suit every spline, monotone too).
+  @spec many_points(pos_integer()) :: Curves.Types.point_list()
+  def many_points(n), do: for(i <- 1..n, do: {i * 1.0, :math.sin(i / 7) * 10})
 
   # Knots with control points, in the format `define_bezier_spline/2` expects: each knot, then the
   # control points of the curve to the next knot. The last knot only ends the curve.

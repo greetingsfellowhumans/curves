@@ -31,12 +31,14 @@ defmodule Curves.MixProject do
         "guides/livebooks/02_bezier_curves.livemd",
         "guides/livebooks/03_splines.livemd",
         "guides/livebooks/04_transforms.livemd",
+        "guides/choosing_a_curve.md",
         "guides/upgrading.md",
         "CHANGELOG.md"
       ],
       groups_for_extras: [
         Tutorial: ~r"guides/tutorial/",
         "Interactive tutorial (Livebook)": ~r"guides/livebooks/",
+        Guides: ["guides/choosing_a_curve.md"],
         "Upgrading and changes": ["guides/upgrading.md", "CHANGELOG.md"]
       ],
       # The tutorial's pictures, drawn by guides/images/generate.exs.

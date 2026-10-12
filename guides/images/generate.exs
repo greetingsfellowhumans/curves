@@ -35,6 +35,11 @@ hermite = fn middle_tangent ->
   Curves.define_hermite([[{0, 0}, {4, 0}], [{4, 2}, middle_tangent], [{8, 0}, {4, 0}]])
 end
 
+# Two knots bunched up between two far away: plain Catmull-Rom loops here, centripetal doesn't.
+bunched = [{0, 0}, {10, 10}, {10.5, 10}, {20, 0}]
+# Chart data with flat stretches, where most splines overshoot and a monotone one doesn't.
+data = [{0, 2}, {1, 2}, {2, 2}, {3, 8}, {4, 8.5}, {5, 3}, {6, 3}]
+
 shape = Curves.define_bezier([{0, 0}, {1, 3}, {3, 3}, {4, 0}])
 # One fixed area for the three rotation pictures, so you can compare where the shape ends up.
 pivot_view = {{-4, -1}, {5, 5}}
@@ -113,6 +118,20 @@ images =
      small ++ [title: "Hermite: short tangent"]},
     {"#{guides}/spline_hermite_long.svg", hermite.({12, 0}),
      small ++ [title: "Hermite: long tangent"]},
+    {"#{guides}/spline_cardinal.svg", Curves.define_cardinal(knots, tension: 0.5),
+     small ++ [title: "Cardinal: tension 0.5", markers: knots]},
+    {"#{guides}/spline_kochanek_bartels.svg", Curves.define_kochanek_bartels(knots, bias: 0.5),
+     small ++ [title: "Kochanek-Bartels: bias 0.5", markers: knots]},
+    {"#{guides}/spline_bunched_catmull_rom.svg", Curves.define_catmull_rom(bunched),
+     medium ++ [title: "Catmull-Rom: a little loop", markers: bunched]},
+    {"#{guides}/spline_centripetal.svg", Curves.define_centripetal_catmull_rom(bunched),
+     medium ++ [title: "Centripetal: no loop", markers: bunched]},
+    {"#{guides}/spline_data_catmull_rom.svg", Curves.define_catmull_rom(data),
+     small ++ [title: "Catmull-Rom: overshoots", markers: data]},
+    {"#{guides}/spline_monotone.svg", Curves.define_monotone(data),
+     small ++ [title: "Monotone: never overshoots", markers: data]},
+    {"#{guides}/spline_natural_cubic.svg", Curves.define_natural_cubic(knots),
+     small ++ [title: "Natural cubic: through every knot", markers: knots]},
 
     # 4. Transforms and drawing
     {"#{guides}/transform_original.svg", shape, small ++ [title: "The original"]},
@@ -162,40 +181,77 @@ images =
          show_axes: false
        ]},
 
-    # README examples (assets/examples)
-    {"#{readme}/ease_in_out.svg", ease_in_out,
-     [width: 400, height: 400, samples: 400, title: "Ease in-out"]},
-    {"#{readme}/quadratic.svg", Curves.define_bezier([{0, 0}, {20, 50}, {100, 0}]),
-     [width: 400, height: 400, samples: 400, title: "Quadratic Bezier"]},
-    {"#{readme}/custom_bezier.svg",
-     Curves.define_bezier([{0, 0}, {0.8, 0.2}, {0.3, 2.2}, {1, 1}]),
-     [width: 400, height: 400, samples: 400, title: "Custom 4-point Bezier"]},
-    {"#{readme}/bezier_spline.svg",
-     Curves.define_bezier_spline([
-       [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
-       [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
-       [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
-       [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
-       [{30.0, 10.0}]
-     ]), [width: 400, height: 400, samples: 400, title: "Bezier Spline"]},
-    {"#{readme}/polyline.svg", Curves.define_polyline([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]),
-     [width: 400, height: 400, samples: 400, title: "Polyline"]},
-    {"#{readme}/hermite.svg",
-     Curves.define_hermite([
-       [{5, 10}, {5, -5}],
-       [{10, 5}, {5, 0}],
-       [{15, 10}, {5, 5}],
-       [{20, 10}, {5, -3}],
-       [{25, 5}, {5, 5}],
-       [{30, 15}, {5, 10}]
-     ]), [width: 400, height: 400, samples: 400, title: "Hermite Spline"]},
-    {"#{readme}/catmull_rom.svg",
-     Curves.define_catmull_rom([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}]),
-     [width: 400, height: 400, samples: 400, title: "Catmull-Rom Spline"]},
-    {"#{readme}/b_spline.svg",
-     Curves.define_b_spline([{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]),
-     [width: 400, height: 400, samples: 400, title: "B-Spline"]}
-  ] ++ predefined_gallery
+    # Choosing a curve
+    {"#{guides}/choose_data_natural.svg", Curves.define_natural_cubic(data),
+     small ++ [title: "Natural cubic: overshoots too", markers: data]},
+    {"#{guides}/choose_data_polyline.svg", Curves.define_polyline(data),
+     small ++ [title: "Polyline: exact, but sharp", markers: data]}
+  ] ++
+    for(
+      tension <- [-0.5, 0.0, 0.5, 1.0],
+      do:
+        {"#{guides}/choose_tension_#{tension}.svg",
+         Curves.define_cardinal(knots, tension: tension),
+         small ++ [title: "tension: #{tension}", markers: knots]}
+    ) ++
+    for(
+      {dial, value} <- [continuity: -0.7, continuity: 0.7, bias: -0.7, bias: 0.7],
+      do:
+        {"#{guides}/choose_#{dial}_#{value}.svg",
+         Curves.define_kochanek_bartels(knots, [{dial, value}]),
+         small ++ [title: "#{dial}: #{value}", markers: knots]}
+    ) ++
+    [
+      # README examples (assets/examples)
+      {"#{readme}/ease_in_out.svg", ease_in_out,
+       [width: 400, height: 400, samples: 400, title: "Ease in-out"]},
+      {"#{readme}/quadratic.svg", Curves.define_bezier([{0, 0}, {20, 50}, {100, 0}]),
+       [width: 400, height: 400, samples: 400, title: "Quadratic Bezier"]},
+      {"#{readme}/custom_bezier.svg",
+       Curves.define_bezier([{0, 0}, {0.8, 0.2}, {0.3, 2.2}, {1, 1}]),
+       [width: 400, height: 400, samples: 400, title: "Custom 4-point Bezier"]},
+      {"#{readme}/bezier_spline.svg",
+       Curves.define_bezier_spline([
+         [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+         [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+         [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+         [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+         [{30.0, 10.0}]
+       ]), [width: 400, height: 400, samples: 400, title: "Bezier Spline"]},
+      {"#{readme}/polyline.svg", Curves.define_polyline([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]),
+       [width: 400, height: 400, samples: 400, title: "Polyline"]},
+      {"#{readme}/hermite.svg",
+       Curves.define_hermite([
+         [{5, 10}, {5, -5}],
+         [{10, 5}, {5, 0}],
+         [{15, 10}, {5, 5}],
+         [{20, 10}, {5, -3}],
+         [{25, 5}, {5, 5}],
+         [{30, 15}, {5, 10}]
+       ]), [width: 400, height: 400, samples: 400, title: "Hermite Spline"]},
+      {"#{readme}/catmull_rom.svg",
+       Curves.define_catmull_rom([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}]),
+       [width: 400, height: 400, samples: 400, title: "Catmull-Rom Spline"]},
+      {"#{readme}/b_spline.svg",
+       Curves.define_b_spline([{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]),
+       [width: 400, height: 400, samples: 400, title: "B-Spline"]},
+      {"#{readme}/cardinal.svg",
+       Curves.define_cardinal([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}], tension: 0.5),
+       [width: 400, height: 400, samples: 400, title: "Cardinal Spline (tension 0.5)"]},
+      {"#{readme}/centripetal_catmull_rom.svg", Curves.define_centripetal_catmull_rom(bunched),
+       [width: 400, height: 400, samples: 400, title: "Centripetal Catmull-Rom Spline"]},
+      {"#{readme}/kochanek_bartels.svg",
+       Curves.define_kochanek_bartels([{0, 0}, {1, 0}, {1, 1}, {0, 1}, {0, 2}, {1, 2}],
+         tension: 0.2,
+         continuity: -0.3,
+         bias: 0.4
+       ), [width: 400, height: 400, samples: 400, title: "Kochanek-Bartels Spline"]},
+      {"#{readme}/monotone.svg", Curves.define_monotone(data),
+       [width: 400, height: 400, samples: 400, title: "Monotone Spline"]},
+      {"#{readme}/natural_cubic.svg",
+       Curves.define_natural_cubic([{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]),
+       [width: 400, height: 400, samples: 400, title: "Natural Cubic Spline"]}
+    ] ++ predefined_gallery
 
 File.mkdir_p!(guides)
 

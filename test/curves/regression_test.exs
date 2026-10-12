@@ -339,7 +339,17 @@ defmodule Curves.RegressionTest do
     end
 
     test "every type key maps to its module, and a {:module, mod} passes straight through" do
-      assert Curves.Spline.Type.list() == [:b_spline, :bezier_spline, :catmull_rom, :hermite]
+      assert Curves.Spline.Type.list() == [
+               :b_spline,
+               :bezier_spline,
+               :cardinal,
+               :catmull_rom,
+               :centripetal_catmull_rom,
+               :hermite,
+               :kochanek_bartels,
+               :monotone,
+               :natural_cubic
+             ]
 
       for key <- Curves.Spline.Type.list() do
         mod = Curves.Spline.Type.get_mod(key)

@@ -75,7 +75,18 @@ defmodule Curves.Support.ReferenceResults do
       {"polyline 5 points",
        fn opts -> Curves.define_polyline(@b_spline |> Enum.take(5), opts) end},
       {"bezier_spline 2 points",
-       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}, {2, 2}], [{3, 0}]], opts) end}
+       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}, {2, 2}], [{3, 0}]], opts) end},
+      {"cardinal 6 points",
+       fn opts -> Curves.define_cardinal(@six, Keyword.put(opts, :tension, 0.4)) end},
+      {"centripetal_catmull_rom 7 points",
+       fn opts -> Curves.define_centripetal_catmull_rom(@b_spline, opts) end},
+      {"kochanek_bartels 6 points",
+       fn opts ->
+         Curves.define_kochanek_bartels(@six, opts ++ [tension: 0.2, continuity: -0.3, bias: 0.4])
+       end},
+      {"monotone 5 points",
+       fn opts -> Curves.define_monotone([{0, 0}, {1, 0}, {2, 3}, {3, 3}, {4, 1}], opts) end},
+      {"natural_cubic 7 points", fn opts -> Curves.define_natural_cubic(@b_spline, opts) end}
     ]
 
     transformed =

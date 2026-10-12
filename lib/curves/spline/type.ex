@@ -5,8 +5,13 @@ defmodule Curves.Spline.TypeIndex do
   @all %{
     bezier_spline: T.BezierSpline,
     b_spline: T.BSpline,
+    cardinal: T.Cardinal,
     catmull_rom: T.CatmullRom,
-    hermite: T.Hermite
+    centripetal_catmull_rom: T.CentripetalCatmullRom,
+    hermite: T.Hermite,
+    kochanek_bartels: T.KochanekBartels,
+    monotone: T.Monotone,
+    natural_cubic: T.NaturalCubic
   }
 
   # Sorted, because Map.keys/1 has no guaranteed order.

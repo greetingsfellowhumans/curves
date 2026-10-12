@@ -33,4 +33,19 @@ defmodule Curves.Utils.OptsTest do
       assert put_force_percent([], force_percent: nil)[:force_percent] == nil
     end
   end
+
+  describe "put_numbers!/2" do
+    test "fills in defaults, turns numbers into floats and keeps other opts" do
+      opts = put_numbers!([tension: 1, origin: {1, 2}], tension: 0.0, bias: 0.0)
+      assert opts[:tension] === 1.0
+      assert opts[:bias] === 0.0
+      assert opts[:origin] == {1, 2}
+    end
+
+    test "anything but a number raises an ArgumentError naming the option" do
+      assert_raise ArgumentError, "the :bias option must be a number, got: \"high\"", fn ->
+        put_numbers!([bias: "high"], bias: 0.0)
+      end
+    end
+  end
 end

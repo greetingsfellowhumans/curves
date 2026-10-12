@@ -52,8 +52,11 @@ defmodule Curves do
 
   1. [Your first curve](first_curve.html): `t`, `solve`, `take`, and the ready-made curves.
   2. [Bezier curves](bezier_curves.html): how control points shape a curve.
-  3. [Splines](splines.html): polylines and the four kinds of spline, and when to use each.
+  3. [Splines](splines.html): polylines and the nine kinds of spline, and when to use each.
   4. [Transforms and drawing](transforms.html): moving, scaling and rotating, and `Curves.Svg`.
+
+  Not sure which curve to use? [Choosing a curve](choosing_a_curve.html) compares them all, with
+  real-world examples of each.
 
 
   ## Transform
@@ -195,6 +198,146 @@ defmodule Curves do
   @spec define_catmull_rom(T.point_list(), T.define_opts()) :: Spline.t()
   defdelegate define_catmull_rom(points, opts \\ []),
     to: Curves.Spline.Type.CatmullRom,
+    as: :define
+
+  @doc ~s"""
+  Define a new `Curves.Spline.Type.Cardinal` spline: a Catmull-Rom spline through every knot, with
+  a `:tension` that sets how tightly it bends at each knot.
+
+  `n` knots give `n - 1` segments. An empty list raises an `ArgumentError`.
+
+  ## Options
+  `:tension` (default `0.0`): `0.0` is exactly `define_catmull_rom/2`. Higher values bend more
+  tightly at each knot, and `1.0` gives straight lines that slow down at each knot. A tension that
+  isn't a number raises an `ArgumentError`.
+
+  Also see [available opts](#module-options).
+
+  ## Examples
+      iex> knots = [{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]
+      iex> curve = Curves.define_cardinal(knots, tension: 0.5)
+      iex> Curves.max_u(curve)
+      4.0
+      iex> Curves.solve!(curve, 1.0)
+      {2.0, 3.0}
+      iex> Curves.solve!(curve, 0.5)
+      {1.0, 1.65625}
+      iex> Curves.solve!(Curves.define_cardinal(knots), 0.5) == Curves.solve!(Curves.define_catmull_rom(knots), 0.5)
+      true
+      iex> Curves.define_cardinal(knots, tension: :high)
+      ** (ArgumentError) the :tension option must be a number, got: :high
+  """
+  @spec define_cardinal(T.point_list(), T.cardinal_opts()) :: Spline.t()
+  defdelegate define_cardinal(points, opts \\ []), to: Curves.Spline.Type.Cardinal, as: :define
+
+  @doc ~s"""
+  Define a new `Curves.Spline.Type.CentripetalCatmullRom` spline: a Catmull-Rom spline through every
+  knot that takes the distances between knots into account, so it never makes little loops or
+  sharp points, even when some knots are bunched up.
+
+  `n` knots give `n - 1` segments. An empty list raises an `ArgumentError`.
+
+  ## Options
+  `:alpha` (default `0.5`), between `0.0` and `1.0`: `0.5` is centripetal, `0.0` is exactly
+  `define_catmull_rom/2`, and `1.0` is chordal. Anything else raises an `ArgumentError`.
+
+  Also see [available opts](#module-options).
+
+  ## Examples
+      iex> curve = Curves.define_centripetal_catmull_rom([{0, 0}, {10, 10}, {10.5, 10}, {20, 0}])
+      iex> Curves.max_u(curve)
+      3.0
+      iex> Curves.solve!(curve, 1.0)
+      {10.0, 10.0}
+      iex> Curves.define_centripetal_catmull_rom([{0, 0}, {1, 3}], alpha: 2)
+      ** (ArgumentError) the :alpha option must be between 0.0 and 1.0, got: 2.0
+  """
+  @spec define_centripetal_catmull_rom(T.point_list(), T.centripetal_opts()) :: Spline.t()
+  defdelegate define_centripetal_catmull_rom(points, opts \\ []),
+    to: Curves.Spline.Type.CentripetalCatmullRom,
+    as: :define
+
+  @doc ~s"""
+  Define a new `Curves.Spline.Type.KochanekBartels` (TCB) spline: a Catmull-Rom spline through
+  every knot, with three dials that change how it passes through each knot.
+
+  `n` knots give `n - 1` segments. An empty list raises an `ArgumentError`.
+
+  ## Options
+  Each dial is a number, usually between `-1.0` and `1.0`, and `0.0` by default. With all three at
+  `0.0` it is exactly `define_catmull_rom/2`. A dial that isn't a number raises an `ArgumentError`.
+
+  * `:tension` - how tightly it bends at each knot, as in `define_cardinal/2`.
+  * `:continuity` - below `0.0` makes sharper corners (`-1.0` turns like a polyline), above `0.0`
+    makes corners that bulge out.
+  * `:bias` - below `0.0` turns early, towards the next knot; above `0.0` turns late, overshooting.
+
+  Also see [available opts](#module-options).
+
+  ## Examples
+      iex> knots = [{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]
+      iex> curve = Curves.define_kochanek_bartels(knots, continuity: -1.0)
+      iex> Curves.solve!(curve, 1.0)
+      {2.0, 3.0}
+      iex> Curves.solve!(curve, 0.5)
+      {1.0, 1.5}
+      iex> Curves.solve!(Curves.define_kochanek_bartels(knots), 0.5) == Curves.solve!(Curves.define_catmull_rom(knots), 0.5)
+      true
+  """
+  @spec define_kochanek_bartels(T.point_list(), T.kochanek_bartels_opts()) :: Spline.t()
+  defdelegate define_kochanek_bartels(points, opts \\ []),
+    to: Curves.Spline.Type.KochanekBartels,
+    as: :define
+
+  @doc ~s"""
+  Define a new `Curves.Spline.Type.Monotone` spline: a smooth curve through data points that never
+  overshoots them, the usual way to smooth a line chart.
+
+  Each knot is a data point, so its `x` must be bigger than the knot before it (or every `x`
+  smaller), otherwise it raises an `ArgumentError`. Between two knots the curve only goes up, only
+  goes down, or stays flat. `n` knots give `n - 1` segments, and within each one `x` moves at a
+  steady speed.
+
+  ## Options
+  See [available opts](#module-options)
+
+  ## Examples
+      iex> curve = Curves.define_monotone([{0, 0}, {1, 0}, {2, 3}, {3, 3}, {4, 1}])
+      iex> Curves.max_u(curve)
+      4.0
+      iex> Curves.solve!(curve, 0.5)
+      {0.5, 0.0}
+      iex> Curves.solve!(curve, 1.5)
+      {1.5, 1.5}
+      iex> Curves.define_monotone([{0, 0}, {2, 1}, {1, 2}])
+      ** (ArgumentError) the knots of a monotone spline must have x always increasing (or always decreasing), so each knot is a data point. Got x values: [0.0, 2.0, 1.0]. See Curves.define_monotone/2.
+  """
+  @spec define_monotone(T.point_list(), T.define_opts()) :: Spline.t()
+  defdelegate define_monotone(points, opts \\ []), to: Curves.Spline.Type.Monotone, as: :define
+
+  @doc ~s"""
+  Define a new `Curves.Spline.Type.NaturalCubic` spline: the smoothest curve through every knot.
+  Its bend changes smoothly everywhere, and it straightens out at both ends.
+
+  Every knot affects the whole curve, so moving one knot changes every segment a little.
+  `n` knots give `n - 1` segments. An empty list raises an `ArgumentError`.
+
+  ## Options
+  See [available opts](#module-options)
+
+  ## Examples
+      iex> curve = Curves.define_natural_cubic([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}])
+      iex> Curves.max_u(curve)
+      4.0
+      iex> Curves.solve!(curve, 1.0)
+      {2.0, 3.0}
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> {Float.round(x, 4), Float.round(y, 4)}
+      {1.0, 2.1696}
+  """
+  @spec define_natural_cubic(T.point_list(), T.define_opts()) :: Spline.t()
+  defdelegate define_natural_cubic(points, opts \\ []),
+    to: Curves.Spline.Type.NaturalCubic,
     as: :define
 
   @doc ~s"""

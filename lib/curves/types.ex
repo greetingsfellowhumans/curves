@@ -52,6 +52,20 @@ defmodule Curves.Types do
   """
   @type define_opts :: [origin: point_tuple()]
 
+  @typedoc "`define_opts/0`, plus the `:tension` of `Curves.define_cardinal/2`."
+  @type cardinal_opts :: [origin: point_tuple(), tension: number()]
+
+  @typedoc "`define_opts/0`, plus the `:alpha` of `Curves.define_centripetal_catmull_rom/2`."
+  @type centripetal_opts :: [origin: point_tuple(), alpha: number()]
+
+  @typedoc "`define_opts/0`, plus the three dials of `Curves.define_kochanek_bartels/2`."
+  @type kochanek_bartels_opts :: [
+          origin: point_tuple(),
+          tension: number(),
+          continuity: number(),
+          bias: number()
+        ]
+
   @typedoc ~s"""
   Any curve: a `Curves.Bezier.Curve`, `Curves.Spline.Curve` or `Curves.Polyline.Curve`.
   """
