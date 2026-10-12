@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0-rc.2] - 2026-10-11
 
-The second release candidate. It has three breaking changes, listed under Changed; the [upgrade guide](upgrading.html#coming-from-1-0-0-rc-1) shows how to update.
+The second release candidate. It has three breaking changes, listed under Changed; sections 10 to 12 of the [upgrade guide](upgrading.html) show how to update.
 
 ### Added
 
