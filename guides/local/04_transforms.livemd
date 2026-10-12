@@ -307,17 +307,20 @@ Curves.from_svg(svg)
 `Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: its shapes become curves, and it keeps
 everything else (groups, colours, text) so `Curves.Svg` can draw it again as it was. The
 `Curves.Transform` functions work on the whole drawing, or on any part of it you find by its `id`
-with `Curves.Drawing.update/3`. Text moves along with the shapes.
+with `Curves.Drawing.update/3`. Text moves along with the shapes, and a group moves everything in
+it together: the roof is a group of the triangle and its round window.
 
 ```elixir
 house = """
 <svg width="300" height="300" viewBox="0 0 100 100">
   <rect x="0" y="0" width="100" height="100" fill="#e7f5ff"/>
   <g id="house">
-    <polygon id="roof" points="10,50 50,15 90,50" fill="#e03131"/>
+    <g id="roof">
+      <polygon points="10,50 50,15 90,50" fill="#e03131"/>
+      <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
+    </g>
     <rect x="18" y="50" width="64" height="40" fill="#ffe8cc" stroke="#862e9c"/>
     <rect id="door" x="42" y="65" width="16" height="25" rx="3" fill="#862e9c"/>
-    <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
     <text x="50" y="98" font-size="6" text-anchor="middle">Home</text>
   </g>
 </svg>
