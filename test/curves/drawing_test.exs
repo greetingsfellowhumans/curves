@@ -83,7 +83,7 @@ defmodule Curves.DrawingTest do
       drawing = Curves.from_svg(@svg) |> Drawing.update("wheels", &Transform.inc_y(&1, 3))
       assert_near(start(drawing, "front"), {25.0, 73.0})
       assert_near(start(drawing, "body"), {10.0, 50.0})
-      assert %Group{origin: {0.0, 3.0}} = Drawing.get(drawing, "wheels")
+      assert Drawing.get(drawing, "wheels").origin == {0.0, 3.0}
     end
 
     test "a group's :center is its own middle" do
