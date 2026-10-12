@@ -16,11 +16,10 @@ def deps do
 end
 ```
 
-## Your first curve in three lines
+## Your first curve in two lines
 
 ```elixir
 curve = Curves.define_bezier(:ease_in_out)
-{x, y} = Curves.solve!(curve, 0.5)
 Curves.Svg.save!(curve, "ease_in_out.svg")
 ```
 
