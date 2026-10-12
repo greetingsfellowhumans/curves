@@ -15,6 +15,7 @@ knots, control points and `u` are.
 | one custom bend, from one point to another | `Curves.define_bezier/2` |
 | straight lines between your points | `Curves.define_polyline/2` |
 | to copy an SVG path, or a font outline | `Curves.define_bezier_spline/2` |
+| the shapes in an SVG file, as curves | `Curves.from_svg/2` |
 | a circle, an ellipse, or an arc of one | `Curves.define_circle/3` or `Curves.define_ellipse/3` |
 | a smooth path through your points, quickly | `Curves.define_centripetal_catmull_rom/2` |
 | the classic Catmull-Rom spline, exactly | `Curves.define_catmull_rom/2` |

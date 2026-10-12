@@ -168,6 +168,12 @@ defmodule Curves.Utils.Segment do
             "Got: #{inspect(other)}. See Curves.define_bezier_spline/2."
   end
 
+  # The segment with `fun` applied to each of its points. An arc's points are its centre, axis ends
+  # and ends, so any affine `fun` (moving, scaling, rotating, skewing) moves the arc exactly.
+  @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
+  def map_points(arc, fun) when is_arc(arc), do: Arc.map_points(arc, fun)
+  def map_points(points, fun), do: Enum.map(points, fun)
+
   # Turns a spline's u (e.g. 2.25) into the index of the segment it falls in and how far along
   # that segment it is: {2, 0.25}. A whole number u is the end of the previous segment
   # (t = 1.0), except u = 0. A small negative u (Spline.solve/3 allows down to -0.001) gives

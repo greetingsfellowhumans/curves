@@ -146,6 +146,29 @@ defmodule Curves.Spline.Curve do
     %{curve | compressed: cb}
   end
 
+  # The spline with every point moved by `fun`, an affine map such as an SVG transform matrix, as if
+  # it had been defined that way: its segments, stored points and dashed lines are all moved, and
+  # its bounds worked out again. Any moves, scaling and rotation from Curves.Transform still apply
+  # on top. Used by Curves.Svg.Import to bring SVG transforms (even skews) into the curve exactly.
+  @doc false
+  @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
+  def map_points(curve, fun) do
+    points = Enum.map(curve.points, fun)
+
+    curve =
+      struct(
+        curve,
+        Map.merge(Vec.bounds(points), %{
+          points: points,
+          segments: Enum.map(curve.segments, &Segment.map_points(&1, fun)),
+          lines: Enum.map(curve.lines, &Enum.map(&1, fun))
+        })
+      )
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
   # The same spline travelled the other way, so u = 0 is the old end. Every polynomial segment has 4
   # points that read the same backwards (a Bezier segment [p0, c0, c1, p1] backwards is
   # [p1, c1, c0, p0]; Catmull-Rom's [previous, k0, k1, next] becomes [next, k1, k0, previous]), and

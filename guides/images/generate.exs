@@ -196,6 +196,13 @@ images =
      small ++ [title: "define_ellipse, rotation: 30"]},
     {"#{guides}/circle_arc.svg", Curves.define_circle({0, 0}, 2, from: 90, to: 180),
      small ++ [title: "define_circle, from: 90, to: 180", markers: [{0, 0}]]},
+    {"#{guides}/svg_import_heart.svg",
+     hd(
+       Curves.from_svg_path(
+         "M 10,30 A 20,20 0,0,1 50,30 A 20,20 0,0,1 90,30 Q 90,60 50,90 Q 10,60 10,30 z",
+         flip_y: true
+       )
+     ).curve, medium ++ [title: "Curves.from_svg_path(heart, flip_y: true)"]},
 
     # Choosing a curve
     {"#{guides}/choose_data_natural.svg", Curves.define_natural_cubic(data),

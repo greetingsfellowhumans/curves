@@ -44,7 +44,8 @@ defmodule Curves.MixProject do
       # The tutorial's pictures, drawn by guides/images/generate.exs.
       assets: %{"guides/images" => "images"},
       nest_modules_by_prefix: [
-        Curves.Spline.Type
+        Curves.Spline.Type,
+        Curves.Drawing
       ],
       skip_undefined_reference_warnings_on: ["CHANGELOG.md"]
     ]
@@ -100,8 +101,11 @@ defmodule Curves.MixProject do
   # `mix run` only runs once per invocation, so it has to be re-enabled for each script.
   @spec bench(list(String.t())) :: :ok
   defp bench(args) do
-    Enum.each(["bench/solve.exs", "bench/take.exs", "bench/define.exs"], fn script ->
-      Mix.Task.rerun("run", [script | args])
-    end)
+    Enum.each(
+      ["bench/solve.exs", "bench/take.exs", "bench/define.exs", "bench/svg_import.exs"],
+      fn script ->
+        Mix.Task.rerun("run", [script | args])
+      end
+    )
   end
 end

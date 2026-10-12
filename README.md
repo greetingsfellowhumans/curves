@@ -274,6 +274,23 @@ curve = Curves.define_natural_cubic([
 
 ![Natural Cubic Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/natural_cubic.svg)
 
+## Reading SVGs
+
+`Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: every shape in it (paths, rectangles, circles, ellipses, lines, polylines and polygons), each made of curves you can solve, transform and draw. Paths keep their exact arcs, and every `transform` is applied, even skews. Anything that isn't made of curves, like text, is listed in `drawing.skipped`.
+
+```elixir
+drawing = Curves.from_svg(File.read!("logo.svg"))
+
+for shape <- drawing.shapes, subpath <- shape.subpaths do
+  Curves.solve!(subpath.curve, 0.5)
+end
+
+# Or just the path data of one <path>
+[heart] = Curves.from_svg_path("M 10,30 A 20,20 0,0,1 50,30 A 20,20 0,0,1 90,30 Q 90,60 50,90 Q 10,60 10,30 z")
+```
+
+It needs no XML library and never creates atoms from the input, so it is safe to use on SVGs from anywhere.
+
 ## Benchmarks
 
 Benchmarks live in `bench/` and use [Benchee](https://github.com/bencheeorg/benchee). Run them all with:

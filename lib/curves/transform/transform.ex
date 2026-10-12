@@ -25,8 +25,7 @@ defmodule Curves.Transform do
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Transform.{Move, Rotate, Scale}
   alias Curves.Types, as: T
-  alias Curves.Utils.{Arc, Errors, Segment, Vec}
-  import Curves.Utils.Arc, only: [is_arc: 1]
+  alias Curves.Utils.{Errors, Segment, Vec}
 
   # A scale is a number, or an {x, y} pair to scale the two directions separately.
   defguardp is_scale(s)
@@ -92,11 +91,7 @@ defmodule Curves.Transform do
   # which moves the arc exactly (see Curves.Utils.Arc).
   @spec map_segment_points(list(Segment.t()), (T.point_tuple() -> T.point_tuple())) ::
           list(Segment.t())
-  defp map_segment_points(segments, fun), do: Enum.map(segments, &map_segment(&1, fun))
-
-  @spec map_segment(Segment.t(), (T.point_tuple() -> T.point_tuple())) :: Segment.t()
-  defp map_segment(arc, fun) when is_arc(arc), do: Arc.map_points(arc, fun)
-  defp map_segment(points, fun), do: Enum.map(points, fun)
+  defp map_segment_points(segments, fun), do: Enum.map(segments, &Segment.map_points(&1, fun))
 
   # Returns a new copy of `points` scaled, then rotated, then moved by the origin,
   # the same way the curve's own points are. `curve` must already have been through

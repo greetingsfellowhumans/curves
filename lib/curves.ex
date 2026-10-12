@@ -59,6 +59,11 @@ defmodule Curves do
   real-world examples of each.
 
 
+  ## Reading SVGs
+
+  `from_svg/2` reads the shapes in an SVG into a `Curves.Drawing` of curves, and `from_svg_path/2`
+  reads the path data of a single `<path>`.
+
   ## Transform
 
   See the `Curves.Transform` module for functions that allow you to move, resize, and rotate existing curves.
@@ -426,6 +431,71 @@ defmodule Curves do
   """
   @spec define_polyline(T.point_list(), T.define_opts()) :: Polyline.t()
   defdelegate define_polyline(points, opts \\ []), to: Polyline, as: :define
+
+  @doc ~s"""
+  Read an SVG document into a `Curves.Drawing`: every shape in it (`<path>`, `<rect>`, `<circle>`,
+  `<ellipse>`, `<line>`, `<polyline>` and `<polygon>`), each as one curve per continuous piece.
+
+  Paths become bezier splines with exact arcs, rectangles and circles become splines too, and
+  lines, polylines and polygons become polylines (see `Curves.Drawing.Subpath`). Every `transform`,
+  on a shape or on the groups around it, is applied to the curves exactly, even skews. Anything
+  that can't be read as curves is listed in the drawing's `:skipped` field, with the reason.
+
+  The coordinates are SVG's own, where y goes down the screen. Curves draws y going up (as in maths),
+  so in `Curves.Svg` pictures an SVG looks upside down; pass `flip_y: true` to turn its y around.
+
+  It is safe to use on SVGs from anywhere: it has no XML library, never creates atoms from the
+  input, and reads in one pass. Input that isn't a string, or has no `<svg>` element, raises an
+  `ArgumentError`.
+
+  Not read: CSS (`style` attributes and `<style>`), `<use>`, sizes in units other than `px`, and
+  the `viewBox` as a mapping to the screen (it is only reported). Each shape's own attributes are
+  kept, as strings, for you to use.
+
+  ## Options
+  * `:flip_y` (default `false`) - mirror every y, so y goes up.
+
+  ## Examples
+      iex> drawing = Curves.from_svg(~s(<svg viewBox="0 0 20 10"><rect x="1" y="2" width="4" height="3" fill="red"/></svg>))
+      iex> drawing.view_box
+      {0.0, 0.0, 20.0, 10.0}
+      iex> [%Curves.Drawing.Shape{element: :rect, subpaths: [subpath]} = rect] = drawing.shapes
+      iex> rect.attributes["fill"]
+      "red"
+      iex> Curves.solve!(subpath.curve, 1.0)
+      {5.0, 2.0}
+
+  Transforms are applied, and what can't be read is listed:
+
+      iex> drawing = Curves.from_svg(~s[<svg><g transform="translate(10 0)"><line x2="5"/></g><text>Hi</text></svg>])
+      iex> [line] = Curves.Drawing.curves(drawing)
+      iex> Curves.solve!(line, 1.0)
+      {15.0, 0.0}
+      iex> drawing.skipped
+      [%{element: "text", id: nil, reason: :not_supported}]
+  """
+  @spec from_svg(String.t(), keyword()) :: Curves.Drawing.t()
+  def from_svg(svg, opts \\ []), do: Curves.Svg.Import.from_svg(svg, opts)
+
+  @doc ~s"""
+  Read SVG path data (a `<path>` element's `d` attribute) into a list of `Curves.Drawing.Subpath`,
+  one per continuous piece, each with a bezier spline curve. Every path command works, absolute and
+  relative: `M L H V C S Q T A Z`. Bad path data raises an `ArgumentError` saying where.
+
+  ## Options
+  * `:flip_y` (default `false`) - mirror every y, so y goes up. See `from_svg/2`.
+
+  ## Examples
+      iex> [subpath] = Curves.from_svg_path("M 0 0 L 10 0 A 5 5 0 0 1 10 10 Z")
+      iex> subpath.closed
+      true
+      iex> Curves.solve!(subpath.curve, 1.5)
+      {15.0, 5.0}
+      iex> Curves.from_svg_path("M 0 0 L 10")
+      ** (ArgumentError) invalid path data: expected a number, got: the end in the L command
+  """
+  @spec from_svg_path(String.t(), keyword()) :: list(Curves.Drawing.Subpath.t())
+  def from_svg_path(data, opts \\ []), do: Curves.Svg.Import.from_path(data, opts)
 
   @doc ~s"""
   Given a curve (`Curves.Bezier.Curve`, `Curves.Spline.Curve` or `Curves.Polyline.Curve`) and `t`, find the point along it.

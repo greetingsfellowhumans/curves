@@ -139,8 +139,44 @@ Curves.Svg.render(curve, markers: [Curves.solve!(curve, 0.5)])
 See `Curves.Svg` for every option. In [Livebook](https://livebook.dev), show an image with
 `Kino.Image.new(svg, :svg)`.
 
+## Reading curves from an SVG
+
+Going the other way, `Curves.from_svg/2` reads an SVG (a logo, an icon, a drawing from Inkscape or
+Figma) into a `Curves.Drawing`: a list of its shapes, each one made of curves you can solve, take,
+transform and draw like any other.
+
+```elixir
+drawing = Curves.from_svg(File.read!("heart.svg"))
+
+for shape <- drawing.shapes, subpath <- shape.subpaths do
+  Curves.solve!(subpath.curve, 0.5)
+end
+```
+
+Every shape works: paths (with exact arcs), rectangles, circles, ellipses, lines, polylines and polygons.
+Every `transform` is already applied, even skews. Anything that isn't made of curves, like text, is
+listed in `drawing.skipped`, so nothing goes missing silently.
+
+For just the path data of one `<path>`, use `Curves.from_svg_path/2`. It gives one subpath for each
+separate piece of the path:
+
+```elixir
+[heart] =
+  Curves.from_svg_path(
+    "M 10,30 A 20,20 0,0,1 50,30 A 20,20 0,0,1 90,30 Q 90,60 50,90 Q 10,60 10,30 z",
+    flip_y: true
+  )
+
+Curves.Svg.render(heart.curve)
+```
+
+![A heart read from SVG path data](images/svg_import_heart.svg)
+
+SVG's y goes *down* the screen, but Curves' y goes up, like a graph, so an SVG looks upside down in
+these pictures. `flip_y: true` turns it the right way up.
+
 ## That's the tour!
 
-You now know everything you need: curves and `t`, control points, splines and `u`, transforms, and
-drawing. The `Curves` module has the full API, and the interactive Livebooks are a great place to keep
+You now know everything you need: curves and `t`, control points, splines and `u`, transforms,
+drawing, and reading SVGs. The `Curves` module has the full API, and the interactive Livebooks are a great place to keep
 experimenting.
