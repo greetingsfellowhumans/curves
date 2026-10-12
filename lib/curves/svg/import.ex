@@ -68,7 +68,7 @@ defmodule Curves.Svg.Import do
 
   # Elements that are drawn but aren't curves, or that Curves can't follow: listed in :skipped, and
   # kept as markup.
-  @not_supported ["text", "image", "use", "svg"]
+  @not_curves ["text", "image", "use", "svg"]
 
   # Never kept, so a drawing drawn again can't run anything: listed in :skipped.
   @unsafe ["script", "foreignObject"]
@@ -543,7 +543,7 @@ defmodule Curves.Svg.Import do
 
   defp element(name, attrs, _parent, state, {self_closing, start, _stop}) when name in @unsafe do
     state
-    |> skip(name, attrs, :not_supported)
+    |> skip(name, attrs, :unsafe, :no)
     |> push(name, :ignore, nil, start, nil, self_closing)
   end
 
@@ -551,16 +551,16 @@ defmodule Curves.Svg.Import do
   # defs, style, title and the like (which aren't drawn themselves) are only kept.
   defp element(name, attrs, parent, state, {self_closing, start, stop}) do
     state
-    |> skip_if_not_supported(name, attrs)
+    |> skip_if_not_curves(name, attrs)
     |> push(name, :raw, parent, start, nil, false)
     |> close_if_self_closing(self_closing, stop)
   end
 
-  @spec skip_if_not_supported(state(), String.t(), map()) :: state()
-  defp skip_if_not_supported(state, name, attrs) when name in @not_supported,
-    do: skip(state, name, attrs, :not_supported)
+  @spec skip_if_not_curves(state(), String.t(), map()) :: state()
+  defp skip_if_not_curves(state, name, attrs) when name in @not_curves,
+    do: skip(state, name, attrs, :not_curves, :as_markup)
 
-  defp skip_if_not_supported(state, _name, _attrs), do: state
+  defp skip_if_not_curves(state, _name, _attrs), do: state
 
   # A group whose transform couldn't be read (nil) is kept as markup, so it is drawn again however
   # the SVG's viewer draws it.
@@ -611,8 +611,13 @@ defmodule Curves.Svg.Import do
           {TransformList.matrix() | nil, state()}
   defp own_matrix(attrs, parent, name, state) do
     case TransformList.parse(attrs["transform"]) do
-      {:ok, own} -> {TransformList.multiply(parent, own), state}
-      {:error, message} -> {nil, skip(state, name, attrs, {:invalid_transform, message})}
+      {:ok, own} ->
+        {TransformList.multiply(parent, own), state}
+
+      # Kept as markup, except the <svg> itself, which draws nothing then.
+      {:error, message} ->
+        {nil,
+         skip(state, name, attrs, {:invalid_transform, message}, kept_unless_root(name, state))}
     end
   end
 
@@ -693,9 +698,15 @@ defmodule Curves.Svg.Import do
   defp add_child(%{stack: [parent | stack]} = state, child),
     do: %{state | stack: [%{parent | children: [child | parent.children]} | stack]}
 
-  @spec skip(state(), String.t(), map(), term()) :: state()
-  defp skip(%{drawing: drawing} = state, name, attrs, reason) do
-    entry = %{element: name, id: attrs["id"], reason: reason}
+  # The root <svg> is the only element with no parent open.
+  @spec kept_unless_root(String.t(), state()) :: :as_markup | :no
+  defp kept_unless_root("svg", %{stack: []}), do: :no
+  defp kept_unless_root(_name, _state), do: :as_markup
+
+  # Lists an element in :skipped: why it wasn't read as curves, and what was kept of it.
+  @spec skip(state(), String.t(), map(), term(), :as_markup | :partly | :no) :: state()
+  defp skip(%{drawing: drawing} = state, name, attrs, reason, kept) do
+    entry = %{element: name, id: attrs["id"], reason: reason, kept: kept}
     %{state | drawing: %{drawing | skipped: [entry | drawing.skipped]}}
   end
 
@@ -726,13 +737,13 @@ defmodule Curves.Svg.Import do
         {add(state, kind, attrs, subpaths), :ignore}
 
       {:partial, subpaths, reason} ->
-        {state |> add(kind, attrs, subpaths) |> skip(name(kind), attrs, reason), :ignore}
+        {state |> add(kind, attrs, subpaths) |> skip(name(kind), attrs, reason, :partly), :ignore}
 
       {:skip, {:unsupported_unit, _} = reason} ->
-        {skip(state, name(kind), attrs, reason), :raw}
+        {skip(state, name(kind), attrs, reason, :as_markup), :raw}
 
       {:skip, reason} ->
-        {skip(state, name(kind), attrs, reason), :ignore}
+        {skip(state, name(kind), attrs, reason, :no), :ignore}
     end
   end
 

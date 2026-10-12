@@ -6,12 +6,12 @@ defmodule Curves.Transform.Rotate do
   # Set (or add to, below) the curve's rotation field, in radians (and, with a pivot, its :origin).
   # The points are rotated later, in compress.
   @spec set_rotation(T.curve_data(), number(), Pivot.around()) :: T.curve_data()
-  def set_rotation(curve, deg, around \\ nil) do
+  def set_rotation(curve, deg, around) do
     transform(curve, around, fn _ -> degrees_to_radians(deg) end)
   end
 
   @spec inc_rotation(T.curve_data(), number(), Pivot.around()) :: T.curve_data()
-  def inc_rotation(curve, amount, around \\ nil) do
+  def inc_rotation(curve, amount, around) do
     transform(curve, around, fn old -> old + degrees_to_radians(amount) end)
   end
 

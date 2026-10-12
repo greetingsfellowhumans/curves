@@ -6,12 +6,10 @@ defmodule Curves.Svg.DrawingWriter do
   # Curves.Svg.PathWriter), in the shape's own coordinates, with its transform on the element, so
   # strokes are as wide as they were.
   alias Curves.Drawing
-  alias Curves.Drawing.{Group, Raw, Shape}
+  alias Curves.Drawing.{Group, Node, Raw, Shape}
   alias Curves.Svg.{Import, PathWriter, TransformList}
   alias Curves.Types, as: T
-  alias Curves.Utils.Vec
-
-  @identity {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}
+  alias Curves.Utils.{Matrix, Vec}
 
   # Attributes that describe a shape's geometry (now in its path data) or its transform (now on
   # the element), so they aren't copied.
@@ -46,7 +44,7 @@ defmodule Curves.Svg.DrawingWriter do
     [
       ~s(<svg xmlns="http://www.w3.org/2000/svg" width="#{escape(width)}" height="#{escape(height)}" viewBox="#{Enum.map_join([vx, vy, vw, vh], " ", &PathWriter.number/1)}"#{attributes(drawing.attributes, @root)}>\n),
       background(opts[:background], box),
-      Enum.map(drawing.children, &child/1),
+      placed(Node.matrix(drawing), Enum.map(drawing.children, &child/1)),
       overlays(drawing, opts, scale),
       title(opts[:title], box, scale),
       "</svg>\n"
@@ -111,11 +109,21 @@ defmodule Curves.Svg.DrawingWriter do
 
   ## The drawing's own content
 
+  # A drawing's own move, scale and rotation (from Curves.Transform) go on a <g> around everything,
+  # so kept markup like text moves with the shapes.
+  @spec placed(Matrix.t(), iodata()) :: iodata()
+  defp placed(matrix, content), do: placed(matrix, content, Matrix.identity?(matrix))
+
+  @spec placed(Matrix.t(), iodata(), boolean()) :: iodata()
+  defp placed(_matrix, content, true = _identity), do: content
+  defp placed(matrix, content, false), do: [~s(<g#{transform(matrix)}>\n), content, "</g>\n"]
+
   @spec child(Drawing.child()) :: iodata()
-  defp child(%Group{element: element, attributes: attributes, children: children}) do
+  defp child(%Group{element: element, attributes: attributes, children: children} = group) do
     [
       "<",
       element,
+      optional_transform(Node.matrix(group)),
       attributes(attributes, ["transform"]),
       ">\n",
       Enum.map(children, &child/1),
@@ -125,52 +133,56 @@ defmodule Curves.Svg.DrawingWriter do
     ]
   end
 
-  defp child(%Shape{subpaths: subpaths, attributes: attributes, transform: matrix}) do
-    {transform, move} = own_coordinates(matrix)
+  defp child(%Shape{subpaths: subpaths, attributes: attributes, transform: matrix} = shape) do
+    {kept, move} = own_coordinates(matrix)
 
     d =
       Enum.map_join(subpaths, " ", fn subpath ->
         PathWriter.path_data(subpath.curve, move) <> close(subpath.closed)
       end)
 
+    transform = optional_transform(Matrix.multiply(Node.matrix(shape), kept))
     [~s(<path d="#{d}"), transform, attributes(attributes, @geometry), "/>\n"]
   end
 
-  defp child(%Raw{markup: markup, transform: matrix}) when matrix == @identity, do: [markup, "\n"]
-
   defp child(%Raw{markup: markup, transform: matrix}),
-    do: [~s(<g#{transform(matrix)}>), markup, "</g>\n"]
+    do: placed(matrix, [markup, "\n"])
 
   @spec close(boolean()) :: String.t()
   defp close(true), do: " Z"
   defp close(false), do: ""
 
-  # A shape's curves are where it is drawn (its transform already applied). To draw it as the SVG
-  # did, they are moved back into its own coordinates, and the transform goes on the element. A
-  # transform that squashes everything flat can't be undone, so then the curves are written as
-  # they are, with no transform.
-  @spec own_coordinates(TransformList.matrix()) ::
-          {String.t(), (T.point_tuple() -> T.point_tuple())}
-  defp own_coordinates(matrix) when matrix == @identity, do: {"", &Function.identity/1}
-
+  # A shape's curves are where its SVG transform put them. To draw it as the SVG did, they are moved
+  # back into its own coordinates, and that transform is kept, to go on the element. A transform
+  # that squashes everything flat can't be undone, so then the curves are written as they are, and
+  # no transform is kept.
+  @spec own_coordinates(Matrix.t()) :: {Matrix.t(), (T.point_tuple() -> T.point_tuple())}
   defp own_coordinates({a, b, c, d, _e, _f} = matrix) do
     det = a * d - b * c
     invertible = abs(det) > 1.0e-12 * max(1.0, abs(a * d) + abs(b * c))
     undo(matrix, det, invertible)
   end
 
-  @spec undo(TransformList.matrix(), float(), boolean()) ::
-          {String.t(), (T.point_tuple() -> T.point_tuple())}
-  defp undo(_matrix, _det, false), do: {"", &Function.identity/1}
+  @spec undo(Matrix.t(), float(), boolean()) :: {Matrix.t(), (T.point_tuple() -> T.point_tuple())}
+  defp undo(_matrix, _det, false), do: {Matrix.identity(), &Function.identity/1}
 
   defp undo({a, b, c, d, e, f} = matrix, det, true) do
     inverse = {d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det}
-    {transform(matrix), &TransformList.move(inverse, &1)}
+    {matrix, &Matrix.move(inverse, &1)}
   end
+
+  # ` transform="..."`, or nothing for a transform that changes nothing.
+  @spec optional_transform(Matrix.t()) :: String.t()
+  defp optional_transform(matrix), do: optional_transform(matrix, Matrix.identity?(matrix))
+
+  @spec optional_transform(Matrix.t(), boolean()) :: String.t()
+  defp optional_transform(_matrix, true = _identity), do: ""
+  defp optional_transform(matrix, false), do: transform(matrix)
 
   @spec transform(TransformList.matrix()) :: String.t()
   defp transform(matrix) do
-    numbers = matrix |> Tuple.to_list() |> Enum.map_join(" ", &PathWriter.number/1)
+    # + 0.0 writes -0.0 (e.g. from rotating by 0) as 0.0.
+    numbers = matrix |> Tuple.to_list() |> Enum.map_join(" ", &PathWriter.number(&1 + 0.0))
     ~s| transform="matrix(#{numbers})"|
   end
 

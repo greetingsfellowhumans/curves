@@ -146,22 +146,30 @@ defmodule Curves.Spline.Curve do
     %{curve | compressed: cb}
   end
 
-  # The spline with every point moved by `fun`, an affine map such as an SVG transform matrix, as if
-  # it had been defined that way: its segments, stored points and dashed lines are all moved, and
-  # its bounds worked out again. Any moves, scaling and rotation from Curves.Transform still apply
-  # on top. Used by Curves.Svg.Import to bring SVG transforms (even skews) into the curve exactly.
+  # The spline with every point moved by `fun`, an affine map such as an SVG transform matrix,
+  # applied to the curve as it is drawn: its own moves, scaling and rotation are folded into its
+  # points first, and then everything is moved by `fun`. The result has no transforms of its own,
+  # as if it had been defined that way: its segments, stored points and dashed lines are all moved,
+  # and its bounds worked out again. Used for SVG transforms (even skews), and to place the curves
+  # of a Curves.Drawing.
   @doc false
   @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
   def map_points(curve, fun) do
-    points = Enum.map(curve.points, fun)
+    drawn = Curves.Transform.apply_all_transformations(curve)
+    move = fn point -> point |> Curves.Transform.transform_points_one(drawn) |> fun.() end
+    points = Enum.map(curve.points, move)
 
     curve =
       struct(
         curve,
         Map.merge(Vec.bounds(points), %{
           points: points,
-          segments: Enum.map(curve.segments, &Segment.map_points(&1, fun)),
-          lines: Enum.map(curve.lines, &Enum.map(&1, fun))
+          segments: Enum.map(drawn.segments, &Segment.map_points(&1, fun)),
+          lines: Enum.map(curve.lines, &Enum.map(&1, move)),
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          origin: {0.0, 0.0}
         })
       )
 

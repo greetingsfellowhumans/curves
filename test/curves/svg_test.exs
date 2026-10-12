@@ -313,6 +313,19 @@ defmodule Curves.SvgTest do
   @spec count(String.t(), String.t()) :: non_neg_integer()
   defp count(text, part), do: length(String.split(text, part)) - 1
 
+  test "a picture of a single point with rounding noise in it keeps its grid inside the image" do
+    # The y values differ only by rounding (two neighbouring floats); they must count as flat.
+    curve =
+      Curves.define_ellipse({100, 100}, {50, 50}, from: -720, to: -720)
+      |> Curves.Transform.set_scale(750.0025)
+
+    svg = Svg.render(curve)
+
+    for [_, x] <- Regex.scan(~r/<line x1="([-\d.]+)"/, svg) do
+      assert String.to_float(x) >= 39.99 and String.to_float(x) <= 560.01
+    end
+  end
+
   describe "drawings, in :inspect mode" do
     @drawing ~s|<svg><circle cx="5" cy="5" r="2"/><path d="M0 0 L10 0 M0 10 L10 10"/><line x2="3"/></svg>|
 
@@ -395,7 +408,7 @@ defmodule Curves.SvgTest do
       [_, d] = Regex.run(~r{<path d="([^"]+)" transform="matrix\(2}, svg)
       assert String.starts_with?(d, "M10.0,0.0 A10.0 10.0")
       # Kept text gets its group's transform around it
-      assert svg =~ ~s|<g transform="matrix(2.0 0.0 0.0 2.0 100.0 50.0)"><text x="0" y="20">|
+      assert svg =~ ~s|<g transform="matrix(2.0 0.0 0.0 2.0 100.0 50.0)">\n<text x="0" y="20">|
     end
 
     test "dots, dashed lines, markers and a title can be turned on, in the drawing's units" do
@@ -432,6 +445,34 @@ defmodule Curves.SvgTest do
       assert svg =~ ~s(viewBox="1.0 2.0 4.0 8.0")
       flipped = Curves.from_svg(~s|<svg viewBox="0 0 10 20"><line x2="3"/></svg>|, flip_y: true)
       assert flipped.view_box == {0.0, -20.0, 10.0, 20.0}
+    end
+
+    test "a shape squashed flat by its transform is drawn where it is, with no transform" do
+      svg =
+        Svg.render(
+          Curves.from_svg(
+            ~s|<svg viewBox="0 0 10 10"><line x2="4" y2="4" transform="scale(1 0)"/></svg>|
+          )
+        )
+
+      assert svg =~ ~s|<path d="M0.0,0.0 L4.0,0.0"/>|
+    end
+
+    test "a size with units is kept; dots then use 1 pixel per unit" do
+      drawing =
+        Curves.from_svg(
+          ~s|<svg width="10cm" height="5cm" viewBox="0 0 10 5"><line x2="4"/></svg>|
+        )
+
+      svg = Svg.render(drawing, show_points: true)
+      assert svg =~ ~s(width="10cm" height="5cm")
+      assert svg =~ ~s(r="5.0")
+    end
+
+    test "a :view that isn't two corners raises" do
+      assert_raise ArgumentError, ~r/:view must be two corners/, fn ->
+        Svg.render(Curves.from_svg(@designed), view: {1, 2})
+      end
     end
 
     test "save! writes it, and :mode is checked" do

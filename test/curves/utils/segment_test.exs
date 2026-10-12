@@ -49,8 +49,9 @@ defmodule Curves.Utils.SegmentTest do
     end
 
     test "turns integer coordinates into floats" do
-      assert [[{0.0, 0.0}, {1.0, 1.0}, {1.0, 1.0}, {2.0, 0.0}]] =
-               Segment.new_segments([[{0, 0}, {1, 1}, {1, 1}], [{2, 0}]])
+      # === tells 0 and 0.0 apart, so this checks they really are floats.
+      assert Segment.new_segments([[{0, 0}, {1, 1}, {1, 1}], [{2, 0}]]) ===
+               [[{0.0, 0.0}, {1.0, 1.0}, {1.0, 1.0}, {2.0, 0.0}]]
     end
   end
 

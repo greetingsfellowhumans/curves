@@ -718,4 +718,62 @@ defmodule Curves.PropertiesTest do
       end
     end
   end
+
+  # The furthest any of 60 points along `a` is from `b`, which is sampled finely. To compare curves
+  # whose `u` differs (path data splits a long arc into pieces).
+  @spec furthest(Curves.Types.curve_struct(), Curves.Types.curve_struct()) :: float()
+  defp furthest(a, b) do
+    dense = [Curves.solve!(b, 0.0) | Curves.take!(b, 4000)]
+
+    for i <- 0..60, reduce: 0.0 do
+      acc ->
+        {x, y} = Curves.solve!(a, i / 60 * Curves.max_u(a))
+
+        nearest =
+          dense |> Enum.map(fn {bx, by} -> (bx - x) ** 2 + (by - y) ** 2 end) |> Enum.min()
+
+        max(acc, :math.sqrt(nearest))
+    end
+  end
+
+  # An ellipse squashed flat (one radius 0), which goes back and forth along a line.
+  @spec flat_ellipse() :: StreamData.t(Curves.Spline.Curve.t())
+  defp flat_ellipse do
+    StreamData.map(
+      StreamData.tuple(
+        {point(), StreamData.float(min: 1.0, max: 50.0),
+         StreamData.float(min: -720.0, max: 720.0)}
+      ),
+      fn {center, r, to} -> Curves.define_ellipse(center, {r, 0}, to: to) end
+    )
+  end
+
+  # Mirroring (a negative scale) makes arcs turn the other way, so SVG's sweep flag must change.
+  property "path data draws exactly the same curve, mirrored or not, starting and ending in the same place" do
+    check all(
+            curve <- StreamData.one_of([curve(), ellipse(), arc_path(2, 5), flat_ellipse()]),
+            {sx, sy} <- StreamData.member_of([{1, 1}, {-1, 1}, {1, -1}, {-2, 0.5}, {0.3, -3}]),
+            degrees <- StreamData.float(min: -180.0, max: 180.0)
+          ) do
+      curve = curve |> Transform.set_scale({sx, sy}) |> Transform.set_rotation(degrees)
+      [again | _] = Curves.from_svg_path(Curves.Svg.path_data(curve)) |> Enum.map(& &1.curve)
+
+      # Exactly the same ends (they are written as they are)...
+      assert_near(Curves.solve!(again, 0.0), Curves.solve!(curve, 0.0), 1.0e-9)
+
+      assert_near(
+        Curves.solve!(again, Curves.max_u(again)),
+        Curves.solve!(curve, Curves.max_u(curve)),
+        1.0e-9
+      )
+
+      # ...and every point of each on the other. 4000 samples are at most this far apart.
+      %{xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax} =
+        Curves.Utils.Vec.bounds(Curves.take!(curve, 200))
+
+      tolerance = max(1.0e-6, 0.01 * max(xmax - xmin, ymax - ymin))
+      assert furthest(curve, again) <= tolerance
+      assert furthest(again, curve) <= tolerance
+    end
+  end
 end

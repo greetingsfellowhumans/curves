@@ -87,10 +87,10 @@ defmodule Curves.Svg.ImportTest do
       assert Drawing.shapes(drawing) == []
 
       assert drawing.skipped == [
-               %{element: "text", id: "t", reason: :not_supported},
-               %{element: "image", id: nil, reason: :not_supported},
-               %{element: "use", id: nil, reason: :not_supported},
-               %{element: "svg", id: nil, reason: :not_supported}
+               %{element: "text", id: "t", reason: :not_curves, kept: :as_markup},
+               %{element: "image", id: nil, reason: :not_curves, kept: :as_markup},
+               %{element: "use", id: nil, reason: :not_curves, kept: :as_markup},
+               %{element: "svg", id: nil, reason: :not_curves, kept: :as_markup}
              ]
 
       assert Enum.map(drawing.children, & &1.markup) == [

@@ -19,8 +19,28 @@ defmodule Curves.Transform do
 
   Positions are `{x, y}` tuples of numbers, and amounts are numbers.
   Anything else raises an `ArgumentError`.
+
+  ## Drawings
+
+  Every function here also takes a `Curves.Drawing` (from `Curves.from_svg/2`), or a group or shape
+  in one, and changes it as a whole, the same way it changes a curve. Everything in it moves
+  together, text and other kept markup too, and `around: :center` is the middle of all of it.
+  `Curves.Drawing.update/3` and `update_in/3` change one part, found by its `id`:
+
+  ```elixir
+  drawing
+  |> Curves.Transform.set_scale(2)
+  |> Curves.Drawing.update("wheel", &Curves.Transform.inc_rotation(&1, 45, around: :center))
+  ```
+
+  The change is kept on the drawing, group or shape (in its `:origin`, `:scale` and `:rotation`),
+  so it can be set again later, like a curve's. `Curves.Drawing.shapes/1` and `curves/1` give the
+  curves where they end up, and `Curves.Svg` draws it there. A `Curves.Drawing.Subpath` changes its
+  curve.
   """
   alias Curves.Bezier.Curve, as: Bezier
+  alias Curves.Drawing
+  alias Curves.Drawing.{Group, Node, Shape, Subpath}
   alias Curves.Polyline.Curve, as: Polyline
   alias Curves.Spline.Curve, as: Spline
   alias Curves.Transform.{Move, Rotate, Scale}
@@ -32,6 +52,14 @@ defmodule Curves.Transform do
             when is_number(s) or
                    (is_tuple(s) and tuple_size(s) == 2 and is_number(elem(s, 0)) and
                       is_number(elem(s, 1)))
+
+  @typedoc ~s"""
+  Anything these functions change: a curve, or a `Curves.Drawing`, or a group, shape or subpath
+  in one. A drawing, group or shape changes as a whole (everything in it, text too); a subpath
+  changes its curve.
+  """
+  @type transformable() ::
+          T.curve_struct() | Drawing.t() | Group.t() | Shape.t() | Subpath.t()
 
   @typedoc ~s"""
   The point to scale, flip or rotate around: `:center` (the middle of the curve's points) or an
@@ -103,6 +131,11 @@ defmodule Curves.Transform do
     Enum.map(points, fn point -> point |> Vec.scale(scale) |> rotate(curve) |> Vec.add(origin) end)
   end
 
+  # One point, transformed like transform_points/2.
+  @doc false
+  @spec transform_points_one(T.point_tuple(), T.curve_data()) :: T.point_tuple()
+  def transform_points_one(point, curve), do: hd(transform_points(curve, [point]))
+
   # Matches apply_rotation/1: around {0, 0}, and a rotation of 0 or 0.0 is skipped.
   @spec rotate(T.point_tuple(), T.curve_data()) :: T.point_tuple()
   defp rotate(point, %{rotation: rotation}) when rotation == 0, do: point
@@ -118,15 +151,23 @@ defmodule Curves.Transform do
   # Hands the transformation to the curve's own module, which adds it and recompresses.
   # `field` names the value the transformation changes (e.g. :origin). Only Bezier and
   # Spline may touch their (opaque) fields, so that work lives there, not here.
-  @spec add(T.curve_struct(), {module(), atom(), list()}, atom()) :: T.curve_struct()
+  @spec add(transformable(), {module(), atom(), list()}, atom()) :: transformable()
   defp add(curve, transformation, field) do
     cond do
       is_struct(curve, Bezier) -> Bezier.add_transformation(curve, transformation, field)
       is_struct(curve, Spline) -> Spline.add_transformation(curve, transformation, field)
       is_struct(curve, Polyline) -> Polyline.add_transformation(curve, transformation, field)
+      drawing_node?(curve) -> Node.transform(curve, transformation)
+      is_struct(curve, Subpath) -> %{curve | curve: add(curve.curve, transformation, field)}
       true -> Errors.raise_not_a_curve(curve)
     end
   end
+
+  # A whole drawing, group or shape: it keeps its own move, scale and rotation (see
+  # Curves.Drawing.Node).
+  @spec drawing_node?(term()) :: boolean()
+  defp drawing_node?(term),
+    do: is_struct(term, Drawing) or is_struct(term, Group) or is_struct(term, Shape)
 
   @doc ~s"""
   Ignore current position and set a new one.
@@ -141,7 +182,7 @@ defmodule Curves.Transform do
       iex> x
       10.5
   """
-  @spec set_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
+  @spec set_position(curve :: transformable(), T.point_tuple()) :: transformable()
   def set_position(curve, origin), do: add(curve, {Move, :set_position, [origin]}, :origin)
 
   @doc ~s"""
@@ -158,7 +199,7 @@ defmodule Curves.Transform do
       iex> x
       20.5
   """
-  @spec inc_position(curve :: T.curve_struct(), T.point_tuple()) :: T.curve_struct()
+  @spec inc_position(curve :: transformable(), T.point_tuple()) :: transformable()
   def inc_position(curve, pos), do: add(curve, {Move, :inc_position, [pos]}, :origin)
 
   @doc ~s"""
@@ -177,7 +218,7 @@ defmodule Curves.Transform do
       iex> y
       10.5
   """
-  @spec inc_x(curve :: T.curve_struct(), xinc :: T.coord()) :: T.curve_struct()
+  @spec inc_x(curve :: transformable(), xinc :: T.coord()) :: transformable()
   def inc_x(curve, xinc) when is_number(xinc), do: add(curve, {Move, :inc_x, [xinc]}, :origin)
 
   def inc_x(_curve, xinc), do: raise_not_a_number("inc_x/2", xinc)
@@ -200,7 +241,7 @@ defmodule Curves.Transform do
       iex> y
       0.5
   """
-  @spec inc_y(curve :: T.curve_struct(), yinc :: T.coord()) :: T.curve_struct()
+  @spec inc_y(curve :: transformable(), yinc :: T.coord()) :: transformable()
   def inc_y(curve, yinc) when is_number(yinc), do: add(curve, {Move, :inc_y, [yinc]}, :origin)
 
   def inc_y(_curve, yinc), do: raise_not_a_number("inc_y/2", yinc)
@@ -252,11 +293,11 @@ defmodule Curves.Transform do
       {{-1.0, -1.0}, {3.0, 3.0}}
   """
   @spec set_scale(
-          T.curve_struct(),
+          transformable(),
           scale :: number() | {number(), number()},
           opts :: [around: around()]
         ) ::
-          T.curve_struct()
+          transformable()
   def set_scale(curve, scale, opts \\ [])
 
   def set_scale(curve, scale, opts) when is_scale(scale),
@@ -280,11 +321,11 @@ defmodule Curves.Transform do
       {5.5, 0.5}
   """
   @spec inc_scale(
-          T.curve_struct(),
+          transformable(),
           amount :: number() | {number(), number()},
           opts :: [around: around()]
         ) ::
-          T.curve_struct()
+          transformable()
   def inc_scale(curve, amount, opts \\ [])
 
   def inc_scale(curve, amount, opts) when is_scale(amount),
@@ -304,7 +345,7 @@ defmodule Curves.Transform do
       iex> Curves.solve!(Transform.flip_x(curve, around: :center), 1.0)
       {1.0, 2.0}
   """
-  @spec flip_x(T.curve_struct(), opts :: [around: around()]) :: T.curve_struct()
+  @spec flip_x(transformable(), opts :: [around: around()]) :: transformable()
   def flip_x(curve, opts \\ []), do: add(curve, {Scale, :flip, [:x, around!(opts)]}, :scale)
 
   @doc ~s"""
@@ -319,7 +360,7 @@ defmodule Curves.Transform do
       iex> Curves.solve!(Transform.flip_y(curve, around: :center), 1.0)
       {3.0, 0.0}
   """
-  @spec flip_y(T.curve_struct(), opts :: [around: around()]) :: T.curve_struct()
+  @spec flip_y(transformable(), opts :: [around: around()]) :: transformable()
   def flip_y(curve, opts \\ []), do: add(curve, {Scale, :flip, [:y, around!(opts)]}, :scale)
 
   @doc ~s"""
@@ -334,7 +375,7 @@ defmodule Curves.Transform do
       iex> {Float.round(x, 5), Float.round(y, 5)}
       {0.0, 0.70711}
   """
-  @spec inc_rotation(T.curve_struct(), number(), opts :: [around: around()]) :: T.curve_struct()
+  @spec inc_rotation(transformable(), number(), opts :: [around: around()]) :: transformable()
   def inc_rotation(curve, amount, opts \\ [])
 
   def inc_rotation(curve, amount, opts) when is_number(amount),
@@ -361,7 +402,7 @@ defmodule Curves.Transform do
       iex> for t <- [0.0, 1.0], {x, y} = Curves.solve!(curve, t), do: {Float.round(x, 5), Float.round(y, 5)}
       [{1.0, -1.0}, {1.0, 1.0}]
   """
-  @spec set_rotation(T.curve_struct(), number(), opts :: [around: around()]) :: T.curve_struct()
+  @spec set_rotation(transformable(), number(), opts :: [around: around()]) :: transformable()
   def set_rotation(curve, amount, opts \\ [])
 
   def set_rotation(curve, amount, opts) when is_number(amount),
@@ -381,12 +422,14 @@ defmodule Curves.Transform do
       iex> Curves.solve!(Transform.reverse(spline), 2.0)
       {0.0, 0.0}
   """
-  @spec reverse(T.curve_struct()) :: T.curve_struct()
+  @spec reverse(transformable()) :: transformable()
   def reverse(curve) do
     cond do
       is_struct(curve, Bezier) -> Bezier.reverse(curve)
       is_struct(curve, Spline) -> Spline.reverse(curve)
       is_struct(curve, Polyline) -> Polyline.reverse(curve)
+      drawing_node?(curve) -> Curves.Drawing.update_curves(curve, &reverse/1)
+      is_struct(curve, Subpath) -> %{curve | curve: reverse(curve.curve)}
       true -> Errors.raise_not_a_curve(curve)
     end
   end

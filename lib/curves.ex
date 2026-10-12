@@ -481,7 +481,7 @@ defmodule Curves do
       iex> Curves.solve!(line, 1.0)
       {15.0, 0.0}
       iex> drawing.skipped
-      [%{element: "text", id: nil, reason: :not_supported}]
+      [%{element: "text", id: nil, reason: :not_curves, kept: :as_markup}]
   """
   @spec from_svg(String.t(), keyword()) :: Curves.Drawing.t()
   def from_svg(svg, opts \\ []), do: Curves.Svg.Import.from_svg(svg, opts)

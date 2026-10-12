@@ -9,18 +9,18 @@ defmodule Curves.Transform.Scale do
   # These only change the curve's :scale field (and, with a pivot, its :origin).
   # The points are scaled later, in compress.
   @spec set_scale(T.curve_data(), scale(), Pivot.around()) :: T.curve_data()
-  def set_scale(curve, scale, around \\ nil) do
+  def set_scale(curve, scale, around) do
     transform(curve, around, fn _ -> scale end)
   end
 
   @spec inc_scale(T.curve_data(), scale(), Pivot.around()) :: T.curve_data()
-  def inc_scale(curve, amount, around \\ nil) do
+  def inc_scale(curve, amount, around) do
     transform(curve, around, &add(&1, amount))
   end
 
   # Mirrors the curve by turning the x (or y) scale negative, or back again.
   @spec flip(T.curve_data(), :x | :y, Pivot.around()) :: T.curve_data()
-  def flip(curve, axis, around \\ nil) do
+  def flip(curve, axis, around) do
     transform(curve, around, &negate(&1, axis))
   end
 

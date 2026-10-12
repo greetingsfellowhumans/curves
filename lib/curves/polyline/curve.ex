@@ -189,6 +189,29 @@ defmodule Curves.Polyline.Curve do
     %{curve | compressed: cb}
   end
 
+  # The polyline with every point moved by `fun` (an affine map), applied as it is drawn: its own
+  # moves, scaling and rotation are folded into its points first. See Curves.Spline.Curve.map_points/2.
+  @doc false
+  @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
+  def map_points(curve, fun) do
+    points = curve |> transformed_points() |> Enum.map(fun)
+
+    curve =
+      struct(
+        curve,
+        Map.merge(Vec.bounds(points), %{
+          points: points,
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          origin: {0.0, 0.0}
+        })
+      )
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
   # The same polyline travelled the other way: its knots in reverse order, so u = 0 is the old end.
   # Called by Curves.Transform.reverse/1. Transforms still apply on top, as before.
   @doc false

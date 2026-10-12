@@ -175,6 +175,17 @@ Every shape works: paths (with exact arcs), rectangles, circles, ellipses, lines
 Every `transform` is already applied to the curves, even skews. Anything that isn't made of curves, like
 the text, is listed in `drawing.skipped`, and kept so it is drawn again.
 
+The `Curves.Transform` functions work on a whole drawing too, and on any part of it you find by its
+`id`, so you can turn a drawing into an animation:
+
+```elixir
+drawing
+|> Curves.Transform.set_scale(0.5, around: :center)
+|> Curves.Drawing.update("chimney", &Curves.Transform.inc_y(&1, -5))
+```
+
+Text and everything else in the drawing move along with the shapes.
+
 To see the curves themselves, draw it like a curve with `mode: :inspect`: in the curve colour, with
 their dots and dashed lines. SVG's y goes *down* the screen, but Curves' y goes up, like a graph, so
 read it with `flip_y: true` to have it the right way up:

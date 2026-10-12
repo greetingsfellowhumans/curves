@@ -304,7 +304,7 @@ defmodule Curves.Svg do
     {ymin, ymax} = all_points |> Enum.map(&elem(&1, 1)) |> Enum.min_max()
     inner_w = opts[:width] - 2 * opts[:padding]
     inner_h = opts[:height] - 2 * opts[:padding]
-    scale = finite(min(fit(inner_w, xmax - xmin), fit(inner_h, ymax - ymin)))
+    scale = finite(min(fit(inner_w, xmin, xmax), fit(inner_h, ymin, ymax)))
 
     %{
       xmin: xmin,
@@ -323,10 +323,16 @@ defmodule Curves.Svg do
      view.height - view.offset_y - (y - view.ymin) * view.scale}
   end
 
-  # Pixels per unit along one axis. A flat axis (span 0) doesn't limit the scale.
-  @spec fit(number(), number()) :: number() | :infinity
-  defp fit(_pixels, span) when span == 0, do: :infinity
-  defp fit(pixels, span), do: pixels / span
+  # Pixels per unit along one axis. A flat axis doesn't limit the scale. An axis whose lowest and
+  # highest values differ by less than about 1e-12 of their size is flat too: the difference is
+  # only rounding (e.g. a rotated straight line), and blowing it up to fill the picture would lose
+  # all precision, putting the grid in the wrong place.
+  @spec fit(number(), number(), number()) :: number() | :infinity
+  defp fit(pixels, low, high), do: fit_span(pixels, high - low, max(abs(low), abs(high)))
+
+  @spec fit_span(number(), number(), number()) :: number() | :infinity
+  defp fit_span(_pixels, span, size) when span <= size * 1.0e-12, do: :infinity
+  defp fit_span(pixels, span, _size), do: pixels / span
 
   # When every point is the same, neither axis limits the scale; any scale works, since the
   # point is drawn at the centre either way.
