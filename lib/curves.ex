@@ -441,16 +441,25 @@ defmodule Curves do
   on a shape or on the groups around it, is applied to the curves exactly, even skews. Anything
   that can't be read as curves is listed in the drawing's `:skipped` field, with the reason.
 
-  The coordinates are SVG's own, where y goes down the screen. Curves draws y going up (as in maths),
-  so in `Curves.Svg` pictures an SVG looks upside down; pass `flip_y: true` to turn its y around.
+  The drawing keeps the SVG's structure: its groups, its shapes' styles, and everything that isn't
+  curves (text, `<defs>`, `<style>`, ...) as markup. So `Curves.Svg.save!/3` draws it again just as
+  it was, and you can change its curves in between.
 
-  It is safe to use on SVGs from anywhere: it has no XML library, never creates atoms from the
-  input, and reads in one pass. Input that isn't a string, or has no `<svg>` element, raises an
-  `ArgumentError`.
+  The coordinates are SVG's own, where y goes down the screen. Curves' own pictures of curves
+  (`Curves.Svg`'s `:inspect` mode) draw y going up, as in maths, so pass `flip_y: true` to turn the
+  drawing's y around for those.
 
-  Not read: CSS (`style` attributes and `<style>`), `<use>`, sizes in units other than `px`, and
-  the `viewBox` as a mapping to the screen (it is only reported). Each shape's own attributes are
-  kept, as strings, for you to use.
+  Reading is safe on SVGs from anywhere: it has no XML library, never creates atoms from the input,
+  and reads in one pass. `<script>` and `<foreignObject>` elements, animations of links and event
+  handlers, event attributes (`onclick`, ...) and `javascript:` links (even disguised with spaces)
+  are never kept, so they aren't in a drawing drawn again, and the markup it keeps is always well
+  formed. That isn't a full
+  sanitizer, though: don't show untrusted SVGs to people without one. Input that isn't a string, or
+  has no `<svg>` element, raises an `ArgumentError`.
+
+  Not read as curves (but kept as markup, so they are still drawn again): text, images, `<use>`, a
+  nested `<svg>`, and shapes with sizes in units other than `px`. CSS (`style` attributes and
+  `<style>`) isn't applied to the curves, but it is kept with them.
 
   ## Options
   * `:flip_y` (default `false`) - mirror every y, so y goes up.
@@ -459,7 +468,7 @@ defmodule Curves do
       iex> drawing = Curves.from_svg(~s(<svg viewBox="0 0 20 10"><rect x="1" y="2" width="4" height="3" fill="red"/></svg>))
       iex> drawing.view_box
       {0.0, 0.0, 20.0, 10.0}
-      iex> [%Curves.Drawing.Shape{element: :rect, subpaths: [subpath]} = rect] = drawing.shapes
+      iex> [%Curves.Drawing.Shape{element: :rect, subpaths: [subpath]} = rect] = Curves.Drawing.shapes(drawing)
       iex> rect.attributes["fill"]
       "red"
       iex> Curves.solve!(subpath.curve, 1.0)

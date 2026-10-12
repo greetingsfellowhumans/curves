@@ -8,16 +8,19 @@ defmodule Curves.Drawing.Shape do
   | `:id` | its `id` attribute, or `nil` |
   | `:subpaths` | a `Curves.Drawing.Subpath` for each separate piece. Most shapes have one; a path has one per `M` (move), so a letter "O" has two: its outside and its hole. |
   | `:attributes` | all of the element's own attributes, as strings, e.g. `%{"fill" => "red"}`. Styles from CSS or from groups around it aren't included. |
+  | `:transform` | every `transform` that applied to it (its own and its groups'), as one matrix `{a, b, c, d, e, f}` (like SVG's `matrix(a, b, c, d, e, f)`) |
 
-  The curves are in the SVG's own coordinates, with every `transform` (on the shape and the groups
-  around it) already applied, so they are where the shape is drawn.
+  The curves are in the SVG's own coordinates, with `:transform` already applied, so they are where
+  the shape is drawn. `Curves.Svg` uses `:transform` to draw the shape the way the SVG did: a stroke
+  inside a `scale(2)` group is twice as wide.
   """
   alias Curves.Drawing.Subpath
 
   defstruct element: nil,
             id: nil,
             subpaths: [],
-            attributes: %{}
+            attributes: %{},
+            transform: {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}
 
   @type element() :: :path | :rect | :circle | :ellipse | :line | :polyline | :polygon
 
@@ -25,6 +28,7 @@ defmodule Curves.Drawing.Shape do
           element: element(),
           id: String.t() | nil,
           subpaths: list(Subpath.t()),
-          attributes: %{String.t() => String.t()}
+          attributes: %{String.t() => String.t()},
+          transform: Curves.Drawing.matrix()
         }
 end

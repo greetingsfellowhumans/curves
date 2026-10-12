@@ -30,4 +30,17 @@ defmodule Curves.Utils.Poly do
 
   def eval({{x0, y0}, {x1, y1}, {x2, y2}, {x3, y3}}, t),
     do: {x0 + t * (x1 + t * (x2 + t * x3)), y0 + t * (y1 + t * (y2 + t * y3))}
+
+  # The cubic Bezier points that make the same curve as the coefficients (the reverse of
+  # coefficients/3 with the Bezier matrix): p0 = a0, c0 = a0 + a1/3, c1 = a0 + (2a1 + a2)/3,
+  # p1 = a0 + a1 + a2 + a3.
+  @spec to_bezier(tuple()) :: list(T.point_tuple())
+  def to_bezier({{x0, y0}, {x1, y1}, {x2, y2}, {x3, y3}}) do
+    [
+      {x0, y0},
+      {x0 + x1 / 3, y0 + y1 / 3},
+      {x0 + (2 * x1 + x2) / 3, y0 + (2 * y1 + y2) / 3},
+      {x0 + x1 + x2 + x3, y0 + y1 + y2 + y3}
+    ]
+  end
 end

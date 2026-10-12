@@ -142,20 +142,50 @@ See `Curves.Svg` for every option. In [Livebook](https://livebook.dev), show an 
 ## Reading curves from an SVG
 
 Going the other way, `Curves.from_svg/2` reads an SVG (a logo, an icon, a drawing from Inkscape or
-Figma) into a `Curves.Drawing`: a list of its shapes, each one made of curves you can solve, take,
-transform and draw like any other.
+Figma) into a `Curves.Drawing`. Its shapes become curves you can solve, take, transform and draw like
+any other, and it keeps everything else (groups, colours, text, gradients) so it can be drawn again
+just as it was.
 
 ```elixir
-drawing = Curves.from_svg(File.read!("heart.svg"))
+house = """
+<svg width="300" height="300" viewBox="0 0 100 100">
+  <rect x="0" y="0" width="100" height="100" fill="#e7f5ff"/>
+  <polygon points="10,50 50,15 90,50" fill="#e03131"/>
+  <rect x="18" y="50" width="64" height="40" fill="#ffe8cc" stroke="#862e9c"/>
+  <rect x="42" y="65" width="16" height="25" rx="3" fill="#862e9c"/>
+  <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
+  <path d="M 70 30 V 18 h 8 v 22" fill="#495057"/>
+  <text x="50" y="98" font-size="6" text-anchor="middle">Home</text>
+</svg>
+"""
 
-for shape <- drawing.shapes, subpath <- shape.subpaths do
+drawing = Curves.from_svg(house)
+
+for shape <- Curves.Drawing.shapes(drawing), subpath <- shape.subpaths do
   Curves.solve!(subpath.curve, 0.5)
 end
+
+# Draw it again, as designed
+Curves.Svg.save!(drawing, "house.svg")
 ```
 
+![A drawing read from an SVG and drawn again](images/svg_import_drawing.svg)
+
 Every shape works: paths (with exact arcs), rectangles, circles, ellipses, lines, polylines and polygons.
-Every `transform` is already applied, even skews. Anything that isn't made of curves, like text, is
-listed in `drawing.skipped`, so nothing goes missing silently.
+Every `transform` is already applied to the curves, even skews. Anything that isn't made of curves, like
+the text, is listed in `drawing.skipped`, and kept so it is drawn again.
+
+To see the curves themselves, draw it like a curve with `mode: :inspect`: in the curve colour, with
+their dots and dashed lines. SVG's y goes *down* the screen, but Curves' y goes up, like a graph, so
+read it with `flip_y: true` to have it the right way up:
+
+```elixir
+house
+|> Curves.from_svg(flip_y: true)
+|> Curves.Svg.save!("house_curves.svg", mode: :inspect)
+```
+
+![The same drawing's curves](images/svg_import_curves.svg)
 
 For just the path data of one `<path>`, use `Curves.from_svg_path/2`. It gives one subpath for each
 separate piece of the path:
@@ -172,8 +202,12 @@ Curves.Svg.render(heart.curve)
 
 ![A heart read from SVG path data](images/svg_import_heart.svg)
 
-SVG's y goes *down* the screen, but Curves' y goes up, like a graph, so an SVG looks upside down in
-these pictures. `flip_y: true` turns it the right way up.
+And to write a curve into your own SVG, `Curves.Svg.path_data/1` gives it as exact path data:
+
+```elixir
+Curves.Svg.path_data(Curves.define_circle({0, 0}, 1, to: 90))
+#=> "M1.0,0.0 A1.0 1.0 0.0 0 1 6.123233995736766e-17,1.0"
+```
 
 ## That's the tour!
 

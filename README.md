@@ -276,14 +276,17 @@ curve = Curves.define_natural_cubic([
 
 ## Reading SVGs
 
-`Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: every shape in it (paths, rectangles, circles, ellipses, lines, polylines and polygons), each made of curves you can solve, transform and draw. Paths keep their exact arcs, and every `transform` is applied, even skews. Anything that isn't made of curves, like text, is listed in `drawing.skipped`.
+`Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: every shape in it (paths, rectangles, circles, ellipses, lines, polylines and polygons), each made of curves you can solve, transform and draw. Paths keep their exact arcs, and every `transform` is applied, even skews. The drawing also keeps the SVG's groups, styles and everything that isn't curves (like text), so `Curves.Svg` can draw it again as it was. `Curves.Svg.path_data/1` writes any curve as exact SVG path data.
 
 ```elixir
 drawing = Curves.from_svg(File.read!("logo.svg"))
 
-for shape <- drawing.shapes, subpath <- shape.subpaths do
+for shape <- Curves.Drawing.shapes(drawing), subpath <- shape.subpaths do
   Curves.solve!(subpath.curve, 0.5)
 end
+
+# Draw it again, as designed: its colours, groups and text are kept
+Curves.Svg.save!(drawing, "logo_again.svg")
 
 # Or just the path data of one <path>
 [heart] = Curves.from_svg_path("M 10,30 A 20,20 0,0,1 50,30 A 20,20 0,0,1 90,30 Q 90,60 50,90 Q 10,60 10,30 z")

@@ -65,6 +65,70 @@ defmodule Curves.Svg.ImportPropertiesTest do
     )
   end
 
+  @unsafe_fragments [
+    "<script>",
+    "</script>",
+    " onclick=\"x\"",
+    " ONLOAD='x'",
+    " href=\"javascript:a\"",
+    " href=\" jav&#x09;ascript:a\"",
+    " xlink:href='vbscript:x'",
+    "<foreignObject>",
+    "</foreignObject>",
+    "<set attributeName=\"href\" to=\"javascript:a\"/>",
+    "<animate attributeName=\"onclick\"/>",
+    "<a",
+    "<text>",
+    "</text>",
+    "<style>",
+    "</style>",
+    "<defs>",
+    "</defs>",
+    "<g>",
+    "</g>",
+    "<x\"y>"
+  ]
+
+  # Every tag in some SVG is safe (no scripts, event handlers or javascript: links), and the tags
+  # are properly closed and nested.
+  @spec assert_safe_and_well_formed(String.t()) :: :ok
+  defp assert_safe_and_well_formed(svg) do
+    open =
+      Enum.reduce(Curves.Svg.Import.tags(svg), [], fn
+        {:open, name, attributes, self_closing}, open ->
+          refute name in ["script", "foreignObject"], "#{name} in #{svg}"
+
+          for {key, value} <- attributes do
+            link = value |> String.replace(~r/[\x00-\x20\x7f]+/, "") |> String.downcase()
+            refute String.starts_with?(String.downcase(key), "on"), "#{key} in #{svg}"
+            refute String.starts_with?(link, ["javascript:", "vbscript:"]), "#{value} in #{svg}"
+          end
+
+          if self_closing, do: open, else: [name | open]
+
+        {:close, name}, [name | open] ->
+          open
+
+        {:close, name}, open ->
+          flunk("</#{name}> doesn't close #{inspect(open)} in #{svg}")
+      end)
+
+    assert open == []
+    :ok
+  end
+
+  property "a drawing drawn again never has scripts in it, and is well formed" do
+    check all(
+            parts <-
+              StreamData.list_of(StreamData.member_of(@unsafe_fragments ++ @fragments),
+                max_length: 40
+              )
+          ) do
+      drawing = Curves.from_svg("<svg>" <> Enum.join(parts) <> "</svg>")
+      assert_safe_and_well_formed(Curves.Svg.render(drawing))
+    end
+  end
+
   property "any text gives a drawing, or an ArgumentError, and never crashes" do
     check all(
             text <-
@@ -72,8 +136,9 @@ defmodule Curves.Svg.ImportPropertiesTest do
           ) do
       try do
         assert %Drawing{} = drawing = Curves.from_svg(text)
-        # Every curve can be solved
+        # Every curve can be solved, and the drawing drawn
         for curve <- Drawing.curves(drawing), do: Curves.solve!(curve, Curves.max_u(curve) / 2)
+        assert "<svg" <> _ = Curves.Svg.render(drawing, samples: 5)
       rescue
         error in ArgumentError -> assert error.message =~ ~r/no <svg> element/
       end
@@ -194,6 +259,82 @@ defmodule Curves.Svg.ImportPropertiesTest do
       {mx, my} = Curves.solve!(moved, u)
       assert abs(mx - (a * x + c * y + e)) <= 1.0e-9 * 100
       assert abs(my - (b * x + d * y + g)) <= 1.0e-9 * 100
+    end
+  end
+
+  # The furthest any point of `a` is from the curve `b` (both sampled), to compare shapes whose `u`
+  # differs (e.g. a circle written as several arcs).
+  @spec furthest(Curves.Types.curve_struct(), Curves.Types.curve_struct()) :: float()
+  defp furthest(a, b) do
+    dense = [Curves.solve!(b, 0.0) | Curves.take!(b, 1500)]
+
+    for i <- 0..40, reduce: 0.0 do
+      acc ->
+        {x, y} = Curves.solve!(a, i / 40 * Curves.max_u(a))
+
+        nearest =
+          dense |> Enum.map(fn {bx, by} -> (bx - x) ** 2 + (by - y) ** 2 end) |> Enum.min()
+
+        max(acc, :math.sqrt(nearest))
+    end
+  end
+
+  property "drawing a drawing and reading it back gives the same shapes, transforms and styles" do
+    shapes = [
+      ~s|<path d="M0 0 L10 0 A5 3 30 0 1 10 10 Q5 15 0 10 z M2 2 h3 v3 z" fill="red"/>|,
+      ~s|<circle cx="2" cy="1" r="4" stroke="blue"/>|,
+      ~s|<ellipse rx="5" ry="2" opacity="0.5"/>|,
+      ~s|<rect x="1" y="1" width="6" height="4" rx="1.5" class="c"/>|,
+      ~s|<polygon points="0,0 4,1 2,5"/>|,
+      ~s|<line x2="3" y2="4" stroke-width="2"/>|
+    ]
+
+    check all(
+            picked <-
+              StreamData.list_of(StreamData.member_of(shapes), min_length: 1, max_length: 4),
+            transforms <-
+              StreamData.list_of(
+                StreamData.member_of([
+                  "",
+                  "translate(3 -2)",
+                  "scale(2 0.5)",
+                  "rotate(30 1 1)",
+                  "skewX(20)",
+                  "matrix(1 0.5 -0.3 1.2 4 5)"
+                ]),
+                length: 4
+              )
+          ) do
+      body =
+        picked
+        |> Enum.zip(transforms)
+        |> Enum.map_join(fn {shape, transform} ->
+          ~s|<g transform="#{transform}" opacity="0.9">#{shape}</g>|
+        end)
+
+      original = Curves.from_svg("<svg>" <> body <> "</svg>")
+      again = original |> Curves.Svg.render() |> Curves.from_svg()
+
+      for {a, b} <- Enum.zip(Drawing.shapes(original), Drawing.shapes(again)) do
+        assert a.transform == b.transform
+
+        assert Map.drop(
+                 a.attributes,
+                 ~w(d points x y width height rx ry cx cy r x1 y1 x2 y2 transform)
+               ) ==
+                 Map.drop(b.attributes, ["d", "transform"])
+
+        assert Enum.map(a.subpaths, & &1.closed) == Enum.map(b.subpaths, & &1.closed)
+
+        for {sa, sb} <- Enum.zip(a.subpaths, b.subpaths) do
+          assert furthest(sa.curve, sb.curve) <= 0.05
+        end
+      end
+
+      assert length(Drawing.shapes(original)) == length(Drawing.shapes(again))
+
+      assert Enum.map(again.children, & &1.attributes) ==
+               Enum.map(original.children, & &1.attributes)
     end
   end
 end

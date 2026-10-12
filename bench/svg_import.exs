@@ -1,5 +1,5 @@
-# Times reading SVGs: path data on its own, a small document with every kind of shape and some
-# transforms, and the same document 100 times over.
+# Times reading SVGs (path data on its own, a small document with every kind of shape and some
+# transforms, and the same document 100 times over), and writing them again.
 Code.require_file("support/bench_helper.exs", __DIR__)
 alias Curves.Bench.Helper
 
@@ -20,10 +20,14 @@ shapes = """
 
 document = "<svg viewBox=\"0 0 300 200\">" <> shapes <> "</svg>"
 big_document = "<svg>" <> String.duplicate(shapes, 100) <> "</svg>"
+drawing = Curves.from_svg(document)
+[%{curve: long_curve}] = Curves.from_svg_path(long_path)
 
 Helper.run("svg_import", %{
   "from_svg_path heart" => fn -> Curves.from_svg_path(heart) end,
   "from_svg_path 3000 segments" => fn -> Curves.from_svg_path(long_path) end,
   "from_svg 7 shapes" => fn -> Curves.from_svg(document) end,
-  "from_svg 700 shapes" => fn -> Curves.from_svg(big_document) end
+  "from_svg 700 shapes" => fn -> Curves.from_svg(big_document) end,
+  "Svg.render 7 shapes, as designed" => fn -> Curves.Svg.render(drawing) end,
+  "Svg.path_data 3000 segments" => fn -> Curves.Svg.path_data(long_curve) end
 })

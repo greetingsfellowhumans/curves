@@ -4,7 +4,7 @@
 #
 #     mix run guides/images/generate.exs
 #
-# Each entry is {file, curve, Svg options}. The code shown next to an image in the guides should
+# Each entry is {file, curve (or Curves.Drawing), Svg options}. The code shown next to an image in the guides should
 # match its entry here.
 
 alias Curves.Transform
@@ -45,6 +45,20 @@ arc_path =
     [{10, 10}],
     [{0, 10}]
   ])
+
+# A little SVG for the "reading SVGs" pictures: a house with a round window, a door and a chimney.
+# The tutorial shows the same SVG.
+house_svg = """
+<svg width="300" height="300" viewBox="0 0 100 100">
+  <rect x="0" y="0" width="100" height="100" fill="#e7f5ff"/>
+  <polygon points="10,50 50,15 90,50" fill="#e03131"/>
+  <rect x="18" y="50" width="64" height="40" fill="#ffe8cc" stroke="#862e9c"/>
+  <rect x="42" y="65" width="16" height="25" rx="3" fill="#862e9c"/>
+  <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
+  <path d="M 70 30 V 18 h 8 v 22" fill="#495057"/>
+  <text x="50" y="98" font-size="6" text-anchor="middle">Home</text>
+</svg>
+"""
 
 # Chart data with flat stretches, where most splines overshoot and a monotone one doesn't.
 data = [{0, 2}, {1, 2}, {2, 2}, {3, 8}, {4, 8.5}, {5, 3}, {6, 3}]
@@ -196,6 +210,9 @@ images =
      small ++ [title: "define_ellipse, rotation: 30"]},
     {"#{guides}/circle_arc.svg", Curves.define_circle({0, 0}, 2, from: 90, to: 180),
      small ++ [title: "define_circle, from: 90, to: 180", markers: [{0, 0}]]},
+    {"#{guides}/svg_import_drawing.svg", Curves.from_svg(house_svg), []},
+    {"#{guides}/svg_import_curves.svg", Curves.from_svg(house_svg, flip_y: true),
+     medium ++ [title: "mode: :inspect", mode: :inspect]},
     {"#{guides}/svg_import_heart.svg",
      hd(
        Curves.from_svg_path(

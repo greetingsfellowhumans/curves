@@ -191,6 +191,27 @@ defmodule Curves.Spline.Curve do
   defp reverse_segment(arc) when is_arc(arc), do: Arc.reverse(arc)
   defp reverse_segment(points), do: Enum.reverse(points)
 
+  # Every segment after the curve's transforms, as a cubic Bezier segment [p0, c0, c1, p1] or an arc,
+  # whatever the spline type: a polynomial segment's coefficients are turned back into the Bezier
+  # points that make exactly the same curve. Used by Curves.Svg to write the curve as path data.
+  @doc false
+  @spec bezier_segments(t()) :: list(Segment.t())
+  def bezier_segments(%__MODULE__{mod: mod} = curve) do
+    curve
+    |> Curves.Transform.apply_all_transformations()
+    |> Map.fetch!(:segments)
+    |> Enum.map(&to_bezier(&1, mod))
+  end
+
+  @spec to_bezier(Segment.t(), module()) :: Segment.t()
+  defp to_bezier(arc, _mod) when is_arc(arc), do: arc
+
+  defp to_bezier(points, mod),
+    do:
+      mod.blending_function()
+      |> Poly.coefficients(points, mod.blending_factor())
+      |> Poly.to_bezier()
+
   # A transformed copy of the original points (knots or control points), for Curves.Svg
   # to draw. `curve.points` itself is never changed.
   @doc false
