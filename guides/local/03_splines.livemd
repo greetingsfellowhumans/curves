@@ -358,6 +358,87 @@ Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) en
 Kino.Layout.grid([form, frame], columns: 2)
 ```
 
+## Arcs and ellipses
+
+A Bezier spline can also hold an **arc** of an ellipse, just like SVG's `A` command:
+`[knot, {:arc, rx, ry, rotation, large_arc, sweep}]` goes from that knot to the next one. There are
+usually four arcs of the same ellipse between two points: `large_arc` takes the long way round, and
+`sweep` picks the direction. Radii too small to reach are made just big enough.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      large_arc: Kino.Input.select("large_arc", [{false, "false: the short way"}, {true, "true: the long way"}]),
+      sweep: Kino.Input.select("sweep", [{true, "true: angle going up"}, {false, "false: angle going down"}]),
+      rx: Kino.Input.range("rx", min: 1, max: 10, step: 0.5, default: 5),
+      ry: Kino.Input.range("ry", min: 1, max: 10, step: 0.5, default: 5),
+      rotation: Kino.Input.range("rotation (degrees)", min: -90, max: 90, step: 5, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  arc = {:arc, data.rx, data.ry, data.rotation, data.large_arc, data.sweep}
+  points = [[{0, 0}, arc], [{8, 0}]]
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_bezier_spline(#{inspect(points)})`"),
+      points
+      |> Curves.define_bezier_spline()
+      |> Curves.Svg.render(width: 480, height: 360, markers: [{0, 0}, {8, 0}], view: {{-12, -12}, {20, 12}})
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{large_arc: false, sweep: true, rx: 5, ry: 5, rotation: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+For a whole ellipse or circle, use `Curves.define_ellipse/3` or `Curves.define_circle/3`. It is one
+segment, so `u` goes from `0.0` to `1.0`, once round. `:from` and `:to` (in degrees) cut out an arc,
+like a canvas's `arc()`. Arcs are exact: they aren't made of Bezier curves.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      rx: Kino.Input.range("rx", min: 0, max: 6, step: 0.5, default: 4),
+      ry: Kino.Input.range("ry", min: 0, max: 6, step: 0.5, default: 2),
+      rotation: Kino.Input.range("rotation", min: -180, max: 180, step: 5, default: 30),
+      from: Kino.Input.range("from", min: -360, max: 360, step: 15, default: 0),
+      to: Kino.Input.range("to", min: -360, max: 360, step: 15, default: 360)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  opts = [rotation: data.rotation, from: data.from, to: data.to]
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_ellipse({0, 0}, {#{data.rx}, #{data.ry}}, #{inspect(opts)})`"),
+      Curves.define_ellipse({0, 0}, {data.rx, data.ry}, opts)
+      |> Curves.Svg.render(width: 480, height: 360, view: {{-7, -7}, {7, 7}}, markers: [{0, 0}])
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{rx: 4, ry: 2, rotation: 30, from: 0, to: 360}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
 ## Bend a Hermite tangent
 
 A Hermite spline passes through every knot, and at each knot you choose a **tangent**: the direction the

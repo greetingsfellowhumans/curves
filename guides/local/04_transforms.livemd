@@ -302,7 +302,77 @@ Curves.from_svg(svg)
 
 ```
 
+## Read an SVG, change it, draw it again
+
+`Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: its shapes become curves, and it keeps
+everything else (groups, colours, text) so `Curves.Svg` can draw it again as it was. The
+`Curves.Transform` functions work on the whole drawing, or on any part of it you find by its `id`
+with `Curves.Drawing.update/3`. Text moves along with the shapes.
+
+```elixir
+house = """
+<svg width="300" height="300" viewBox="0 0 100 100">
+  <rect x="0" y="0" width="100" height="100" fill="#e7f5ff"/>
+  <g id="house">
+    <polygon id="roof" points="10,50 50,15 90,50" fill="#e03131"/>
+    <rect x="18" y="50" width="64" height="40" fill="#ffe8cc" stroke="#862e9c"/>
+    <rect id="door" x="42" y="65" width="16" height="25" rx="3" fill="#862e9c"/>
+    <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
+    <text x="50" y="98" font-size="6" text-anchor="middle">Home</text>
+  </g>
+</svg>
+"""
+
+form =
+  Kino.Control.form(
+    [
+      mode: Kino.Input.select("Draw it", [{:design, "as designed"}, {:inspect, "as curves (mode: :inspect)"}]),
+      turn: Kino.Input.range("Turn the house", min: -45, max: 45, step: 5, default: 0),
+      size: Kino.Input.range("House size", min: 0.3, max: 1.2, step: 0.1, default: 1),
+      lift: Kino.Input.range("Lift the roof", min: 0, max: 15, step: 1, default: 0),
+      door: Kino.Input.range("Open the door", min: 0, max: 1, step: 0.1, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  drawing =
+    house
+    |> Curves.from_svg()
+    |> Curves.Drawing.update("house", fn house ->
+      house
+      |> Curves.Transform.set_rotation(data.turn, around: :center)
+      |> Curves.Transform.set_scale(data.size, around: :center)
+    end)
+    |> Curves.Drawing.update("roof", &Curves.Transform.inc_y(&1, -data.lift))
+    # An opening door gets narrower, hinged on its left edge.
+    |> Curves.Drawing.update("door", &Curves.Transform.set_scale(&1, {1 - data.door * 0.9, 1}, around: {42, 77}))
+
+  # Curves draws curves with y going up, so in :inspect mode turn the drawing the right way up.
+  drawing = if data.mode == :inspect, do: Curves.Transform.flip_y(drawing), else: drawing
+
+  drawing
+  |> Curves.Svg.render(mode: data.mode, width: 360, height: 360)
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{mode: :design, turn: 0, size: 1, lift: 0, door: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+Going the other way, `Curves.Svg.path_data/1` writes any curve as exact SVG path data, for your own
+`<path>` elements:
+
+```elixir
+Curves.define_catmull_rom([{0, 0}, {2, 3}, {4, 1}])
+|> Curves.Svg.path_data()
+```
+
 ## That's the tour! 🎉
 
-You now know the essentials: curves and `t`, control points, splines and `u`, transforms, and drawing.
+You now know the essentials: curves and `t`, control points, splines and `u`, transforms, drawing, and
+reading SVGs.
 The [API docs](https://hexdocs.pm/curves/Curves.html) have everything else. Have fun making things move!
