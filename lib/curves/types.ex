@@ -52,8 +52,33 @@ defmodule Curves.Types do
   """
   @type define_opts :: [origin: point_tuple()]
 
+  @typedoc "`define_opts/0`, plus the `:tension` of `Curves.define_cardinal/2`."
+  @type cardinal_opts :: [origin: point_tuple(), tension: number()]
+
+  @typedoc "`define_opts/0`, plus the `:alpha` of `Curves.define_centripetal_catmull_rom/2`."
+  @type centripetal_opts :: [origin: point_tuple(), alpha: number()]
+
+  @typedoc "`define_opts/0`, plus the tilt and angles (in degrees) of `Curves.define_ellipse/3`."
+  @type ellipse_opts :: [origin: point_tuple(), rotation: number(), from: number(), to: number()]
+
+  @typedoc "`define_opts/0`, plus the three dials of `Curves.define_kochanek_bartels/2`."
+  @type kochanek_bartels_opts :: [
+          origin: point_tuple(),
+          tension: number(),
+          continuity: number(),
+          bias: number()
+        ]
+
   @typedoc ~s"""
-  Either a Bezier or Spline struct
+  Any curve: a `Curves.Bezier.Curve`, `Curves.Spline.Curve` or `Curves.Polyline.Curve`.
   """
-  @type curve_struct() :: Curves.Bezier.Curve.t() | Curves.Spline.Curve.t()
+  @type curve_struct() ::
+          Curves.Bezier.Curve.t() | Curves.Spline.Curve.t() | Curves.Polyline.Curve.t()
+
+  # A curve struct (Bezier, Spline or Polyline) seen as a plain map. Internal helpers (Curves.Transform,
+  # Curves.Utils.Percent) use this instead of curve_struct(), because the structs are opaque:
+  # only the curve modules (Curves.Bezier.Curve, Curves.Spline.Curve, Curves.Polyline.Curve)
+  # may read their fields, so they are the only modules that call these helpers.
+  @typedoc false
+  @type curve_data() :: %{optional(atom()) => term()}
 end

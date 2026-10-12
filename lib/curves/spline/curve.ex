@@ -3,7 +3,8 @@ defmodule Curves.Spline.Curve do
   Struct representing a spline
   """
   alias Curves.Types, as: T
-  alias Curves.Utils.{Percent, Poly, Segment, Vec}
+  alias Curves.Utils.{Arc, Percent, Poly, Segment, Vec}
+  import Curves.Utils.Arc, only: [is_arc: 1]
 
   @minimum_u 0.0 - Curves.Utils.Constants.small_number()
 
@@ -21,6 +22,7 @@ defmodule Curves.Spline.Curve do
     :max_u,
     :scale,
     :rotation,
+    lines: [],
     opts: [],
     origin: {0.0, 0.0}
   ]
@@ -43,6 +45,7 @@ defmodule Curves.Spline.Curve do
             ymin: T.coord(),
             scale: float(),
             rotation: float(),
+            lines: list(T.point_list()),
             opts: T.opts(),
             origin: T.point_tuple()
           }
@@ -57,12 +60,12 @@ defmodule Curves.Spline.Curve do
 
     segments =
       if mod.override_segment_parsing() do
-        Enum.map(coords, fn segment -> Enum.map(segment, &Vec.new/1) end)
+        Enum.map(coords, &given_segment/1)
       else
         Segment.new_segments(coords)
       end
 
-    points = coords |> List.flatten() |> Enum.map(&Vec.new/1)
+    points = mod.stored_points(coords)
 
     curve =
       struct(
@@ -72,6 +75,7 @@ defmodule Curves.Spline.Curve do
           mod: mod,
           points: points,
           segments: segments,
+          lines: mod.control_lines(coords),
           transformations: [],
           scale: 1.0,
           rotation: 0.0,
@@ -88,6 +92,11 @@ defmodule Curves.Spline.Curve do
     Map.put(curve, :compressed, compressed)
   end
 
+  # A segment a spline type built itself: an arc as it is, or 4 points turned into floats.
+  @spec given_segment(Arc.t() | list(T.point_tuple())) :: Segment.t()
+  defp given_segment(arc) when is_arc(arc), do: arc
+  defp given_segment(points), do: Enum.map(points, &Vec.new/1)
+
   @doc false
   @spec compress(__MODULE__.t(), opts :: list()) ::
           {:ok, (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()})} | {:error, any()}
@@ -99,18 +108,135 @@ defmodule Curves.Spline.Curve do
         Curves.Transform.transform_points(curve, curve.points)
       end)
 
-    # Each segment's polynomial coefficients, worked out once; a tuple so solving can pick one by index.
+    # What each segment needs for solving, worked out once: a polynomial's coefficients, or an
+    # arc's centre and axes. A tuple, so solving can pick one by index.
     coefficients =
       curve.segments
-      |> Enum.map(&Poly.coefficients(mod.blending_function(), &1, mod.blending_factor()))
+      |> Enum.map(&prepare(&1, mod))
       |> List.to_tuple()
 
     {:ok,
      fn u, solve_opts ->
        {index, t} = Segment.split_u(u)
-       point = coefficients |> elem(index) |> Poly.eval(t)
+       point = coefficients |> elem(index) |> eval(t)
        {:ok, Percent.maybe_normalize(bounds, point, solve_opts)}
      end}
+  end
+
+  @spec prepare(Segment.t(), module()) :: tuple()
+  defp prepare(arc, _mod) when is_arc(arc), do: Arc.prepare(arc)
+
+  defp prepare(points, mod),
+    do: Poly.coefficients(mod.blending_function(), points, mod.blending_factor())
+
+  # Solves one prepared segment at t. Polynomials come first: they are the common case.
+  @spec eval(tuple(), float()) :: T.point_tuple()
+  defp eval(coefficients, t) when not is_arc(coefficients), do: Poly.eval(coefficients, t)
+  defp eval(arc, t), do: Arc.eval(arc, t)
+
+  # Adds a transformation such as {Curves.Transform.Move, :inc_x, [5]} to the end of the list,
+  # then recompresses. Called by Curves.Transform, which can't touch this opaque struct itself.
+  # The value of `field` (:origin, :scale or :rotation) before the change is stored with it.
+  @doc false
+  @spec add_transformation(t(), {module(), atom(), list()}, atom()) :: t()
+  def add_transformation(curve, {mod, func, args}, field) do
+    transformation = {mod, func, args, Map.fetch!(curve, field)}
+    curve = %{curve | transformations: curve.transformations ++ [transformation]}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The spline with every point moved by `fun`, an affine map such as an SVG transform matrix,
+  # applied to the curve as it is drawn: its own moves, scaling and rotation are folded into its
+  # points first, and then everything is moved by `fun`. The result has no transforms of its own,
+  # as if it had been defined that way: its segments, stored points and dashed lines are all moved,
+  # and its bounds worked out again. Used for SVG transforms (even skews), and to place the curves
+  # of a Curves.Drawing.
+  @doc false
+  @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
+  def map_points(curve, fun) do
+    drawn = Curves.Transform.apply_all_transformations(curve)
+    move = fn point -> point |> Curves.Transform.transform_points_one(drawn) |> fun.() end
+    points = Enum.map(curve.points, move)
+
+    curve =
+      struct(
+        curve,
+        Map.merge(Vec.bounds(points), %{
+          points: points,
+          segments: Enum.map(drawn.segments, &Segment.map_points(&1, fun)),
+          lines: Enum.map(curve.lines, &Enum.map(&1, move)),
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          origin: {0.0, 0.0}
+        })
+      )
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The same spline travelled the other way, so u = 0 is the old end. Every polynomial segment has 4
+  # points that read the same backwards (a Bezier segment [p0, c0, c1, p1] backwards is
+  # [p1, c1, c0, p0]; Catmull-Rom's [previous, k0, k1, next] becomes [next, k1, k0, previous]), and
+  # an arc swaps its start and end angles. So it reverses the segments and each one.
+  # Called by Curves.Transform.reverse/1.
+  @doc false
+  @spec reverse(t()) :: t()
+  def reverse(curve) do
+    curve = %{
+      curve
+      | segments: curve.segments |> Enum.reverse() |> Enum.map(&reverse_segment/1),
+        points: Enum.reverse(curve.points)
+    }
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  @spec reverse_segment(Segment.t()) :: Segment.t()
+  defp reverse_segment(arc) when is_arc(arc), do: Arc.reverse(arc)
+  defp reverse_segment(points), do: Enum.reverse(points)
+
+  # Every segment after the curve's transforms, as a cubic Bezier segment [p0, c0, c1, p1] or an arc,
+  # whatever the spline type: a polynomial segment's coefficients are turned back into the Bezier
+  # points that make exactly the same curve. Used by Curves.Svg to write the curve as path data.
+  @doc false
+  @spec bezier_segments(t()) :: list(Segment.t())
+  def bezier_segments(%__MODULE__{mod: mod} = curve) do
+    curve
+    |> Curves.Transform.apply_all_transformations()
+    |> Map.fetch!(:segments)
+    |> Enum.map(&to_bezier(&1, mod))
+  end
+
+  @spec to_bezier(Segment.t(), module()) :: Segment.t()
+  defp to_bezier(arc, _mod) when is_arc(arc), do: arc
+
+  defp to_bezier(points, mod),
+    do:
+      mod.blending_function()
+      |> Poly.coefficients(points, mod.blending_factor())
+      |> Poly.to_bezier()
+
+  # A transformed copy of the original points (knots or control points), for Curves.Svg
+  # to draw. `curve.points` itself is never changed.
+  @doc false
+  @spec transformed_points(t()) :: T.point_list()
+  def transformed_points(%__MODULE__{points: points} = curve) do
+    curve
+    |> Curves.Transform.apply_all_transformations()
+    |> Curves.Transform.transform_points(points)
+  end
+
+  # The dashed lines Curves.Svg draws (see Curves.Spline.Type's control_lines/1), moved, scaled
+  # and rotated like the curve.
+  @doc false
+  @spec control_lines(t()) :: list(T.point_list())
+  def control_lines(%__MODULE__{lines: lines} = curve) do
+    curve = Curves.Transform.apply_all_transformations(curve)
+    Enum.map(lines, &Curves.Transform.transform_points(curve, &1))
   end
 
   @doc false
@@ -118,6 +244,9 @@ defmodule Curves.Spline.Curve do
           {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
   def solve(%__MODULE__{} = curve, u, opts) when is_number(u),
     do: solve_resolved(curve, u, resolve_opts(curve, opts))
+
+  def solve(_curve, u, _opts),
+    do: raise(ArgumentError, "u must be a number, got: #{inspect(u)}")
 
   # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
   # once for every point instead of once per point.

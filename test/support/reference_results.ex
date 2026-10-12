@@ -21,12 +21,14 @@ defmodule Curves.Support.ReferenceResults do
     [{30, 15}, {5, 10}]
   ]
   @b_spline [{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]
+  # SVG-style: each knot, then the control points of the curve to the next knot.
+  # These are the rc.1 points converted (see guides/upgrading.md), so the results are unchanged.
   @bezier_spline [
-    [{5.0, 10.0}, {10.0, 10.0}],
-    [{10.0, 5.0}, {5.0, 5.0}, {15.0, 5.0}],
-    [{15.0, 10.0}, {15.0, 6.0}, {15.0, 14.0}],
-    [{20.0, 15.0}, {18.0, 15.0}, {23.0, 15.0}],
-    [{30.0, 10.0}, {32.0, 5.0}]
+    [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
+    [{10.0, 5.0}, {15.0, 5.0}, {15.0, 6.0}],
+    [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
+    [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
+    [{30.0, 10.0}]
   ]
 
   # Transforms applied on top of a defined curve. `{:origin, xy}` is a define option instead.
@@ -70,8 +72,35 @@ defmodule Curves.Support.ReferenceResults do
       {"b_spline 7 points", fn opts -> Curves.define_b_spline(@b_spline, opts) end},
       {"bezier_spline 5 points",
        fn opts -> Curves.define_bezier_spline(@bezier_spline, opts) end},
+      {"polyline 5 points",
+       fn opts -> Curves.define_polyline(@b_spline |> Enum.take(5), opts) end},
       {"bezier_spline 2 points",
-       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}], [{3, 0}, {2, 2}]], opts) end}
+       fn opts -> Curves.define_bezier_spline([[{0, 0}, {1, 2}, {2, 2}], [{3, 0}]], opts) end},
+      {"cardinal 6 points",
+       fn opts -> Curves.define_cardinal(@six, Keyword.put(opts, :tension, 0.4)) end},
+      {"centripetal_catmull_rom 7 points",
+       fn opts -> Curves.define_centripetal_catmull_rom(@b_spline, opts) end},
+      {"kochanek_bartels 6 points",
+       fn opts ->
+         Curves.define_kochanek_bartels(@six, opts ++ [tension: 0.2, continuity: -0.3, bias: 0.4])
+       end},
+      {"monotone 5 points",
+       fn opts -> Curves.define_monotone([{0, 0}, {1, 0}, {2, 3}, {3, 3}, {4, 1}], opts) end},
+      {"natural_cubic 7 points", fn opts -> Curves.define_natural_cubic(@b_spline, opts) end},
+      {"bezier_spline arcs",
+       fn opts ->
+         Curves.define_bezier_spline(
+           [
+             [{0, 0}],
+             [{10, 0}, {:arc, 5, 3, 30, false, true}],
+             [{10, 10}, {:arc, 4, 4, 0, true, false}],
+             [{2, 8}]
+           ],
+           opts
+         )
+       end},
+      {"ellipse", fn opts -> Curves.define_ellipse({1, 2}, {4, 2}, opts ++ [rotation: 30]) end},
+      {"circle arc", fn opts -> Curves.define_circle({0, 0}, 3, opts ++ [from: 45, to: -200]) end}
     ]
 
     transformed =
@@ -121,7 +150,9 @@ defmodule Curves.Support.ReferenceResults do
       solve_percent: for(u <- us, do: {u, Curves.solve(curve, u, force_percent: true)}),
       take: Curves.take(curve, 9),
       take_percent: Curves.take(curve, 9, force_percent: true),
-      svg: Curves.Svg.render(curve, samples: 20, width: 200, height: 200)
+      # Without the axes grid (on by default since it was added), so the fixture checks the curve
+      # drawing only; the grid has its own tests in svg_test.exs.
+      svg: Curves.Svg.render(curve, samples: 20, width: 200, height: 200, show_axes: false)
     }
   end
 

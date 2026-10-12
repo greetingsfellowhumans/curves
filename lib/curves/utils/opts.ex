@@ -43,6 +43,23 @@ defmodule Curves.Utils.Opts do
   @spec app_force_percent() :: term()
   defp app_force_percent, do: Application.get_env(:curves, :force_percent, @force_percent_default)
 
+  # Checks a spline's number options and returns `opts` with each one set as a float: the given
+  # value, or its default. `defaults` is a keyword list, e.g. `[tension: 0.0]`. A value that
+  # isn't a number raises an ArgumentError naming the option.
+  @spec put_numbers!(T.opts(), keyword(float())) :: T.opts()
+  def put_numbers!(opts, defaults) do
+    Enum.reduce(defaults, opts, fn {key, default}, acc ->
+      Keyword.put(acc, key, to_float!(Keyword.get(acc, key, default), key))
+    end)
+  end
+
+  @spec to_float!(term(), atom()) :: float()
+  defp to_float!(value, _key) when is_number(value), do: value * 1.0
+
+  defp to_float!(value, key) do
+    raise ArgumentError, "the #{inspect(key)} option must be a number, got: #{inspect(value)}"
+  end
+
   # Each config option's value from the app config, or its default when it isn't set.
   @spec config_opts() :: T.opts()
   defp config_opts() do

@@ -7,6 +7,10 @@ defmodule Curves.Spline.Type.CatmullRom do
 
   This makes a smooth, C1 continuous spline.
 
+  It has relatives that work the same way, with something extra: `Curves.Spline.Type.Cardinal` adds a
+  `:tension`, `Curves.Spline.Type.CentripetalCatmullRom` never makes loops when knots are bunched up,
+  and `Curves.Spline.Type.KochanekBartels` adds tension, continuity and bias dials.
+
 
   ```elixir
   curve = Curves.define_catmull_rom([

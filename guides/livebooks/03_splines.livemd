@@ -1,0 +1,475 @@
+# 3. Splines (interactive)
+
+```elixir
+Mix.install([
+  {:curves, "~> 1.0.0-rc.2"},
+  {:kino, "~> 0.19"}
+])
+```
+
+## Many curves, one path
+
+A spline joins several curves end to end into one smooth path. Each piece is a **segment**, and the
+points where segments meet are **knots**.
+
+```elixir
+knots = [{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]
+
+knots
+|> Curves.define_catmull_rom()
+|> Curves.Svg.render(width: 480, height: 360, markers: knots)
+|> Kino.Image.new(:svg)
+```
+
+## Walking along a spline with `u`
+
+On a single curve you use `t` from `0.0` to `1.0`. On a spline you use `u`, and **each segment adds one
+to it**: `0..1` is the first segment, `1..2` the second, and so on. Whole numbers land exactly on the
+knots, and `Curves.max_u/1` is the end.
+
+Drag **u** and watch which segment you're in:
+
+```elixir
+curve = Curves.define_catmull_rom(knots)
+max_u = Curves.max_u(curve)
+
+form =
+  Kino.Control.form(
+    [u: Kino.Input.range("u", min: 0, max: max_u, step: 0.05, default: 1.5)],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{u: u} ->
+  {x, y} = Curves.solve!(curve, u)
+  segment = min(trunc(u), trunc(max_u) - 1)
+  t = u - segment
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("""
+      `u = #{u}` is in **segment #{segment + 1} of #{trunc(max_u)}**, #{round(t * 100)}% of the way along it.
+      The point is `{#{Float.round(x * 1.0, 2)}, #{Float.round(y * 1.0, 2)}}`.
+      """),
+      curve
+      |> Curves.Svg.render(width: 480, height: 360, markers: [{x, y}])
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{u: 1.5}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 1)
+```
+
+## Nine kinds of spline (and a polyline)
+
+Curves has nine kinds of spline. They all join curves together, but they bend differently. A
+**polyline** (`define_polyline/2`) is the simplest path of all: straight lines from knot to knot,
+like SVG's `<polyline>`.
+
+| Kind | Passes through the knots? | What you give it |
+| --- | --- | --- |
+| **Polyline** | yes, with straight lines | just the knots |
+| **Catmull-Rom** | yes | just the knots; it works out the bends |
+| **B-spline** | no, only near them | just the knots; the smoothest of all |
+| **Bezier spline** | yes | each knot plus the control points to the next one |
+| **Hermite** | yes | each knot plus a tangent (direction and speed) |
+| **Cardinal** | yes | just the knots, plus a tension |
+| **Centripetal Catmull-Rom** | yes | just the knots; it never loops |
+| **Kochanek-Bartels** | yes | just the knots, plus three dials |
+| **Monotone** | yes | data points; it never overshoots them |
+| **Natural cubic** | yes | just the knots; the smoothest through them |
+
+Move the knots up and down, and switch between the kinds. The purple dots are your knots: see which
+splines go through them, and which only get close. (For the Bezier spline we use straight lines here,
+and for the Hermite spline a flat tangent at every knot. The rest use their default settings.)
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      kind:
+        Kino.Input.select("Kind",
+          catmull_rom: "Catmull-Rom",
+          polyline: "Polyline (straight lines)",
+          b_spline: "B-spline",
+          bezier_spline: "Bezier spline (straight lines)",
+          hermite: "Hermite (flat tangents)",
+          cardinal: "Cardinal",
+          centripetal_catmull_rom: "Centripetal Catmull-Rom",
+          kochanek_bartels: "Kochanek-Bartels",
+          monotone: "Monotone",
+          natural_cubic: "Natural cubic"
+        ),
+      y0: Kino.Input.range("Knot 1", min: -2, max: 6, step: 0.5, default: 0),
+      y1: Kino.Input.range("Knot 2", min: -2, max: 6, step: 0.5, default: 3),
+      y2: Kino.Input.range("Knot 3", min: -2, max: 6, step: 0.5, default: 1),
+      y3: Kino.Input.range("Knot 4", min: -2, max: 6, step: 0.5, default: 4),
+      y4: Kino.Input.range("Knot 5", min: -2, max: 6, step: 0.5, default: 2)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  knots = for {key, x} <- [y0: 0, y1: 2, y2: 4, y3: 6, y4: 8], do: {x, data[key]}
+
+  curve =
+    case data.kind do
+      :catmull_rom -> Curves.define_catmull_rom(knots)
+      :polyline -> Curves.define_polyline(knots)
+      :b_spline -> Curves.define_b_spline(knots)
+      :bezier_spline -> Curves.define_bezier_spline(Enum.map(knots, &[&1]))
+      :hermite -> Curves.define_hermite(Enum.map(knots, &[&1, {2, 0}]))
+      :cardinal -> Curves.define_cardinal(knots)
+      :centripetal_catmull_rom -> Curves.define_centripetal_catmull_rom(knots)
+      :kochanek_bartels -> Curves.define_kochanek_bartels(knots)
+      :monotone -> Curves.define_monotone(knots)
+      :natural_cubic -> Curves.define_natural_cubic(knots)
+    end
+
+  curve
+  |> Curves.Svg.render(width: 480, height: 360, markers: knots, show_points: false)
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{kind: :catmull_rom, y0: 0, y1: 3, y2: 1, y3: 4, y4: 2}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## Turn the dials
+
+Five more splines are Catmull-Rom with a different recipe for the tangents. Three of them have dials:
+
+* **Cardinal**: `tension` pulls the curve tighter at each knot (`0` is Catmull-Rom, `1` is straight lines).
+* **Centripetal Catmull-Rom**: `alpha` sets how much the distances between knots count. At `0` it's plain
+  Catmull-Rom, which makes a little loop between the two bunched-up knots here; at `0.5` (centripetal) the
+  loop is gone.
+* **Kochanek-Bartels**: `tension`, plus `continuity` (corners or bulges at the knots) and `bias` (turn early,
+  or late and overshoot).
+
+Each kind only uses its own dials.
+
+```elixir
+dial_knots = [{0, 0}, {2, 3}, {2.4, 3}, {5, 1}, {7, 4}, {9, 2}]
+
+form =
+  Kino.Control.form(
+    [
+      kind:
+        Kino.Input.select("Kind",
+          cardinal: "Cardinal (tension)",
+          centripetal_catmull_rom: "Centripetal Catmull-Rom (alpha)",
+          kochanek_bartels: "Kochanek-Bartels (tension, continuity, bias)"
+        ),
+      tension: Kino.Input.range("Tension", min: -1, max: 1, step: 0.1, default: 0),
+      continuity: Kino.Input.range("Continuity", min: -1, max: 1, step: 0.1, default: 0),
+      bias: Kino.Input.range("Bias", min: -1, max: 1, step: 0.1, default: 0),
+      alpha: Kino.Input.range("Alpha", min: 0, max: 1, step: 0.05, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  # Sliders can give values like 0.30000000000000004, so round them for display.
+  dial = fn key -> Float.round(data[key] * 1.0, 2) end
+
+  {code, curve} =
+    case data.kind do
+      :cardinal ->
+        opts = [tension: dial.(:tension)]
+        {"Curves.define_cardinal(knots, #{inspect(opts)})", Curves.define_cardinal(dial_knots, opts)}
+
+      :centripetal_catmull_rom ->
+        opts = [alpha: dial.(:alpha)]
+
+        {"Curves.define_centripetal_catmull_rom(knots, #{inspect(opts)})",
+         Curves.define_centripetal_catmull_rom(dial_knots, opts)}
+
+      :kochanek_bartels ->
+        opts = [tension: dial.(:tension), continuity: dial.(:continuity), bias: dial.(:bias)]
+
+        {"Curves.define_kochanek_bartels(knots, #{inspect(opts)})",
+         Curves.define_kochanek_bartels(dial_knots, opts)}
+    end
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`#{code}`"),
+      curve
+      |> Curves.Svg.render(width: 480, height: 360, markers: dial_knots, show_points: false)
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(
+  frame,
+  render.(%{kind: :cardinal, tension: 0, continuity: 0, bias: 0, alpha: 0})
+)
+
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## Smooth a chart
+
+Most splines swing above and below your points. On a chart, that shows peaks and dips that aren't in the
+data. A **monotone** spline never does: between two data points it only goes up, only goes down, or stays
+flat. Drag the data around and compare it with the others.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      kind:
+        Kino.Input.select("Kind",
+          monotone: "Monotone",
+          catmull_rom: "Catmull-Rom",
+          natural_cubic: "Natural cubic",
+          polyline: "Polyline"
+        ),
+      y0: Kino.Input.range("Day 1", min: 0, max: 10, step: 0.5, default: 2),
+      y1: Kino.Input.range("Day 2", min: 0, max: 10, step: 0.5, default: 2),
+      y2: Kino.Input.range("Day 3", min: 0, max: 10, step: 0.5, default: 8),
+      y3: Kino.Input.range("Day 4", min: 0, max: 10, step: 0.5, default: 8.5),
+      y4: Kino.Input.range("Day 5", min: 0, max: 10, step: 0.5, default: 3),
+      y5: Kino.Input.range("Day 6", min: 0, max: 10, step: 0.5, default: 3)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  points = for {key, x} <- [y0: 1, y1: 2, y2: 3, y3: 4, y4: 5, y5: 6], do: {x, data[key]}
+
+  curve =
+    case data.kind do
+      :monotone -> Curves.define_monotone(points)
+      :catmull_rom -> Curves.define_catmull_rom(points)
+      :natural_cubic -> Curves.define_natural_cubic(points)
+      :polyline -> Curves.define_polyline(points)
+    end
+
+  {curve_low, curve_high} = curve |> Curves.take!(300) |> Enum.map(&elem(&1, 1)) |> Enum.min_max()
+  {data_low, data_high} = points |> Enum.map(&elem(&1, 1)) |> Enum.min_max()
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("""
+      The data goes from `#{data_low}` to `#{data_high}`.
+      The curve goes from `#{Float.round(curve_low, 2)}` to `#{Float.round(curve_high, 2)}`.
+      """),
+      curve
+      |> Curves.Svg.render(width: 480, height: 360, markers: points, show_points: false)
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(
+  frame,
+  render.(%{kind: :monotone, y0: 2, y1: 2, y2: 8, y3: 8.5, y4: 3, y5: 3})
+)
+
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+[Choosing a curve](https://hexdocs.pm/curves/choosing_a_curve.html) compares every kind of curve, with
+real-world examples of where each is used.
+
+## Build a Bezier spline
+
+A Bezier spline is written like an SVG path: each point is a knot, followed by the control points of
+the curve **to the next knot**.
+
+| Point | The curve to the next knot | Like SVG's |
+| --- | --- | --- |
+| `[knot]` | a straight line | `L` |
+| `[knot, c]` | a quadratic curve, pulled towards `c` | `Q` |
+| `[knot, c0, c1]` | a cubic curve: leaves `knot` towards `c0`, arrives from `c1` | `C` |
+
+The last point only ends the curve, so it is just `[knot]`. Pick what each of the three segments
+should be:
+
+```elixir
+kinds = [line: "Line (L)", quadratic: "Quadratic (Q)", cubic: "Cubic (C)"]
+
+form =
+  Kino.Control.form(
+    [
+      first: Kino.Input.select("Segment 1", kinds),
+      second: Kino.Input.select("Segment 2", kinds),
+      third: Kino.Input.select("Segment 3", kinds)
+    ],
+    report_changes: true
+  )
+
+# The three segments run from knot to knot; each kind adds its own control points.
+point = fn kind, {x, y} ->
+  case kind do
+    :line -> [{x, y}]
+    :quadratic -> [{x, y}, {x + 1.5, y + 3}]
+    :cubic -> [{x, y}, {x + 1, y - 2}, {x + 2, y + 3}]
+  end
+end
+
+frame = Kino.Frame.new()
+
+render = fn %{first: first, second: second, third: third} ->
+  points = [
+    point.(first, {0, 0}),
+    point.(second, {3, 1}),
+    point.(third, {6, 0}),
+    [{9, 1}]
+  ]
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_bezier_spline(#{inspect(points)})`"),
+      points
+      |> Curves.define_bezier_spline()
+      |> Curves.Svg.render(width: 480, height: 360)
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{first: :line, second: :line, third: :line}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## Arcs and ellipses
+
+A Bezier spline can also hold an **arc** of an ellipse, just like SVG's `A` command:
+`[knot, {:arc, rx, ry, rotation, large_arc, sweep}]` goes from that knot to the next one. There are
+usually four arcs of the same ellipse between two points: `large_arc` takes the long way round, and
+`sweep` picks the direction. Radii too small to reach are made just big enough.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      large_arc: Kino.Input.select("large_arc", [{false, "false: the short way"}, {true, "true: the long way"}]),
+      sweep: Kino.Input.select("sweep", [{true, "true: angle going up"}, {false, "false: angle going down"}]),
+      rx: Kino.Input.range("rx", min: 1, max: 10, step: 0.5, default: 5),
+      ry: Kino.Input.range("ry", min: 1, max: 10, step: 0.5, default: 5),
+      rotation: Kino.Input.range("rotation (degrees)", min: -90, max: 90, step: 5, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  arc = {:arc, data.rx, data.ry, data.rotation, data.large_arc, data.sweep}
+  points = [[{0, 0}, arc], [{8, 0}]]
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_bezier_spline(#{inspect(points)})`"),
+      points
+      |> Curves.define_bezier_spline()
+      |> Curves.Svg.render(width: 480, height: 360, markers: [{0, 0}, {8, 0}], view: {{-12, -12}, {20, 12}})
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{large_arc: false, sweep: true, rx: 5, ry: 5, rotation: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+For a whole ellipse or circle, use `Curves.define_ellipse/3` or `Curves.define_circle/3`. It is one
+segment, so `u` goes from `0.0` to `1.0`, once round. `:from` and `:to` (in degrees) cut out an arc,
+like a canvas's `arc()`. Arcs are exact: they aren't made of Bezier curves.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      rx: Kino.Input.range("rx", min: 0, max: 6, step: 0.5, default: 4),
+      ry: Kino.Input.range("ry", min: 0, max: 6, step: 0.5, default: 2),
+      rotation: Kino.Input.range("rotation", min: -180, max: 180, step: 5, default: 30),
+      from: Kino.Input.range("from", min: -360, max: 360, step: 15, default: 0),
+      to: Kino.Input.range("to", min: -360, max: 360, step: 15, default: 360)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  opts = [rotation: data.rotation, from: data.from, to: data.to]
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_ellipse({0, 0}, {#{data.rx}, #{data.ry}}, #{inspect(opts)})`"),
+      Curves.define_ellipse({0, 0}, {data.rx, data.ry}, opts)
+      |> Curves.Svg.render(width: 480, height: 360, view: {{-7, -7}, {7, 7}}, markers: [{0, 0}])
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{rx: 4, ry: 2, rotation: 30, from: 0, to: 360}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## Bend a Hermite tangent
+
+A Hermite spline passes through every knot, and at each knot you choose a **tangent**: the direction the
+curve travels and how fast. Turn and stretch the tangent at the middle knot:
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      angle: Kino.Input.range("Direction (degrees)", min: -180, max: 180, step: 5, default: 0),
+      length: Kino.Input.range("Length", min: 0, max: 20, step: 0.5, default: 4)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{angle: angle, length: length} ->
+  radians = angle * :math.pi() / 180
+  tangent = {length * :math.cos(radians), length * :math.sin(radians)}
+
+  [[{0, 0}, {4, 0}], [{4, 2}, tangent], [{8, 0}, {4, 0}]]
+  |> Curves.define_hermite()
+  |> Curves.Svg.render(width: 480, height: 360, markers: [{4, 2}])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{angle: 0, length: 4}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+A long tangent makes the curve keep going in that direction for longer before it turns. A tangent of
+length `0` makes a sharp corner. (Catmull-Rom, and the five splines in "Turn the dials" and "Smooth a
+chart", are Hermite splines that work out the tangents for you.)
+
+## Next
+
+[Chapter 4](04_transforms.livemd): moving, scaling and rotating curves, and drawing them your way.

@@ -69,9 +69,7 @@ defmodule Curves.Spline.Type.Hermite do
 
   defp to_bezier_segments(points) do
     points
-    |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.map(fn [{p0, m0}, {p1, m1}] ->
-      [p0, Vec.add(p0, Vec.scale(m0, 1 / 3)), Vec.subtract(p1, Vec.scale(m1, 1 / 3)), p1]
-    end)
+    |> Enum.map(fn {knot, tangent} -> {knot, tangent, tangent} end)
+    |> Curves.Utils.Hermite.bezier_segments()
   end
 end

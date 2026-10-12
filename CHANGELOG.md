@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-rc.2] - 2026-10-11
+
+The second release candidate. It has three breaking changes, listed under Changed; sections 10 to 12 of the [upgrade guide](upgrading.html) show how to update.
+
+### Added
+
+#### New kinds of curve
+
+- `Curves.define_polyline/2` makes a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`. It is solved with `u` like a spline (each line adds one to `u`), at a steady speed along each line, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`.
+- Five new kinds of spline. Like Catmull-Rom, you only give each one the knots, and it passes through every one of them. Each has its own module under `Curves.Spline.Type`, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`:
+  - `Curves.define_cardinal/2`: Catmull-Rom with a `:tension` option that sets how tightly it bends at each knot (d3's `curveCardinal`).
+  - `Curves.define_centripetal_catmull_rom/2`: Catmull-Rom that takes the distances between knots into account, so it never makes loops or cusps. Its `:alpha` option (default `0.5`) also gives plain (`0.0`) and chordal (`1.0`) Catmull-Rom.
+  - `Curves.define_kochanek_bartels/2`: a TCB spline, Catmull-Rom with `:tension`, `:continuity` and `:bias` dials, as used for keyframes in animation tools.
+  - `Curves.define_monotone/2`: a monotone cubic spline (Fritsch–Carlson) for chart data. It never overshoots: between two knots it only goes up, down or stays flat. Each knot's `x` must always increase (or always decrease).
+  - `Curves.define_natural_cubic/2`: the smoothest curve through every knot, with a continuous bend everywhere.
+- Exact elliptical arcs, which aren't made of Bezier curves:
+  - `Curves.define_bezier_spline/2` takes `[knot, {:arc, rx, ry, rotation, large_arc, sweep}]`, an arc to the next knot exactly like SVG's `A` command, with SVG's rules for radii that are too small, zero or negative.
+  - `Curves.define_ellipse/3` and `Curves.define_circle/3` make an ellipse or circle, or an arc of one with the `:from` and `:to` options (in degrees), like a canvas's `arc()` and `ellipse()`. It is one segment, so `u` goes from `0.0` to `1.0`, and a whole one ends exactly where it started.
+  - Arcs work with every transform (even different x and y scales), `reverse/1`, `:force_percent` and `Curves.Svg`. They start and end exactly on their knots. The curve stores extra points that the arc stays inside, which `Curves.Svg` draws as dots.
+
+#### Transforms
+
+- More transforms in `Curves.Transform`:
+  - `set_scale/3` and `inc_scale/3` take an `{x, y}` pair to scale the two directions separately, e.g. `set_scale(curve, {2, 0.5})`.
+  - `flip_x/2` and `flip_y/2` mirror a curve.
+  - An `around:` option on the scale, flip and rotation functions turns the curve around `:center` (the middle of its points) or any `{x, y}` point in its own coordinates, which then stays where it is.
+  - `reverse/1` gives the same curve travelled the other way.
+
+#### Reading and drawing SVGs
+
+- `Curves.from_svg/2` reads an SVG into a `Curves.Drawing`:
+  - Its shapes (`<path>`, `<rect>`, `<circle>`, `<ellipse>`, `<line>`, `<polyline>` and `<polygon>`) become curves, with a `Curves.Drawing.Subpath` per continuous piece, holding a curve and whether it is closed. Every path command works, with exact arcs.
+  - Every `transform` (on shapes and groups, even `skewX`, `skewY` and `matrix`) is applied to the curves exactly.
+  - It keeps the SVG's structure (`Curves.Drawing.Group`), each shape's styles and transform, and everything that isn't curves (text, `<defs>`, `<style>`, ...) as markup (`Curves.Drawing.Raw`). `Curves.Drawing.shapes/1` and `curves/1` list everything in it.
+  - Anything that can't be read as curves (text, images, `<use>`, sizes in `%` or `em`, bad path data, ...) is listed in the drawing's `:skipped` field with the reason.
+  - `flip_y: true` turns SVG's downward y around.
+  - It has no XML library and never creates atoms from its input. `<script>`, `<foreignObject>`, animations of links and event handlers, event attributes and `javascript:` links are never kept, and kept markup is always well formed.
+  - Every `Curves.Transform` function also takes a whole drawing, or a group, shape or subpath in it, and changes it as a whole, text included; `around: :center` is its middle. The change is kept on the drawing, group or shape (`:origin`, `:scale`, `:rotation`), like a curve's.
+  - `Curves.Drawing.get/2`, `fetch/2`, `put/3`, `update/3` and `delete/2` find and change a part by its `id`; `get_in/2` and `update_in/3` follow a path of ids; `by_id/1` does the same for `Kernel.get_in/2`, `update_in/3` and `pop_in/2`; `update_shapes/2` and `update_curves/2` change every shape or curve.
+  - Each entry in `:skipped` says what was kept of it: `kept: :as_markup`, `:partly` or `:no`. The reason `:not_curves` (text, images, ...) is told apart from `:unsafe` (`<script>`, `<foreignObject>`).
+- `Curves.from_svg_path/2` reads just the path data of one `<path>`.
+- `Curves.Svg.render/2` and `save!/3` draw a `Curves.Drawing` as designed: in its own size and view box, with its groups, colours, text and gradients, so it looks like the SVG it was read from. `mode: :inspect` draws it like a curve instead.
+- `Curves.Svg.path_data/1` writes any curve as exact SVG path data: `C` commands for each spline segment (every kind of spline), `A` for arcs (even skewed ones), and `L` for straight lines.
+- `Curves.Svg` has a `:view` option, `{{x1, y1}, {x2, y2}}`, that draws a fixed area instead of fitting the picture to the curve, so several pictures or animation frames share the same scale.
+- `Curves.Svg` has a `:markers` option that highlights extra `{x, y}` points, e.g. `markers: [Curves.solve!(curve, 0.5)]` to show where `t = 0.5` lands. `:marker_color` and `:marker_radius` style them.
+- `Curves.Svg` has a `:show_axes` option that draws a grid with the x and y values along the bottom and left edges, like a ruler, so you can see a curve's real size and position. The x = 0 and y = 0 lines are darker. `:axis_color` sets its colour. It is on by default; `show_axes: false` gives the old look.
+
+#### Docs
+
+- A new tutorial for new users, in four chapters: your first curve, Bezier curves, splines, and transforms and drawing. The hexdocs version is full of pictures drawn with `Curves.Svg`, and its simplified first page is now the docs' landing page. Each chapter is also an interactive Livebook with sliders, animations and an easing race. They replace the two old livebooks.
+- A new guide, [Choosing a curve](choosing_a_curve.html), compares every kind of curve, with real-world examples of where each is used.
+- `Curves.Bezier.Predefined`'s docs show a picture of every predefined curve.
+
+### Changed
+
+- **Breaking:** Bezier spline points are SVG-style. Each point is a knot, then the control points of the curve *to the next knot*: `[knot]` is a straight line (SVG `L`), `[knot, c]` a quadratic curve (`Q`) and `[knot, c0, c1]` a cubic curve (`C`). They used to be the two handles of the knot itself (the control point the curve arrives from, and the one it leaves towards). The last point only ends the curve, so control points there (including on a single knot) raise an `ArgumentError`. Old points without them still work, but draw a different curve. The [upgrade guide](upgrading.html) has a function that converts old points to new ones exactly.
+- **Breaking:** Transforms apply in the usual scale, rotate, move order: a curve is scaled and rotated around its own `{0, 0}`, then moved to its position. The position used to be scaled too, so scaling a moved curve also moved it (e.g. from `{10, 10}` to `{20, 20}` with `set_scale(2)`), and a rotation then turned it around a point that was no longer on the curve. Only curves that are both moved and scaled give different results. See the [upgrade guide](upgrading.html).
+- **Breaking:** `Curves.Bezier.Predefined.get_coords/1` raises an `ArgumentError` for a name that isn't a predefined curve, like `details/1` does. It used to return `nil`.
+- `Curves.Svg` draws the dashed lines of beziers and bezier splines from each control point to the knot it pulls on, instead of one line through every point. A straight line has none.
+- `Curves.Svg` images now include the axes grid by default (see `:show_axes` above).
+- Passing something that isn't a curve to `Curves.solve/3`, `solve!/3`, `take/3`, `take!/3`, the `Curves.Transform` functions, or `Curves.Svg.render/2` and `save!/3` now raises an `ArgumentError` such as `expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve, got: :nope`. It used to raise a `CaseClauseError`, `FunctionClauseError`, `KeyError` or `UndefinedFunctionError`, depending on the function and the input.
+- Other invalid input now raises an `ArgumentError` that says what was expected, instead of an error from deep inside the library:
+  - an unknown predefined curve name (`define_bezier(:nope)`, `Predefined.details/1`, `Predefined.get_coords/1`) or `Predefined.list/1` order.
+  - `define_bezier/2` given something that isn't a list or a name, e.g. a single `{x, y}`.
+  - any point, `:origin`, or `Curves.Transform` position that isn't an `{x, y}` tuple of numbers, in every `define_*` function.
+  - a `t`/`u` that isn't a number in `solve/3` and `solve!/3`.
+  - a `Curves.Transform` amount (`inc_x/2`, `set_scale/2`, `set_rotation/2`, ...) that isn't a number.
+  - an unknown spline type (it was a `RuntimeError`).
+- `Curves.Svg`'s `show_points`, `show_polygon` and `show_axes` treat `nil` like `false`. `show_points: nil` used to crash, and `show_polygon: nil` drew the polygon.
+
+### Fixed
+
+- Dialyzer no longer warns about breaking the opaqueness of `Curves.Bezier.Curve.t()` and `Curves.Spline.Curve.t()` inside the library. Code outside the two curve modules no longer reads or matches their fields.
+- `Curves.Svg` no longer misplaces its grid when a curve's points differ only by rounding (e.g. a rotated straight line far from `{0, 0}`). Such tiny differences were blown up to fill the picture, which lost all precision; they now count as flat.
+- Bezier `take/3` and `take!/3` end exactly at the end of the curve. For some `n` (e.g. 49) the last sample used to be at `t = 0.9999999999999999`, so it was very slightly short of the last point.
+
 ## [1.0.0-rc.1] - 2026-10-10
 
 The first release candidate for 1.0. Version 0.3.0 was never released; its changes ship here.

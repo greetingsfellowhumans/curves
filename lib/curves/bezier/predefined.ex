@@ -1,17 +1,4 @@
 defmodule Curves.Bezier.Predefined do
-  @moduledoc ~s"""
-  Shortcuts for quickly getting a list of points that can be passed into `Curves.define_bezier/1`
-
-  ## Usage
-  ```elixir
-      iex> alias Curves.Bezier.Predefined
-      iex> Predefined.get_coords(:linear_up_right)
-      [{0.0, 0.0}, {1.0, 1.0}]
-      iex> [:ease | _] = Predefined.list()
-      iex> Predefined.get_coords(:ease_in_out_cubic)
-      [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
-  ```
-  """
   alias Curves.Types, as: T
 
   @order1 %{
@@ -70,6 +57,47 @@ defmodule Curves.Bezier.Predefined do
        |> Map.new(fn {k, li} ->
          {k, Enum.map(li, fn {x, y} -> {x * 1.0, y * 1.0} end)} # Coerce to floats
        end)
+
+  # The moduledoc needs the curve names, so it comes after them. Its gallery uses the pictures that
+  # guides/images/generate.exs draws for every predefined curve.
+  gallery = fn curves ->
+    rows =
+      curves
+      |> Map.keys()
+      |> Enum.sort()
+      |> Enum.map(&"![#{inspect(&1)}](images/predefined_#{&1}.svg)")
+      |> Enum.chunk_every(3, 3, ["", ""])
+      |> Enum.map_join("\n", &"| #{Enum.join(&1, " | ")} |")
+
+    "| | | |\n| --- | --- | --- |\n" <> rows
+  end
+
+  @moduledoc ~s"""
+  Shortcuts for quickly getting a list of points that can be passed into `Curves.define_bezier/1`
+
+  ## Usage
+  ```elixir
+      iex> alias Curves.Bezier.Predefined
+      iex> Predefined.get_coords(:linear_up_right)
+      [{0.0, 0.0}, {1.0, 1.0}]
+      iex> [:ease | _] = Predefined.list()
+      iex> Predefined.get_coords(:ease_in_out_cubic)
+      [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
+  ```
+
+  ## Gallery
+
+  Each picture shows the curve in blue and the points that shape it in orange.
+
+  ### Cubic
+  #{gallery.(@order3)}
+
+  ### Quadratic
+  #{gallery.(@order2)}
+
+  ### Linear
+  #{gallery.(@order1)}
+  """
 
   @typedoc ~s"""
   ### Cubic
@@ -132,6 +160,10 @@ defmodule Curves.Bezier.Predefined do
 
       3 -> @order3
       :cubic -> @order3
+
+      other ->
+        raise ArgumentError,
+              "order must be 1, 2, 3, :linear, :quad or :cubic, got: #{inspect(other)}"
     end
       |> Map.keys()
       |> Enum.sort()
@@ -146,7 +178,7 @@ defmodule Curves.Bezier.Predefined do
   """
   @spec details(curve_key()) :: curve_type_info()
   def details(k) do
-    li = Map.get(@all, k)
+    li = fetch!(k)
     order = Enum.count(li) - 1
     %{key: k, points: li, order: order}
   end
@@ -166,21 +198,30 @@ defmodule Curves.Bezier.Predefined do
   end
 
   @doc ~s"""
-  Return the list of `{x, y}` points for a predefined curve.
+  Return the list of `{x, y}` points for a predefined curve. A name that isn't one raises an `ArgumentError`.
 
   ## Examples
       iex> Curves.Bezier.Predefined.get_coords(:linear_up_right)
       [{0.0, 0.0}, {1.0, 1.0}]
+      iex> Curves.Bezier.Predefined.get_coords(:nope)
+      ** (ArgumentError) unknown predefined curve: :nope. See Curves.Bezier.Predefined.list/0 for the names
   """
   @spec get_coords(curve_key()) :: T.point_list()
-  def get_coords(k) do
-    Map.get(@all, k)
-  end
+  def get_coords(k), do: fetch!(k)
 
   @doc false
   @spec get(curve_key(), T.opts()) :: T.point_list()
   def get(k, _opts \\ []) do
-    Map.get(@all, k) |> Enum.map(&Curves.Utils.Vec.new/1)
+    fetch!(k) |> Enum.map(&Curves.Utils.Vec.new/1)
+  end
+
+  # The points of a predefined curve, or a clear error when `k` isn't one of the names.
+  @spec fetch!(term()) :: T.point_list()
+  defp fetch!(k) when is_map_key(@all, k), do: Map.fetch!(@all, k)
+
+  defp fetch!(k) do
+    raise ArgumentError,
+          "unknown predefined curve: #{inspect(k)}. See Curves.Bezier.Predefined.list/0 for the names"
   end
 
 end

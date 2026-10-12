@@ -5,8 +5,14 @@ defmodule Curves.Spline.TypeIndex do
   @all %{
     bezier_spline: T.BezierSpline,
     b_spline: T.BSpline,
+    cardinal: T.Cardinal,
     catmull_rom: T.CatmullRom,
-    hermite: T.Hermite
+    ellipse: T.Ellipse,
+    centripetal_catmull_rom: T.CentripetalCatmullRom,
+    hermite: T.Hermite,
+    kochanek_bartels: T.KochanekBartels,
+    monotone: T.Monotone,
+    natural_cubic: T.NaturalCubic
   }
 
   # Sorted, because Map.keys/1 has no guaranteed order.
@@ -19,7 +25,7 @@ defmodule Curves.Spline.TypeIndex do
 
   def get(key) do
     case Map.get(@all, key) do
-      nil -> raise "Unknown spline_type: #{inspect(key)}"
+      nil -> raise ArgumentError, "Unknown spline_type: #{inspect(key)}"
       mod -> mod
     end
   end
@@ -52,6 +58,15 @@ defmodule Curves.Spline.Type do
 
   @callback define(points :: list(tuple() | list()), opts :: list()) :: Curves.Spline.Curve.t()
 
+  # The dashed lines Curves.Svg draws, from the same points define_spline/3 gets. The default is
+  # one line through every point in order.
+  @callback control_lines(points :: list(list(tuple()))) :: list(list(tuple()))
+
+  # The curve's :points (see Curves.Spline.Curve), from the same points define_spline/3 gets. The
+  # default is every point, in order, as floats. Types whose input holds more than points (such as
+  # a bezier spline's arcs) override it.
+  @callback stored_points(points :: list()) :: list(tuple())
+
   @doc false
   @spec get_mod(atom() | {:module, module()}) :: module()
   defdelegate get_mod(key), to: Curves.Spline.TypeIndex, as: :get
@@ -80,6 +95,19 @@ defmodule Curves.Spline.Type do
       @impl true
       def map_segments(segment_list, _curve), do: Enum.map(segment_list, fn {li, _idx} -> li end)
       defoverridable map_segments: 2
+
+      @doc false
+      @impl true
+      def control_lines(points),
+        do: [points |> List.flatten() |> Enum.map(&Curves.Utils.Vec.new/1)]
+
+      defoverridable control_lines: 1
+
+      @doc false
+      @impl true
+      def stored_points(points), do: points |> List.flatten() |> Enum.map(&Curves.Utils.Vec.new/1)
+
+      defoverridable stored_points: 1
     end
   end
 end

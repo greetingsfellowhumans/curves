@@ -1,0 +1,359 @@
+# 4. Transforms and drawing (interactive)
+
+```elixir
+Mix.install([
+  {:curves, "~> 1.0.0-rc.2"},
+  {:kino, "~> 0.19"}
+])
+```
+
+## Move it, grow it, spin it
+
+`Curves.Transform` changes where a curve is, how big it is and which way it faces, without changing its
+points. Every example here starts from the same shape:
+
+```elixir
+alias Curves.Transform
+
+shape = Curves.define_bezier([{0, 0}, {1, 3}, {3, 3}, {4, 0}])
+
+shape
+|> Curves.Svg.render(width: 480, height: 360)
+|> Kino.Image.new(:svg)
+```
+
+Now take the controls! The purple dot is the curve's **position**: the curve's own `{0, 0}` lands there.
+Watch how scaling and rotating happen *around* that dot. A negative scale flips the curve over.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      x: Kino.Input.range("Position x", min: -10, max: 10, step: 0.5, default: 0),
+      y: Kino.Input.range("Position y", min: -10, max: 10, step: 0.5, default: 0),
+      scale: Kino.Input.range("Scale", min: -3, max: 3, step: 0.1, default: 1),
+      rotation: Kino.Input.range("Rotation (degrees)", min: -180, max: 180, step: 5, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{x: x, y: y, scale: scale, rotation: rotation} ->
+  curve =
+    shape
+    |> Transform.set_position({x, y})
+    |> Transform.set_scale(scale)
+    |> Transform.set_rotation(rotation)
+
+  # A fixed :view keeps the picture the same size, so you can see the curve move and grow.
+  # (Without it, Svg fits the picture to the curve.)
+  curve
+  |> Curves.Svg.render(width: 480, height: 480, view: {{-20, -20}, {20, 20}}, markers: [{x, y}])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{x: 0, y: 0, scale: 1, rotation: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## The order is always the same
+
+Whatever order you call them in, the curve is first **scaled**, then **rotated**, and finally **moved**
+to its position. So scaling and rotating never move a curve away from where you put it: the start of
+the shape (its `{0, 0}`) is still exactly at the position.
+
+```elixir
+shape
+|> Transform.set_rotation(45)
+|> Transform.set_scale(2)
+|> Transform.set_position({5, 2})
+|> Curves.solve!(0.0)
+```
+
+## `set_` or `inc_`?
+
+Each transform comes in two flavours: `set_position/2`, `set_scale/2` and `set_rotation/2` replace the
+current value, while `inc_position/2`, `inc_x/2`, `inc_y/2`, `inc_scale/2` and `inc_rotation/2` add to
+it. Each press of the button below turns the shape another 30 degrees:
+
+```elixir
+button = Kino.Control.button("Turn 30°")
+frame = Kino.Frame.new()
+
+# Keeps the latest curve between presses.
+{:ok, spinning} = Agent.start_link(fn -> shape end)
+
+render = fn curve ->
+  curve
+  |> Curves.Svg.render(width: 360, height: 360, view: {{-5, -5}, {5, 5}})
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(shape))
+
+Kino.listen(button, fn _event ->
+  Agent.update(spinning, &Transform.inc_rotation(&1, 30))
+  Kino.Frame.render(frame, render.(Agent.get(spinning, & &1)))
+end)
+
+Kino.Layout.grid([button, frame], columns: 1)
+```
+
+## Stretch, flip and turn around a point
+
+Scale the two directions separately (a negative scale flips that way), and choose what the curve turns
+around: its own `{0, 0}` (here, its first point), or its middle with `around: :center`. The purple dot is
+the point it turns around, which never moves.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      around: Kino.Input.select("Around", own_origin: "its own {0, 0}", center: ":center"),
+      scale_x: Kino.Input.range("Scale x", min: -3, max: 3, step: 0.1, default: 1),
+      scale_y: Kino.Input.range("Scale y", min: -3, max: 3, step: 0.1, default: 1),
+      rotation: Kino.Input.range("Rotation (degrees)", min: -180, max: 180, step: 5, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{around: around, scale_x: scale_x, scale_y: scale_y, rotation: rotation} ->
+  {opts, pivot} =
+    case around do
+      :own_origin -> {[], {0, 0}}
+      :center -> {[around: :center], {2, 1.5}}
+    end
+
+  shape
+  |> Transform.set_scale({scale_x, scale_y}, opts)
+  |> Transform.set_rotation(rotation, opts)
+  |> Curves.Svg.render(width: 480, height: 480, view: {{-10, -10}, {10, 10}}, markers: [pivot])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{around: :own_origin, scale_x: 1, scale_y: 1, rotation: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+Turn the rotation with **Around** set to each option, and watch the difference: around its own `{0, 0}`
+the shape swings around its first point; around `:center` it spins in place. `flip_x/2` and `flip_y/2` are
+shortcuts for a scale of `-1` one way.
+
+## Going backwards
+
+`Transform.reverse/1` gives you the same curve travelled the other way: `t = 0.0` becomes its old end.
+Drag `t` and switch the direction:
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      direction: Kino.Input.select("Direction", forwards: "Forwards", backwards: "Backwards (reverse/1)"),
+      t: Kino.Input.range("t", min: 0, max: 1, step: 0.01, default: 0.2)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{direction: direction, t: t} ->
+  curve =
+    case direction do
+      :forwards -> shape
+      :backwards -> Transform.reverse(shape)
+    end
+
+  curve
+  |> Curves.Svg.render(width: 480, height: 360, markers: [Curves.solve!(curve, t)])
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{direction: :forwards, t: 0.2}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## Results between 0 and 1: `:force_percent`
+
+Sometimes you only care *where along the shape* a point is, not its real coordinates; for example to
+drive an animation. `force_percent: true` rescales every result so that the shape's lowest point is
+`0.0` and its highest is `1.0`, on both axes. Make the shape bigger, then switch it on: the numbers stop
+changing!
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      scale: Kino.Input.range("Scale", min: 0.5, max: 10, step: 0.5, default: 3),
+      percent: Kino.Input.checkbox("force_percent", default: false)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{scale: scale, percent: percent} ->
+  curve = Transform.set_scale(shape, scale)
+  opts = [force_percent: percent]
+
+  rows =
+    for t <- [0.0, 0.25, 0.5, 0.75, 1.0] do
+      {x, y} = Curves.solve!(curve, t, opts)
+      "| #{t} | #{Float.round(x * 1.0, 3)} | #{Float.round(y * 1.0, 3)} |"
+    end
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("| t | x | y |\n| --- | --- | --- |\n" <> Enum.join(rows, "\n")),
+      curve
+      |> Curves.Svg.render(width: 360, height: 300, solve_opts: opts, show_points: not percent, show_polygon: not percent)
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 2
+  )
+end
+
+Kino.Frame.render(frame, render.(%{scale: 3, percent: false}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 1)
+```
+
+The "lowest and highest points" are those of the curve's own points (its knots and control points). This
+shape bends less far than its control points, so its `y` tops out at `0.75`, not `1.0`.
+
+## Draw it your way
+
+`Curves.Svg` has lots of options. Play with a few of them here. Turn **samples** right down to see how
+the line is made of straight pieces between solved points.
+
+```elixir
+colours = [{"#1c7ed6", "Blue"}, {"#e64980", "Pink"}, {"#2f9e44", "Green"}, {"#f08c00", "Orange"}]
+
+form =
+  Kino.Control.form(
+    [
+      samples: Kino.Input.range("samples", min: 1, max: 100, step: 1, default: 100),
+      curve_width: Kino.Input.range("curve_width", min: 1, max: 12, step: 1, default: 3),
+      curve_color: Kino.Input.select("curve_color", colours),
+      show_points: Kino.Input.checkbox("show_points", default: true),
+      show_polygon: Kino.Input.checkbox("show_polygon", default: true),
+      show_axes: Kino.Input.checkbox("show_axes", default: true)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn options ->
+  options = Map.update!(options, :samples, &round/1)
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.Svg.render(curve, #{inspect(Map.to_list(options))})`"),
+      [{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}]
+      |> Curves.define_catmull_rom()
+      |> Curves.Svg.render([width: 480, height: 360] ++ Map.to_list(options))
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(
+  frame,
+  render.(%{samples: 100, curve_width: 3, curve_color: "#1c7ed6", show_points: true, show_polygon: true, show_axes: true})
+)
+
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+To keep a picture, `Curves.Svg.save!/3` writes it to a file:
+
+```elixir
+path = Path.join(System.tmp_dir!(), "my_curve.svg")
+Curves.Svg.save!(shape, path, title: "My curve")
+```
+
+## Read an SVG, change it, draw it again
+
+`Curves.from_svg/2` reads an SVG into a `Curves.Drawing`: its shapes become curves, and it keeps
+everything else (groups, colours, text) so `Curves.Svg` can draw it again as it was. The
+`Curves.Transform` functions work on the whole drawing, or on any part of it you find by its `id`
+with `Curves.Drawing.update/3`. Text moves along with the shapes, and a group moves everything in
+it together: the roof is a group of the triangle and its round window.
+
+```elixir
+house = """
+<svg width="300" height="300" viewBox="0 0 100 100">
+  <rect x="0" y="0" width="100" height="100" fill="#e7f5ff"/>
+  <g id="house">
+    <g id="roof">
+      <polygon points="10,50 50,15 90,50" fill="#e03131"/>
+      <circle cx="50" cy="35" r="6" fill="#fff" stroke="#862e9c" stroke-width="2"/>
+    </g>
+    <rect x="18" y="50" width="64" height="40" fill="#ffe8cc" stroke="#862e9c"/>
+    <rect id="door" x="42" y="65" width="16" height="25" rx="3" fill="#862e9c"/>
+    <text x="50" y="98" font-size="6" text-anchor="middle">Home</text>
+  </g>
+</svg>
+"""
+
+form =
+  Kino.Control.form(
+    [
+      mode: Kino.Input.select("Draw it", [{:design, "as designed"}, {:inspect, "as curves (mode: :inspect)"}]),
+      turn: Kino.Input.range("Turn the house", min: -45, max: 45, step: 5, default: 0),
+      size: Kino.Input.range("House size", min: 0.3, max: 1.2, step: 0.1, default: 1),
+      lift: Kino.Input.range("Lift the roof", min: 0, max: 15, step: 1, default: 0),
+      door: Kino.Input.range("Open the door", min: 0, max: 1, step: 0.1, default: 0)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn data ->
+  drawing =
+    house
+    |> Curves.from_svg()
+    |> Curves.Drawing.update("house", fn house ->
+      house
+      |> Curves.Transform.set_rotation(data.turn, around: :center)
+      |> Curves.Transform.set_scale(data.size, around: :center)
+    end)
+    |> Curves.Drawing.update("roof", &Curves.Transform.inc_y(&1, -data.lift))
+    # An opening door gets narrower, hinged on its left edge.
+    |> Curves.Drawing.update("door", &Curves.Transform.set_scale(&1, {1 - data.door * 0.9, 1}, around: {42, 77}))
+
+  # Curves draws curves with y going up, so in :inspect mode turn the drawing the right way up.
+  drawing = if data.mode == :inspect, do: Curves.Transform.flip_y(drawing), else: drawing
+
+  drawing
+  |> Curves.Svg.render(mode: data.mode, width: 360, height: 360)
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{mode: :design, turn: 0, size: 1, lift: 0, door: 0}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+Going the other way, `Curves.Svg.path_data/1` writes any curve as exact SVG path data, for your own
+`<path>` elements:
+
+```elixir
+Curves.define_catmull_rom([{0, 0}, {2, 3}, {4, 1}])
+|> Curves.Svg.path_data()
+```
+
+## That's the tour! 🎉
+
+You now know the essentials: curves and `t`, control points, splines and `u`, transforms, drawing, and
+reading SVGs.
+The [API docs](https://hexdocs.pm/curves/Curves.html) have everything else. Have fun making things move!

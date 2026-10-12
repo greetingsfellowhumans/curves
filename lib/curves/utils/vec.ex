@@ -4,8 +4,13 @@ defmodule Curves.Utils.Vec do
   alias Curves.Types, as: T
 
   # {x, y} with both values turned into floats, so integer input behaves like float input.
+  # Every point a user gives (curve points, :origin, set_position/2, ...) goes through here,
+  # so anything else gets a clear error instead of a crash deeper in the maths.
   @spec new(T.point_tuple()) :: T.point_tuple()
-  def new({x, y}), do: {x * 1.0, y * 1.0}
+  def new({x, y}) when is_number(x) and is_number(y), do: {x * 1.0, y * 1.0}
+
+  def new(other),
+    do: raise(ArgumentError, "expected an {x, y} point with numbers, got: #{inspect(other)}")
 
   @spec add(T.point_tuple(), T.point_tuple()) :: T.point_tuple()
   def add({x, y}, {dx, dy}), do: {x + dx, y + dy}
@@ -13,8 +18,10 @@ defmodule Curves.Utils.Vec do
   @spec subtract(T.point_tuple(), T.point_tuple()) :: T.point_tuple()
   def subtract({x, y}, {dx, dy}), do: {x - dx, y - dy}
 
-  # Multiplies both coordinates by `k`, which scales about {0, 0}.
-  @spec scale(T.point_tuple(), number()) :: T.point_tuple()
+  # Multiplies both coordinates by `k`, which scales about {0, 0}. With a {kx, ky} pair, x is
+  # multiplied by kx and y by ky, which stretches (or, with a negative, flips) one way more than the other.
+  @spec scale(T.point_tuple(), number() | {number(), number()}) :: T.point_tuple()
+  def scale({x, y}, {kx, ky}), do: {x * kx, y * ky}
   def scale({x, y}, k), do: {x * k, y * k}
 
   # Rotates a point counter-clockwise by `radians` around `origin`.

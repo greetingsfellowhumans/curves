@@ -5,7 +5,7 @@ defmodule Curves.Utils.Percent do
 
   alias Curves.Types, as: T
 
-  # Anything with min/max bounds, such as a Bezier or Spline curve.
+  # Anything with min/max bounds, such as a curve (Bezier, Spline or Polyline).
   @type bounded :: %{xmin: T.coord(), xmax: T.coord(), ymin: T.coord(), ymax: T.coord()}
 
   # Finds the lowest and highest x and y among the points.
@@ -20,7 +20,7 @@ defmodule Curves.Utils.Percent do
   # `get_points` returns the transformed points, and is only called when needed:
   # an untransformed curve (scale 1, rotation 0, origin {0, 0}) reuses the bounds stored at
   # define time. They are exactly what transforming would give, and skipping it keeps define fast.
-  @spec get_bounds_after_transforms(T.curve_struct(), (-> T.point_list())) :: bounded()
+  @spec get_bounds_after_transforms(T.curve_data(), (-> T.point_list())) :: bounded()
   def get_bounds_after_transforms(%{scale: scale, rotation: rotation} = curve, get_points)
       when scale == 1 and rotation == 0,
       do: get_bounds_at_origin(curve.origin, curve, get_points)
@@ -28,7 +28,7 @@ defmodule Curves.Utils.Percent do
   def get_bounds_after_transforms(_curve, get_points), do: get_bounds(get_points.())
 
   # Stored bounds when the origin is {0, 0}, otherwise the bounds of the transformed points.
-  @spec get_bounds_at_origin(T.point_tuple(), T.curve_struct(), (-> T.point_list())) :: bounded()
+  @spec get_bounds_at_origin(T.point_tuple(), T.curve_data(), (-> T.point_list())) :: bounded()
   defp get_bounds_at_origin({x, y}, curve, _get_points) when x == 0 and y == 0,
     do: Map.take(curve, [:xmin, :xmax, :ymin, :ymax])
 

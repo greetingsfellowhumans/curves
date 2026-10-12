@@ -4,7 +4,7 @@ defmodule Curves.Bezier.Curve do
   """
   alias Curves.Bezier.Predefined
   alias Curves.Types, as: T
-  alias Curves.Utils.{Percent, Poly, Vec}
+  alias Curves.Utils.{Percent, Poly, Segment, Vec}
 
   # Blending matrices for 2, 3 and 4 points (linear, quadratic and cubic Bernstein polynomials).
   @matrices %{
@@ -51,6 +51,13 @@ defmodule Curves.Bezier.Curve do
   def define(points, opts \\ [])
 
   def define([], _opts), do: raise(ArgumentError, "a bezier curve needs at least one point")
+
+  # Anything but a list of points or a predefined name, e.g. a single {x, y} or a map.
+  def define(points, _opts) when not is_list(points) and not is_atom(points) do
+    raise ArgumentError,
+          "a bezier curve takes a list of {x, y} points or a predefined curve name such as :ease, " <>
+            "got: #{inspect(points)}"
+  end
 
   def define(points, opts) do
     points =
@@ -107,10 +114,81 @@ defmodule Curves.Bezier.Curve do
      end}
   end
 
+  # Adds a transformation such as {Curves.Transform.Move, :inc_x, [5]} to the end of the list,
+  # then recompresses. Called by Curves.Transform, which can't touch this opaque struct itself.
+  # The value of `field` (:origin, :scale or :rotation) before the change is stored with it.
+  @doc false
+  @spec add_transformation(t(), {module(), atom(), list()}, atom()) :: t()
+  def add_transformation(curve, {mod, func, args}, field) do
+    transformation = {mod, func, args, Map.fetch!(curve, field)}
+    curve = %{curve | transformations: curve.transformations ++ [transformation]}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The same curve travelled the other way: its points in reverse order, so t = 0 is the old end.
+  # Called by Curves.Transform.reverse/1. Transforms still apply on top, as before.
+  @doc false
+  @spec reverse(t()) :: t()
+  def reverse(curve) do
+    curve = %{curve | points: Enum.reverse(curve.points)}
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The curve with every point moved by `fun` (an affine map), applied as it is drawn: its own
+  # moves, scaling and rotation are folded into its points first. See Curves.Spline.Curve.map_points/2.
+  @doc false
+  @spec map_points(t(), (T.point_tuple() -> T.point_tuple())) :: t()
+  def map_points(curve, fun) do
+    points = curve |> transformed_points() |> Enum.map(fun)
+
+    curve =
+      struct(
+        curve,
+        Map.merge(Vec.bounds(points), %{
+          points: points,
+          transformations: [],
+          scale: 1.0,
+          rotation: 0.0,
+          origin: {0.0, 0.0}
+        })
+      )
+
+    {:ok, cb} = compress(curve)
+    %{curve | compressed: cb}
+  end
+
+  # The curve's points after moving, scaling and rotating, for Curves.Svg to draw.
+  @doc false
+  @spec transformed_points(t()) :: T.point_list()
+  def transformed_points(curve) do
+    %{points: points} = Curves.Transform.apply_all_transformations(curve)
+    points
+  end
+
+  # The dashed lines Curves.Svg draws: from each control point to the end it pulls on
+  # (first to second point, and third to fourth for a cubic). Other point counts can't be
+  # solved, so they just get one line through every point.
+  @doc false
+  @spec control_lines(t()) :: list(T.point_list())
+  def control_lines(curve), do: curve |> transformed_points() |> handle_lines()
+
+  @spec handle_lines(T.point_list()) :: list(T.point_list())
+  defp handle_lines([start | _] = points) when length(points) in 2..4 do
+    {controls, [finish]} = points |> tl() |> Enum.split(-1)
+    Segment.handle_lines(start, controls, finish)
+  end
+
+  defp handle_lines(points), do: [points]
+
   @doc false
   @spec solve(t(), number(), T.opts()) :: {:ok, T.point_tuple()} | {:error, tuple()}
   def solve(%__MODULE__{} = curve, t, opts) when is_number(t),
     do: solve_resolved(curve, t, resolve_opts(curve, opts))
+
+  def solve(_curve, t, _opts),
+    do: raise(ArgumentError, "t must be a number, got: #{inspect(t)}")
 
   # Solves with opts that already went through resolve_opts/2, so take/3 can resolve them
   # once for every point instead of once per point.
@@ -140,7 +218,9 @@ defmodule Curves.Bezier.Curve do
     opts = resolve_opts(curve, opts)
 
     Enum.reduce_while(1..n, [], fn i, acc ->
-      case solve_resolved(curve, i * (1 / n), opts) do
+      # i / n, not i * (1 / n): the rounding in 1 / n would make the last t 0.9999999999999999
+      # for some n (e.g. 49) instead of exactly 1.0.
+      case solve_resolved(curve, i / n, opts) do
         {:ok, point} -> {:cont, [point | acc]}
         {:error, term} -> {:halt, term}
       end

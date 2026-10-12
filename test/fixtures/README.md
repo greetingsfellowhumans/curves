@@ -2,7 +2,7 @@
 
 ## reference_results.etf
 
-Known-good results for about 140 curves: every predefined bezier, custom beziers and every spline type,
+Known-good results for about 220 curves: every predefined bezier, custom beziers and every spline type,
 each with and without moves, scaling and rotation. For each curve it holds `solve/3` at a range of
 `t`/`u` values (with and without `:force_percent`), `take/3`, and `Curves.Svg.render/2`.
 `test/curves/reference_results_test.exs` checks the library still gives the same results,

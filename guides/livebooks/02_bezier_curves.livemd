@@ -1,0 +1,180 @@
+# 2. Bezier curves (interactive)
+
+```elixir
+Mix.install([
+  {:curves, "~> 1.0.0-rc.2"},
+  {:kino, "~> 0.19"}
+])
+```
+
+## Points that pull
+
+A Bezier curve is defined by a short list of points:
+
+* the curve **starts at the first point** and **ends at the last point**,
+* the points in between are **control points**: the curve doesn't go through them, it is *pulled
+  towards* them, like a rope pulled by magnets.
+
+The number of points decides the kind of curve: 2 points make a straight line, 3 a **quadratic** curve
+and 4 a **cubic** curve.
+
+```elixir
+Curves.define_bezier([{0, 0}, {1, 4}, {3, -1}, {4, 3}])
+|> Curves.Svg.render(width: 480, height: 360)
+|> Kino.Image.new(:svg)
+```
+
+The dashed lines join each control point to the end it pulls on: they show the direction the curve
+leaves the start, and the direction it arrives at the end.
+
+## Move the control points
+
+The start `{0, 0}` and end `{4, 0}` stay put. Move the control points with the sliders and switch
+between the three kinds of curve. Try:
+
+* both control points high up, for a hill,
+* one up and one down, for an S,
+* control points *past* the ends, for loops and overshoots.
+
+```elixir
+form =
+  Kino.Control.form(
+    [
+      kind:
+        Kino.Input.select(
+          "Kind",
+          [cubic: "Cubic (4 points)", quadratic: "Quadratic (3 points)", linear: "Line (2 points)"]
+        ),
+      c1x: Kino.Input.range("Control 1: x", min: -2, max: 6, step: 0.25, default: 1),
+      c1y: Kino.Input.range("Control 1: y", min: -4, max: 4, step: 0.25, default: 3),
+      c2x: Kino.Input.range("Control 2: x (cubic only)", min: -2, max: 6, step: 0.25, default: 3),
+      c2y: Kino.Input.range("Control 2: y (cubic only)", min: -4, max: 4, step: 0.25, default: 3)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{kind: kind, c1x: c1x, c1y: c1y, c2x: c2x, c2y: c2y} ->
+  points =
+    case kind do
+      :cubic -> [{0, 0}, {c1x, c1y}, {c2x, c2y}, {4, 0}]
+      :quadratic -> [{0, 0}, {c1x, c1y}, {4, 0}]
+      :linear -> [{0, 0}, {4, 0}]
+    end
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new("`Curves.define_bezier(#{inspect(points)})`"),
+      points
+      |> Curves.define_bezier()
+      |> Curves.Svg.render(width: 480, height: 360, title: "#{kind}")
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{kind: :cubic, c1x: 1, c1y: 3, c2x: 3, c2y: 3}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+## You already know these: CSS easing
+
+If you've written CSS, you've used cubic Bezier curves! `cubic-bezier(x1, y1, x2, y2)` is a curve from
+`{0, 0}` to `{1, 1}` with the control points `{x1, y1}` and `{x2, y2}`. Design your own easing below,
+then press **Play** to feel what it does to a moving box.
+
+```elixir
+# Remembers the latest numbers from the form, so the Play button can use them.
+{:ok, latest} = Agent.start_link(fn -> %{x1: 0.68, y1: -0.55, x2: 0.27, y2: 1.55} end)
+
+form =
+  Kino.Control.form(
+    [
+      x1: Kino.Input.range("x1", min: 0, max: 1, step: 0.01, default: 0.68),
+      y1: Kino.Input.range("y1", min: -1, max: 2, step: 0.01, default: -0.55),
+      x2: Kino.Input.range("x2", min: 0, max: 1, step: 0.01, default: 0.27),
+      y2: Kino.Input.range("y2", min: -1, max: 2, step: 0.01, default: 1.55)
+    ],
+    report_changes: true
+  )
+
+easing = fn %{x1: x1, y1: y1, x2: x2, y2: y2} ->
+  Curves.define_bezier([{0, 0}, {x1, y1}, {x2, y2}, {1, 1}])
+end
+
+frame = Kino.Frame.new()
+
+render = fn css ->
+  Agent.update(latest, fn _ -> css end)
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new(
+        "CSS: `cubic-bezier(#{css.x1}, #{css.y1}, #{css.x2}, #{css.y2})`"
+      ),
+      css |> easing.() |> Curves.Svg.render(width: 420, height: 360) |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(Agent.get(latest, & &1)))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 2)
+```
+
+```elixir
+# A box sliding from left to right, using your easing for "how far along" at each moment.
+box = fn progress ->
+  x = 20 + progress * 460
+
+  Kino.Image.new(
+    """
+    <svg xmlns="http://www.w3.org/2000/svg" width="560" height="100">
+      <rect width="100%" height="100%" fill="#f8f9fa"/>
+      <line x1="45" y1="80" x2="505" y2="80" stroke="#dee2e6" stroke-width="2"/>
+      <rect x="#{x}" y="30" width="50" height="50" rx="8" fill="#7048e8"/>
+    </svg>
+    """,
+    :svg
+  )
+end
+
+button = Kino.Control.button("Play")
+frame = Kino.Frame.new()
+Kino.Frame.render(frame, box.(0.0))
+
+Kino.listen(button, fn _event ->
+  curve = easing.(Agent.get(latest, & &1))
+
+  for step <- 0..50 do
+    {_x, progress} = Curves.solve!(curve, step / 50)
+    Kino.Frame.render(frame, box.(progress))
+    Process.sleep(25)
+  end
+end)
+
+Kino.Layout.grid([button, frame], columns: 1)
+```
+
+Try a curve that goes below `0` or above `1`: the box backs up before it starts, or overshoots and
+comes back. That's how "bouncy" animations are made.
+
+## Too many points?
+
+A single Bezier curve takes 2 to 4 points. With more, solving returns an error:
+
+```elixir
+[{0, 0}, {1, 1}, {2, 0}, {3, 1}, {4, 0}]
+|> Curves.define_bezier()
+|> Curves.solve(0.5)
+```
+
+For longer paths, chain curves together with a spline. That's the next chapter.
+
+## Next
+
+[Chapter 3](03_splines.livemd): splines.

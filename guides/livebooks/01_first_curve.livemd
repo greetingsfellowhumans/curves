@@ -1,0 +1,210 @@
+# 1. Your first curve (interactive)
+
+```elixir
+Mix.install([
+  {:curves, "~> 1.0.0-rc.2"},
+  {:kino, "~> 0.19"}
+])
+```
+
+## Welcome!
+
+This is the first of four short, hands-on chapters. You'll make a curve, move along it, and race some
+curves against each other. Evaluate each cell in order (or click **Evaluate all** at the top), then play
+with the sliders and buttons.
+
+Every picture is drawn by `Curves.Svg`. In each one:
+
+* the **blue line** is the curve,
+* the **orange dots** are the points that shape it,
+* the **dashed lines** show which point pulls on which part of the curve,
+* the **purple dots** are points we asked for,
+* and the grid shows the real `x` and `y` values.
+
+## Make a curve
+
+The quickest way to get a curve is to pick a ready-made one by name:
+
+```elixir
+curve = Curves.define_bezier(:ease_in_out)
+
+curve
+|> Curves.Svg.render(width: 480, height: 360)
+|> Kino.Image.new(:svg)
+```
+
+## Moving along a curve with `t`
+
+Think of the curve as a road. `t` says how far along the road you are: `0.0` is the start, `1.0` is the
+end. `Curves.solve!/2` turns a `t` into an `{x, y}` point:
+
+```elixir
+Curves.solve!(curve, 0.5)
+```
+
+Now try it yourself. Drag the **t** slider and watch the purple dot travel. Pick a different curve too:
+some of them move slowly at first, some rush off, and some even overshoot!
+
+```elixir
+names = Enum.map(Curves.Bezier.Predefined.list(), &{&1, inspect(&1)})
+
+form =
+  Kino.Control.form(
+    [
+      name: Kino.Input.select("Curve", names, default: :ease_in_out),
+      t: Kino.Input.range("t", min: 0, max: 1, step: 0.01, default: 0.3)
+    ],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{name: name, t: t} ->
+  curve = Curves.define_bezier(name)
+  {x, y} = Curves.solve!(curve, t)
+
+  Kino.Layout.grid(
+    [
+      Kino.Markdown.new(
+        "`Curves.solve!(curve, #{t})` → `{#{Float.round(x * 1.0, 3)}, #{Float.round(y * 1.0, 3)}}`"
+      ),
+      curve
+      |> Curves.Svg.render(width: 480, height: 360, markers: [{x, y}], title: inspect(name))
+      |> Kino.Image.new(:svg)
+    ],
+    columns: 1
+  )
+end
+
+Kino.Frame.render(frame, render.(%{name: :ease_in_out, t: 0.3}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 1)
+```
+
+Did you notice that the dot doesn't move at a steady pace? `t` is *time* along the road, not distance.
+On `:ease_in_out` the dot starts slowly, rushes through the middle and slows down at the end. That's
+exactly what makes it feel smooth in an animation.
+
+## Many points at once with `take`
+
+To draw a curve, or move something along it, you usually want many points. `Curves.take!/2` gives you
+`n` of them, evenly spaced in `t`:
+
+```elixir
+Curves.take!(curve, 5)
+```
+
+Slide **n** to ask for more or fewer points:
+
+```elixir
+form =
+  Kino.Control.form(
+    [n: Kino.Input.range("n", min: 1, max: 40, step: 1, default: 10)],
+    report_changes: true
+  )
+
+frame = Kino.Frame.new()
+
+render = fn %{n: n} ->
+  curve
+  |> Curves.Svg.render(width: 480, height: 360, markers: Curves.take!(curve, round(n)))
+  |> Kino.Image.new(:svg)
+end
+
+Kino.Frame.render(frame, render.(%{n: 10}))
+Kino.listen(form, fn %{data: data} -> Kino.Frame.render(frame, render.(data)) end)
+Kino.Layout.grid([form, frame], columns: 1)
+```
+
+`take` starts *after* the start: its points are at `t = 1/n, 2/n, ... 1.0`. Add
+`Curves.solve!(curve, 0.0)` if you need the very first point too.
+
+## When things go wrong
+
+`solve!` and `take!` raise an error when something is wrong. Their siblings `solve` and `take` return
+`{:ok, result}` or `{:error, reason}` instead. Try a `t` past the end:
+
+```elixir
+Curves.solve(curve, 1.5)
+```
+
+## The gallery
+
+Here is every ready-made curve. `Curves.Bezier.Predefined.list/0` gives you their names.
+
+```elixir
+Curves.Bezier.Predefined.list()
+|> Enum.map(fn name ->
+  name
+  |> Curves.define_bezier()
+  |> Curves.Svg.render(width: 220, height: 180, padding: 24, title: inspect(name), show_axes: false)
+  |> Kino.Image.new(:svg)
+end)
+|> Kino.Layout.grid(columns: 4)
+```
+
+## The easing race 🏁
+
+Easing curves decide *how* something moves from start to finish. Let's race five of them! Each runner
+uses the `y` of its curve as "how far along the track am I", for `t` going from `0.0` to `1.0`. They all
+start and finish at the same time, but watch how differently they get there.
+
+Press **Start the race!** (as often as you like).
+
+```elixir
+runners = [
+  {:linear, "#1c7ed6"},
+  {:ease_in, "#e8590c"},
+  {:ease_out, "#2f9e44"},
+  {:ease_in_out, "#7048e8"},
+  {:ease_out_back, "#e64980"}
+]
+
+# Draws the track at time t: one lane per runner, with a dot at its progress.
+render = fn %{t: t} ->
+  lanes =
+    for {{name, color}, lane} <- Enum.with_index(runners) do
+      {_x, progress} = Curves.solve!(Curves.define_bezier(name), t)
+      y = 40 + lane * 50
+      x = 120 + progress * 440
+
+      """
+      <text x="10" y="#{y + 5}" font-family="sans-serif" font-size="14">#{inspect(name)}</text>
+      <line x1="120" y1="#{y}" x2="560" y2="#{y}" stroke="#dee2e6" stroke-width="2"/>
+      <circle cx="#{x}" cy="#{y}" r="12" fill="#{color}"/>
+      """
+    end
+
+  Kino.Image.new(
+    """
+    <svg xmlns="http://www.w3.org/2000/svg" width="600" height="280">
+      <rect width="100%" height="100%" fill="#ffffff"/>
+      <line x1="560" y1="20" x2="560" y2="260" stroke="#212529" stroke-width="3" stroke-dasharray="6 4"/>
+      #{lanes}
+    </svg>
+    """,
+    :svg
+  )
+end
+
+button = Kino.Control.button("Start the race!")
+frame = Kino.Frame.new()
+Kino.Frame.render(frame, render.(%{t: 0.0}))
+
+Kino.listen(button, fn _event ->
+  for step <- 0..60 do
+    Kino.Frame.render(frame, render.(%{t: step / 60}))
+    Process.sleep(30)
+  end
+end)
+
+Kino.Layout.grid([button, frame], columns: 1)
+```
+
+Who won? Nobody: they all finish at `t = 1.0`. But `:ease_out` sprints off and coasts in,
+`:ease_in` starts slowly and speeds up, and `:ease_out_back` overshoots the line and comes back. Try
+swapping in other names from the gallery!
+
+## Next
+
+In [chapter 2](02_bezier_curves.livemd) you'll make your own curves by moving control points around.
