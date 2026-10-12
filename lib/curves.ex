@@ -114,6 +114,10 @@ defmodule Curves do
   a cubic curve (`C`). The last point only ends the curve, so it must be `[knot]`.
   Any other shape, or an empty list, raises an `ArgumentError`.
 
+  `[knot, {:arc, rx, ry, rotation, large_arc, sweep}]` is an elliptical arc to the next knot, exactly
+  like SVG's `A rx ry rotation large-arc-flag sweep-flag x y`, with `true`/`false` for the flags and
+  the rotation in degrees. See `Curves.Spline.Type.BezierSpline` for what the flags do.
+
   ## Examples
       iex> curve = Curves.define_bezier_spline([
       ...>   [{5.0, 10.0}, {10.0, 10.0}, {5.0, 5.0}],
@@ -128,6 +132,14 @@ defmodule Curves do
       {10.0, 5.0}
       iex> Curves.define_bezier_spline([])
       ** (ArgumentError) a spline needs at least 1 point, got none
+
+  A line, then a half circle (SVG `M 0 0 L 10 0 A 5 5 0 0 1 10 10`):
+
+      iex> curve = Curves.define_bezier_spline([[{0, 0}], [{10, 0}, {:arc, 5, 5, 0, false, true}], [{10, 10}]])
+      iex> Curves.solve!(curve, 1.5)
+      {15.0, 5.0}
+      iex> Curves.solve!(curve, 2.0)
+      {10.0, 10.0}
   """
   @spec define_bezier_spline(points :: list(T.point_list()), opts :: T.define_opts()) ::
           Spline.t()
@@ -339,6 +351,57 @@ defmodule Curves do
   defdelegate define_natural_cubic(points, opts \\ []),
     to: Curves.Spline.Type.NaturalCubic,
     as: :define
+
+  @doc ~s"""
+  Define an ellipse, or an arc of one: a `Curves.Spline.Type.Ellipse` centred on `center`, with
+  radii `{rx, ry}` (numbers that are 0 or more; anything else raises an `ArgumentError`).
+
+  It is one segment, so `u` goes from `0.0` to `1.0`. By default it goes once all the way round,
+  starting at `center + {rx, 0}` like SVG's `<ellipse>`, and ends exactly where it started.
+
+  ## Options
+  All in degrees:
+
+  * `:rotation` (default `0`) - tilts the ellipse's x axis, turning it around its centre.
+  * `:from` and `:to` (defaults `0` and `360`) - the angles the curve starts and ends at, measured
+    from the ellipse's x axis, to make an arc. When `:to` is bigger, the angle goes up: anticlockwise
+    in Curves' pictures (y up), clockwise on an SVG screen (y down). When it is smaller, the other way.
+
+  Also see [available opts](#module-options).
+
+  ## Examples
+      iex> curve = Curves.define_ellipse({1, 2}, {4, 2})
+      iex> Curves.max_u(curve)
+      1.0
+      iex> Curves.solve!(curve, 0.0)
+      {5.0, 2.0}
+      iex> Curves.solve!(curve, 1.0)
+      {5.0, 2.0}
+      iex> {x, y} = Curves.solve!(curve, 0.25)
+      iex> {Float.round(x, 6), Float.round(y, 6)}
+      {1.0, 4.0}
+      iex> Curves.define_ellipse({0, 0}, {-1, 2})
+      ** (ArgumentError) the radii of an ellipse must be {rx, ry}, two numbers that are 0 or more, got: {-1, 2}
+  """
+  @spec define_ellipse(T.point_tuple(), {number(), number()}, T.ellipse_opts()) :: Spline.t()
+  def define_ellipse(center, radii, opts \\ []),
+    do: Curves.Spline.Type.Ellipse.define({center, radii}, opts)
+
+  @doc ~s"""
+  Define a circle, or an arc of one: `define_ellipse/3` with both radii `r`. It takes the same
+  options, so `:from` and `:to` (in degrees) make an arc, like a canvas's `arc()`.
+
+  ## Examples
+      iex> curve = Curves.define_circle({0, 0}, 2, from: 90, to: 180)
+      iex> {x, y} = Curves.solve!(curve, 1.0)
+      iex> {Float.round(x, 6), Float.round(y, 6)}
+      {-2.0, 0.0}
+      iex> {x, y} = Curves.solve!(curve, 0.5)
+      iex> {Float.round(x, 4), Float.round(y, 4)}
+      {-1.4142, 1.4142}
+  """
+  @spec define_circle(T.point_tuple(), number(), T.ellipse_opts()) :: Spline.t()
+  defdelegate define_circle(center, r, opts \\ []), to: Curves.Spline.Type.Ellipse
 
   @doc ~s"""
   Define a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`.

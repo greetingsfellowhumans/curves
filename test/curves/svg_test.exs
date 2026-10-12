@@ -58,6 +58,14 @@ defmodule Curves.SvgTest do
       assert length(line_points(svg)) == 101
     end
 
+    test "an ellipse draws the box around it as dots, with dashed lines like a quadratic's" do
+      svg = Svg.render(Curves.define_ellipse({0, 0}, {4, 2}), samples: 10)
+      # Its start and end are the same point, drawn twice.
+      assert count(svg, "<circle") == 9
+      assert count(svg, "stroke-dasharray") == 4
+      assert length(line_points(svg)) == 11
+    end
+
     test "the splines built from knots draw one dot per knot, and a dashed line through them" do
       for define <- [
             &Curves.define_cardinal/1,

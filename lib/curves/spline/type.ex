@@ -7,6 +7,7 @@ defmodule Curves.Spline.TypeIndex do
     b_spline: T.BSpline,
     cardinal: T.Cardinal,
     catmull_rom: T.CatmullRom,
+    ellipse: T.Ellipse,
     centripetal_catmull_rom: T.CentripetalCatmullRom,
     hermite: T.Hermite,
     kochanek_bartels: T.KochanekBartels,
@@ -61,6 +62,11 @@ defmodule Curves.Spline.Type do
   # one line through every point in order.
   @callback control_lines(points :: list(list(tuple()))) :: list(list(tuple()))
 
+  # The curve's :points (see Curves.Spline.Curve), from the same points define_spline/3 gets. The
+  # default is every point, in order, as floats. Types whose input holds more than points (such as
+  # a bezier spline's arcs) override it.
+  @callback stored_points(points :: list()) :: list(tuple())
+
   @doc false
   @spec get_mod(atom() | {:module, module()}) :: module()
   defdelegate get_mod(key), to: Curves.Spline.TypeIndex, as: :get
@@ -96,6 +102,12 @@ defmodule Curves.Spline.Type do
         do: [points |> List.flatten() |> Enum.map(&Curves.Utils.Vec.new/1)]
 
       defoverridable control_lines: 1
+
+      @doc false
+      @impl true
+      def stored_points(points), do: points |> List.flatten() |> Enum.map(&Curves.Utils.Vec.new/1)
+
+      defoverridable stored_points: 1
     end
   end
 end

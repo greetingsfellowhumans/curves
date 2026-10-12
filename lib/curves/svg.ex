@@ -38,7 +38,8 @@ defmodule Curves.Svg do
   The `show_*` options treat `nil` like `false`.
 
   The dots are the points the curve stores. For most curves these are the points you defined it with,
-  but B-splines store the control points they generate from yours.
+  but B-splines store the control points they generate from yours, and ellipses and arcs store the
+  corners of the shape they stay inside (see `Curves.Spline.Type.Ellipse`).
 
   If `:solve_opts` turns on `:force_percent`, the curve is drawn in 0..1 but its points are not,
   so set `show_points: false` and `show_polygon: false`.

@@ -26,7 +26,9 @@ defmodule Curves.Bench.Helper do
       "spline kochanek_bartels" =>
         Curves.define_kochanek_bartels(spline_points(), tension: 0.2, continuity: -0.3, bias: 0.4),
       "spline monotone" => Curves.define_monotone(spline_points()),
-      "spline natural_cubic" => Curves.define_natural_cubic(spline_points())
+      "spline natural_cubic" => Curves.define_natural_cubic(spline_points()),
+      "spline ellipse" => Curves.define_ellipse({0.0, 0.0}, {4.0, 2.0}, rotation: 30),
+      "spline bezier_spline with arcs" => Curves.define_bezier_spline(arc_path_points())
     }
   end
 
@@ -61,6 +63,18 @@ defmodule Curves.Bench.Helper do
       [{15.0, 10.0}, {15.0, 14.0}, {18.0, 15.0}],
       [{20.0, 15.0}, {23.0, 15.0}, {32.0, 5.0}],
       [{30.0, 10.0}]
+    ]
+  end
+
+  # A path of lines and arcs, like SVG's `M 0 0 L 10 0 A 5 5 0 0 1 10 10 L 0 10 A 3 6 30 1 0 0 0`.
+  @spec arc_path_points() :: list(list())
+  def arc_path_points() do
+    [
+      [{0.0, 0.0}],
+      [{10.0, 0.0}, {:arc, 5, 5, 0, false, true}],
+      [{10.0, 10.0}],
+      [{0.0, 10.0}, {:arc, 3, 6, 30, true, false}],
+      [{0.0, 0.0}]
     ]
   end
 

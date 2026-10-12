@@ -31,7 +31,9 @@ defmodule Curves.PropertiesTest do
         :centripetal_catmull_rom,
         :kochanek_bartels,
         :monotone,
-        :natural_cubic
+        :natural_cubic,
+        :arc_path,
+        :ellipse
       ]),
       fn
         :catmull_rom -> StreamData.map(points(4, 8), &Curves.define_catmull_rom/1)
@@ -43,6 +45,64 @@ defmodule Curves.PropertiesTest do
         :kochanek_bartels -> kochanek_bartels(points(4, 8))
         :monotone -> StreamData.map(data_points(4, 8), &Curves.define_monotone/1)
         :natural_cubic -> StreamData.map(points(4, 8), &Curves.define_natural_cubic/1)
+        :arc_path -> arc_path(4, 8)
+        :ellipse -> ellipse()
+      end
+    )
+  end
+
+  # An SVG arc command without its end point: radii 0..50, a rotation, and the two flags.
+  @spec arc_spec() :: StreamData.t(tuple())
+  defp arc_spec do
+    StreamData.map(
+      StreamData.tuple({
+        StreamData.float(min: 0.0, max: 50.0),
+        StreamData.float(min: 0.0, max: 50.0),
+        StreamData.float(min: -360.0, max: 360.0),
+        StreamData.boolean(),
+        StreamData.boolean()
+      }),
+      fn {rx, ry, rotation, large_arc, sweep} -> {:arc, rx, ry, rotation, large_arc, sweep} end
+    )
+  end
+
+  # A bezier spline whose curves are a mix of lines, cubics and arcs (SVG L, C and A).
+  @spec arc_path(pos_integer(), pos_integer()) :: StreamData.t(Curves.Spline.Curve.t())
+  defp arc_path(min, max) do
+    StreamData.bind(points(min, max), fn knots ->
+      {curves, [last]} = Enum.split(knots, -1)
+
+      curves
+      |> Enum.map(&path_point/1)
+      |> StreamData.fixed_list()
+      |> StreamData.map(&Curves.define_bezier_spline(&1 ++ [[last]]))
+    end)
+  end
+
+  # One knot of a path, with a line, a cubic or an arc to the next one.
+  @spec path_point({float(), float()}) :: StreamData.t(list())
+  defp path_point({x, y} = knot) do
+    StreamData.one_of([
+      StreamData.constant([knot]),
+      StreamData.constant([knot, {x + 1.0, y - 2.0}, {x - 1.0, y + 2.0}]),
+      StreamData.map(arc_spec(), &[knot, &1])
+    ])
+  end
+
+  # An ellipse (or an arc of one) somewhere in -100..100, with radii 0..50.
+  @spec ellipse() :: StreamData.t(Curves.Spline.Curve.t())
+  defp ellipse do
+    StreamData.map(
+      StreamData.tuple({
+        point(),
+        StreamData.float(min: 0.0, max: 50.0),
+        StreamData.float(min: 0.0, max: 50.0),
+        StreamData.float(min: -360.0, max: 360.0),
+        StreamData.float(min: -720.0, max: 720.0),
+        StreamData.float(min: -720.0, max: 720.0)
+      }),
+      fn {center, rx, ry, rotation, from, to} ->
+        Curves.define_ellipse(center, {rx, ry}, rotation: rotation, from: from, to: to)
       end
     )
   end
@@ -328,8 +388,9 @@ defmodule Curves.PropertiesTest do
     end
   end
 
-  # Beziers, B-splines, bezier splines and Hermite splines stay inside their own (stored) points,
-  # and a monotone spline never overshoots its knots, so force_percent stays in 0..1. Catmull-Rom
+  # Beziers, B-splines, bezier splines (arcs too: they store hull points) and Hermite splines stay
+  # inside their own (stored) points, and a monotone spline never overshoots its knots, so
+  # force_percent stays in 0..1. Catmull-Rom
   # and the other splines through their knots can bend outside them, so they're left out.
   property "force_percent stays within 0..1 for curves that stay inside their points" do
     check all(
@@ -339,7 +400,9 @@ defmodule Curves.PropertiesTest do
                 StreamData.map(points(4, 8), &Curves.define_b_spline/1),
                 StreamData.map(points(4, 8), &bezier_spline/1),
                 StreamData.map(points(4, 8), &hermite/1),
-                StreamData.map(data_points(4, 8), &Curves.define_monotone/1)
+                StreamData.map(data_points(4, 8), &Curves.define_monotone/1),
+                arc_path(2, 6),
+                ellipse()
               ]),
             f <- fraction()
           ) do
@@ -578,6 +641,80 @@ defmodule Curves.PropertiesTest do
         |> Enum.each(fn {{kx, ky}, i} ->
           assert_close(Curves.solve!(curve, i * 1.0), {kx * 1.0, ky * 1.0})
         end)
+      end
+    end
+  end
+
+  # Arcs end exactly on their knots. Lines and cubics (and arcs that SVG draws as lines, like a
+  # radius of 0) land within rounding, as they always have.
+  property "a path with arcs passes through every knot" do
+    check all(knots <- points(2, 8), specs <- StreamData.list_of(arc_spec(), length: 7)) do
+      {curves, [last]} = Enum.split(knots, -1)
+      path = Enum.zip_with(curves, specs, fn knot, spec -> [knot, spec] end) ++ [[last]]
+      curve = Curves.define_bezier_spline(path)
+
+      knots
+      |> Enum.with_index()
+      |> Enum.each(fn {knot, i} -> assert_close(Curves.solve!(curve, i * 1.0), knot) end)
+
+      # The segments field is internal; this checks every real arc ends exactly on its knot. (A
+      # whole number u solves the end of the segment before it, so only u = 0 solves a start.)
+      curve.segments
+      |> Enum.with_index()
+      |> Enum.each(fn
+        {{:arc, _c, _a, _b, _from, _to, _start, _finish}, i} ->
+          assert Curves.solve!(curve, i + 1.0) == Enum.at(knots, i + 1)
+
+        _line ->
+          :ok
+      end)
+
+      assert_first_arc_starts_exactly(curve, hd(knots))
+    end
+  end
+
+  @spec assert_first_arc_starts_exactly(Curves.Spline.Curve.t(), {float(), float()}) :: :ok | true
+  defp assert_first_arc_starts_exactly(
+         %{segments: [{:arc, _, _, _, _, _, _, _} | _]} = curve,
+         knot
+       ),
+       do: assert(Curves.solve!(curve, 0.0) == knot)
+
+  defp assert_first_arc_starts_exactly(_curve, _knot), do: :ok
+
+  property "an SVG arc of a circle stays the same distance from its centre, turning the way sweep says" do
+    check all(
+            p1 <- point(),
+            p2 <- point(),
+            r <- StreamData.float(min: 0.1, max: 200.0),
+            large_arc <- StreamData.boolean(),
+            sweep <- StreamData.boolean(),
+            f <- fraction()
+          ) do
+      case Curves.Utils.Arc.from_svg(p1, {r, r, 0, large_arc, sweep}, p2) do
+        {:arc, {cx, cy} = c, a, _b, from, to, _start, _finish} = arc ->
+          radius =
+            :math.sqrt(
+              elem(Curves.Utils.Vec.subtract(a, c), 0) ** 2 +
+                elem(Curves.Utils.Vec.subtract(a, c), 1) ** 2
+            )
+
+          {x, y} = arc |> Curves.Utils.Arc.prepare() |> Curves.Utils.Arc.eval(f)
+
+          assert abs(:math.sqrt((x - cx) ** 2 + (y - cy) ** 2) - radius) <=
+                   1.0e-9 * max(1.0, radius)
+
+          assert sweep == to > from
+          # A large arc turns at least half way round, a small one at most.
+          half = :math.pi()
+
+          if large_arc,
+            do: assert(abs(to - from) >= half - 1.0e-9),
+            else: assert(abs(to - from) <= half + 1.0e-9)
+
+        line ->
+          # Only the same start and end gives no arc here (the radius is never 0).
+          assert p1 == p2 and line == [p1, p1, p1, p1]
       end
     end
   end

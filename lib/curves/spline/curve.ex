@@ -3,7 +3,8 @@ defmodule Curves.Spline.Curve do
   Struct representing a spline
   """
   alias Curves.Types, as: T
-  alias Curves.Utils.{Percent, Poly, Segment, Vec}
+  alias Curves.Utils.{Arc, Percent, Poly, Segment, Vec}
+  import Curves.Utils.Arc, only: [is_arc: 1]
 
   @minimum_u 0.0 - Curves.Utils.Constants.small_number()
 
@@ -59,12 +60,12 @@ defmodule Curves.Spline.Curve do
 
     segments =
       if mod.override_segment_parsing() do
-        Enum.map(coords, fn segment -> Enum.map(segment, &Vec.new/1) end)
+        Enum.map(coords, &given_segment/1)
       else
         Segment.new_segments(coords)
       end
 
-    points = coords |> List.flatten() |> Enum.map(&Vec.new/1)
+    points = mod.stored_points(coords)
 
     curve =
       struct(
@@ -91,6 +92,11 @@ defmodule Curves.Spline.Curve do
     Map.put(curve, :compressed, compressed)
   end
 
+  # A segment a spline type built itself: an arc as it is, or 4 points turned into floats.
+  @spec given_segment(Arc.t() | list(T.point_tuple())) :: Segment.t()
+  defp given_segment(arc) when is_arc(arc), do: arc
+  defp given_segment(points), do: Enum.map(points, &Vec.new/1)
+
   @doc false
   @spec compress(__MODULE__.t(), opts :: list()) ::
           {:ok, (u :: float(), opts :: T.opts() -> {:ok, T.point_tuple()})} | {:error, any()}
@@ -102,19 +108,31 @@ defmodule Curves.Spline.Curve do
         Curves.Transform.transform_points(curve, curve.points)
       end)
 
-    # Each segment's polynomial coefficients, worked out once; a tuple so solving can pick one by index.
+    # What each segment needs for solving, worked out once: a polynomial's coefficients, or an
+    # arc's centre and axes. A tuple, so solving can pick one by index.
     coefficients =
       curve.segments
-      |> Enum.map(&Poly.coefficients(mod.blending_function(), &1, mod.blending_factor()))
+      |> Enum.map(&prepare(&1, mod))
       |> List.to_tuple()
 
     {:ok,
      fn u, solve_opts ->
        {index, t} = Segment.split_u(u)
-       point = coefficients |> elem(index) |> Poly.eval(t)
+       point = coefficients |> elem(index) |> eval(t)
        {:ok, Percent.maybe_normalize(bounds, point, solve_opts)}
      end}
   end
+
+  @spec prepare(Segment.t(), module()) :: tuple()
+  defp prepare(arc, _mod) when is_arc(arc), do: Arc.prepare(arc)
+
+  defp prepare(points, mod),
+    do: Poly.coefficients(mod.blending_function(), points, mod.blending_factor())
+
+  # Solves one prepared segment at t. Polynomials come first: they are the common case.
+  @spec eval(tuple(), float()) :: T.point_tuple()
+  defp eval(coefficients, t) when not is_arc(coefficients), do: Poly.eval(coefficients, t)
+  defp eval(arc, t), do: Arc.eval(arc, t)
 
   # Adds a transformation such as {Curves.Transform.Move, :inc_x, [5]} to the end of the list,
   # then recompresses. Called by Curves.Transform, which can't touch this opaque struct itself.
@@ -128,22 +146,27 @@ defmodule Curves.Spline.Curve do
     %{curve | compressed: cb}
   end
 
-  # The same spline travelled the other way, so u = 0 is the old end. Every spline type is stored
-  # as 4-point segments that read the same backwards (a Bezier segment [p0, c0, c1, p1] backwards is
-  # [p1, c1, c0, p0]; Catmull-Rom's [previous, k0, k1, next] becomes [next, k1, k0, previous]), so it
-  # reverses the segments and the points in each one. Called by Curves.Transform.reverse/1.
+  # The same spline travelled the other way, so u = 0 is the old end. Every polynomial segment has 4
+  # points that read the same backwards (a Bezier segment [p0, c0, c1, p1] backwards is
+  # [p1, c1, c0, p0]; Catmull-Rom's [previous, k0, k1, next] becomes [next, k1, k0, previous]), and
+  # an arc swaps its start and end angles. So it reverses the segments and each one.
+  # Called by Curves.Transform.reverse/1.
   @doc false
   @spec reverse(t()) :: t()
   def reverse(curve) do
     curve = %{
       curve
-      | segments: curve.segments |> Enum.reverse() |> Enum.map(&Enum.reverse/1),
+      | segments: curve.segments |> Enum.reverse() |> Enum.map(&reverse_segment/1),
         points: Enum.reverse(curve.points)
     }
 
     {:ok, cb} = compress(curve)
     %{curve | compressed: cb}
   end
+
+  @spec reverse_segment(Segment.t()) :: Segment.t()
+  defp reverse_segment(arc) when is_arc(arc), do: Arc.reverse(arc)
+  defp reverse_segment(points), do: Enum.reverse(points)
 
   # A transformed copy of the original points (knots or control points), for Curves.Svg
   # to draw. `curve.points` itself is never changed.

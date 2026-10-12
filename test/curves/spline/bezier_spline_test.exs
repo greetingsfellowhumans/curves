@@ -126,4 +126,50 @@ defmodule Curves.Spline.BezierSplineTest do
              [{30.0, 10.0}]
            ]
   end
+
+  describe "arcs" do
+    # SVG: M 0 0 L 10 0 A 5 5 0 0 1 10 10 L 0 10
+    @arc_path [[{0, 0}], [{10, 0}, {:arc, 5, 5, 0, false, true}], [{10, 10}], [{0, 10}]]
+
+    test "an arc goes from its knot to the next one, like SVG's A" do
+      curve = Curves.define_bezier_spline(@arc_path)
+      assert Curves.max_u(curve) == 3.0
+      assert Curves.solve!(curve, 1.0) == {10.0, 0.0}
+      assert Curves.solve!(curve, 2.0) == {10.0, 10.0}
+      assert Curves.solve!(curve, 1.5) == {15.0, 5.0}
+    end
+
+    test "stores the arc's hull points between its knots, and draws its dashed lines" do
+      curve = Curves.define_bezier_spline(@arc_path)
+      [k0, k1, corner1, middle, corner2, k2, k3] = curve.points
+      assert {k0, k1, k2, k3} == {{0.0, 0.0}, {10.0, 0.0}, {10.0, 10.0}, {0.0, 10.0}}
+      assert_in_delta elem(corner1, 0), 15.0, 1.0e-9
+      assert_in_delta elem(middle, 0), 15.0, 1.0e-9
+      assert_in_delta elem(corner2, 1), 10.0, 1.0e-9
+      assert [[^k1, ^corner1, ^middle], [^middle, ^corner2, ^k2]] = curve.lines
+    end
+
+    test "an arc that SVG draws as a line, or not at all, is one" do
+      curve = Curves.define_bezier_spline([[{0, 0}, {:arc, 0, 5, 0, false, true}], [{6, 0}]])
+      assert Curves.solve!(curve, 0.5) == {3.0, 0.0}
+      assert curve.points == [{0.0, 0.0}, {6.0, 0.0}]
+
+      curve = Curves.define_bezier_spline([[{1, 1}, {:arc, 3, 3, 0, false, true}], [{1, 1}]])
+      assert Curves.solve!(curve, 0.5) == {1.0, 1.0}
+    end
+
+    test "a malformed arc, or an arc on the last point, raises an ArgumentError" do
+      for bad <- [{:arc, 5, 5, 0, 0, 1}, {:arc, 5, 5}, {:arc, "5", 5, 0, false, true}] do
+        assert_raise ArgumentError,
+                     ~r/an arc must be \{:arc, rx, ry, rotation, large_arc, sweep\}/,
+                     fn ->
+                       Curves.define_bezier_spline([[{0, 0}, bad], [{1, 1}]])
+                     end
+      end
+
+      assert_raise ArgumentError, ~r/the last point of a bezier spline only ends the curve/, fn ->
+        Curves.define_bezier_spline([[{0, 0}], [{1, 1}, {:arc, 5, 5, 0, false, true}]])
+      end
+    end
+  end
 end

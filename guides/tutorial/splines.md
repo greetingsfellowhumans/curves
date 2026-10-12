@@ -76,6 +76,7 @@ the curve **to the next knot**:
 | `[knot]` | a straight line | `L` |
 | `[knot, c]` | a quadratic curve, pulled towards `c` | `Q` |
 | `[knot, c0, c1]` | a cubic curve: leaves `knot` towards `c0`, arrives from `c1` | `C` |
+| `[knot, {:arc, rx, ry, rotation, large_arc, sweep}]` | an elliptical arc | `A` |
 
 The last point only ends the curve, so it is just `[knot]`.
 
@@ -89,6 +90,32 @@ Curves.define_bezier_spline([
 ```
 
 ![L, then Q, then C](images/spline_bezier_lqc.svg)
+
+An arc is a piece of an ellipse with radii `rx` and `ry`, from its knot to the next one, just like
+SVG's `A`. Here's a straight line, a half circle and another straight line (SVG
+`M 0 0 L 10 0 A 5 5 0 0 1 10 10 L 0 10`):
+
+```elixir
+Curves.define_bezier_spline([
+  [{0, 0}],
+  [{10, 0}, {:arc, 5, 5, 0, false, true}],
+  [{10, 10}],
+  [{0, 10}]
+])
+```
+
+![L, then A, then L](images/spline_arc_path.svg)
+
+There are usually four arcs of the same ellipse between two points, and the last two values pick one:
+`large_arc` takes the long way round, and `sweep` picks the direction (`true` goes anticlockwise in these
+pictures, where y goes up).
+
+| | `sweep: false` | `sweep: true` |
+| --- | --- | --- |
+| `large_arc: false` | ![Short way, angle going down](images/arc_flags_false_false.svg) | ![Short way, angle going up](images/arc_flags_false_true.svg) |
+| `large_arc: true` | ![Long way, angle going down](images/arc_flags_true_false.svg) | ![Long way, angle going up](images/arc_flags_true_true.svg) |
+
+The orange dots and dashed lines show the shape the arc stays inside, like a Bezier curve's control points.
 
 ### Hermite: say which way to go
 
@@ -175,6 +202,23 @@ Curves.define_natural_cubic([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}])
 
 ![Natural cubic](images/spline_natural_cubic.svg)
 
+## Ellipses, circles and arcs
+
+`Curves.define_ellipse/3` and `Curves.define_circle/3` draw a whole ellipse or circle, given its centre and
+radii. It is one segment, so `u` goes from `0.0` to `1.0`, once round. `:rotation` tilts it, and `:from`
+and `:to` (in degrees) give an arc of it instead, like a canvas's `arc()`:
+
+```elixir
+Curves.define_ellipse({0, 0}, {4, 2}, rotation: 30)
+Curves.define_circle({0, 0}, 2, from: 90, to: 180)
+```
+
+| An ellipse | An arc of a circle |
+| --- | --- |
+| ![An ellipse](images/ellipse.svg) | ![An arc](images/circle_arc.svg) |
+
+Arcs are exact: they aren't made of Bezier curves, and a whole ellipse ends exactly where it started.
+
 ## Which one should I use?
 
 | You want... | Use |
@@ -188,6 +232,7 @@ Curves.define_natural_cubic([{0, 0}, {2, 3}, {4, 1}, {6, 4}, {8, 2}])
 | the smoothest possible path, and don't need to hit the points exactly | `define_b_spline/2` |
 | exact control over every bend, or to copy an SVG path | `define_bezier_spline/2` |
 | to set the direction and speed at each point | `define_hermite/2` |
+| a circle, an ellipse, or an arc of one | `define_circle/3`, `define_ellipse/3`, or an arc in `define_bezier_spline/2` |
 
 [Choosing a curve](../choosing_a_curve.md) compares them all side by side, with real-world examples of each.
 

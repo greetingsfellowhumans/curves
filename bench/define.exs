@@ -6,6 +6,7 @@ alias Curves.Bench.Helper
 points = Helper.spline_points()
 hermite_points = Helper.hermite_points()
 bezier_spline_points = Helper.bezier_spline_points()
+arc_path_points = Helper.arc_path_points()
 cubic = [{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}]
 
 Helper.run("define", %{
@@ -18,7 +19,9 @@ Helper.run("define", %{
   "spline centripetal_catmull_rom" => fn -> Curves.define_centripetal_catmull_rom(points) end,
   "spline kochanek_bartels" => fn -> Curves.define_kochanek_bartels(points, bias: 0.4) end,
   "spline monotone" => fn -> Curves.define_monotone(points) end,
-  "spline natural_cubic" => fn -> Curves.define_natural_cubic(points) end
+  "spline natural_cubic" => fn -> Curves.define_natural_cubic(points) end,
+  "spline ellipse" => fn -> Curves.define_ellipse({0.0, 0.0}, {4.0, 2.0}, rotation: 30) end,
+  "spline bezier_spline with arcs" => fn -> Curves.define_bezier_spline(arc_path_points) end
 })
 
 # The same splines from 1000 knots, to show how building them grows with the number of knots.

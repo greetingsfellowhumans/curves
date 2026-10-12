@@ -1,6 +1,6 @@
 # Choosing a curve
 
-Curves has a single Bezier curve, a polyline, and nine kinds of spline. This guide helps you pick one:
+Curves has a single Bezier curve, a polyline, nine kinds of spline, and ellipses. This guide helps you pick one:
 first a quick table, then a section on each, with what it is good at, where it falls short, and where
 you have probably seen it before.
 
@@ -15,6 +15,7 @@ knots, control points and `u` are.
 | one custom bend, from one point to another | `Curves.define_bezier/2` |
 | straight lines between your points | `Curves.define_polyline/2` |
 | to copy an SVG path, or a font outline | `Curves.define_bezier_spline/2` |
+| a circle, an ellipse, or an arc of one | `Curves.define_circle/3` or `Curves.define_ellipse/3` |
 | a smooth path through your points, quickly | `Curves.define_centripetal_catmull_rom/2` |
 | the classic Catmull-Rom spline, exactly | `Curves.define_catmull_rom/2` |
 | a smooth path through your points, with a "tightness" slider | `Curves.define_cardinal/2` |
@@ -31,6 +32,7 @@ knots, control points and `u` are.
 | Bezier | first and last only | one smooth piece | the whole curve | no |
 | Polyline | yes | sharp corners | the two lines touching it | no |
 | Bezier spline | the knots | as smooth as your control points make it | the two segments touching it | no |
+| Ellipse | its start and end | perfectly smooth | the whole curve | no |
 | Hermite | yes | smooth direction | the two segments touching it | yes |
 | Catmull-Rom | yes | smooth direction | up to 4 nearby segments | yes, and can loop |
 | Cardinal | yes | smooth direction | up to 4 nearby segments | yes, less with more tension |
@@ -114,6 +116,28 @@ Curves.define_bezier_spline([
   knot, the control points either side of it must line up.
 - **You've seen it in:** SVG's `<path>`, the HTML canvas's `bezierCurveTo` and `quadraticCurveTo`, and
   every letter of the font you're reading.
+
+## Ellipses, circles and arcs
+
+An exact ellipse or circle, or an arc of one: not built from Bezier curves, so it is perfectly round, and a
+whole one ends exactly where it started. Give the centre and radii; `:rotation` tilts it, and `:from` and
+`:to` (in degrees) cut out an arc. A bezier spline can also contain arcs, like SVG's `A` command.
+
+```elixir
+Curves.define_circle({0, 0}, 2, from: 90, to: 180)
+Curves.define_bezier_spline([[{0, 0}], [{10, 0}, {:arc, 5, 5, 0, false, true}], [{10, 10}], [{0, 10}]])
+```
+
+| An arc of a circle | A path with an arc |
+| --- | --- |
+| ![An arc](images/circle_arc.svg) | ![L, A, L](images/spline_arc_path.svg) |
+
+- **Good at:** anything round: wheels, dials, gauges, orbits, rounded corners, and anything that turns at
+  a steady rate. On a circle, `u` moves at a steady speed.
+- **Falls short:** on a long, thin ellipse the speed isn't steady: it goes faster round the long sides.
+- **You've seen it in:** SVG's `<circle>`, `<ellipse>` and the path command `A`, the canvas's `arc()` and
+  `ellipse()`, the `G2` and `G3` commands that move CNC machines and 3D printers in arcs, and every
+  pie chart and progress ring.
 
 ## Hermite
 

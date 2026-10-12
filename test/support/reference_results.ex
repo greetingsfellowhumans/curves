@@ -86,7 +86,21 @@ defmodule Curves.Support.ReferenceResults do
        end},
       {"monotone 5 points",
        fn opts -> Curves.define_monotone([{0, 0}, {1, 0}, {2, 3}, {3, 3}, {4, 1}], opts) end},
-      {"natural_cubic 7 points", fn opts -> Curves.define_natural_cubic(@b_spline, opts) end}
+      {"natural_cubic 7 points", fn opts -> Curves.define_natural_cubic(@b_spline, opts) end},
+      {"bezier_spline arcs",
+       fn opts ->
+         Curves.define_bezier_spline(
+           [
+             [{0, 0}],
+             [{10, 0}, {:arc, 5, 3, 30, false, true}],
+             [{10, 10}, {:arc, 4, 4, 0, true, false}],
+             [{2, 8}]
+           ],
+           opts
+         )
+       end},
+      {"ellipse", fn opts -> Curves.define_ellipse({1, 2}, {4, 2}, opts ++ [rotation: 30]) end},
+      {"circle arc", fn opts -> Curves.define_circle({0, 0}, 3, opts ++ [from: 45, to: -200]) end}
     ]
 
     transformed =

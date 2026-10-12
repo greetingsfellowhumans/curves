@@ -4,20 +4,25 @@ defmodule Curves.Utils.Segment do
   # solved in. Each spline type decides what the 4 points mean (e.g. Catmull-Rom uses
   # [previous knot, knot0, knot1, next knot]); its blending matrix turns them into a curve.
   alias Curves.Types, as: T
-  alias Curves.Utils.Vec
+  alias Curves.Utils.{Arc, Vec}
+  import Curves.Utils.Arc, only: [is_arc: 1]
 
-  # Exactly 4 points.
-  @type t() :: list(T.point_tuple())
+  # Exactly 4 points, or an elliptical arc (see Curves.Utils.Arc).
+  @type t() :: list(T.point_tuple()) | Curves.Utils.Arc.t()
 
-  # One point of a bezier spline, checked and turned into floats: its knot and the 0 to 2
-  # control points of the curve from this knot to the next one.
-  @typep parsed_point() :: {T.point_tuple(), list(T.point_tuple())}
+  # SVG's arc command without its end point: {rx, ry, rotation, large_arc, sweep}.
+  @typep arc_spec() :: {number(), number(), number(), boolean(), boolean()}
 
-  # Builds cubic segments from a bezier spline's points, the way SVG path data works: each point
+  # One point of a bezier spline, checked and turned into floats: its knot, and either the 0 to 2
+  # control points of the curve from this knot to the next one, or the arc to the next one.
+  @typep parsed_point() :: {T.point_tuple(), list(T.point_tuple()) | {:arc, arc_spec()}}
+
+  # Builds segments from a bezier spline's points, the way SVG path data works: each point
   # is a knot plus the control points of the curve to the next knot, and the next point's knot
-  # ends that curve. [knot] is a straight line (SVG L), [knot, c] a quadratic curve (SVG Q) and
-  # [knot, c0, c1] a cubic curve (SVG C). Lines and quadratics are turned into the exact same
-  # curve written as a cubic, so every segment has 4 points.
+  # ends that curve. [knot] is a straight line (SVG L), [knot, c] a quadratic curve (SVG Q),
+  # [knot, c0, c1] a cubic curve (SVG C) and [knot, {:arc, rx, ry, rotation, large_arc, sweep}] an
+  # elliptical arc (SVG A). Lines and quadratics are turned into the exact same curve written as a
+  # cubic, so every segment has 4 points, except arcs (see Curves.Utils.Arc).
   # The last point only ends the curve, so it must be [knot]. A single knot is one segment that
   # stays on that point. Coordinates are turned into floats.
   @spec new_segments(list(list(T.point_tuple()))) :: list(t())
@@ -36,8 +41,49 @@ defmodule Curves.Utils.Segment do
     lists
     |> parse_points()
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.flat_map(fn [{knot, controls}, {next, _}] -> handle_lines(knot, controls, next) end)
+    |> Enum.flat_map(fn [{knot, to_next}, {next, _}] -> lines_to(knot, to_next, next) end)
   end
+
+  # A bezier spline's stored points: each knot followed by the control points of the curve to the
+  # next knot (so without arcs, every point given, in order). An arc adds its hull points between
+  # its knots instead (see Curves.Utils.Arc.hull_points/1), so the arc stays inside the points.
+  @spec stored_points(list(list(T.point_tuple()))) :: T.point_list()
+  def stored_points(lists) do
+    parsed = parse_points(lists)
+    {last, _} = List.last(parsed)
+
+    parsed
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.flat_map(fn [{knot, to_next}, {next, _}] -> [knot | between(knot, to_next, next)] end)
+    |> Kernel.++([last])
+  end
+
+  # The points stored between two knots: the control points, or an arc's hull points without its ends.
+  @spec between(T.point_tuple(), list(T.point_tuple()) | {:arc, arc_spec()}, T.point_tuple()) ::
+          T.point_list()
+  defp between(start, {:arc, spec}, finish),
+    do: start |> Arc.from_svg(spec, finish) |> arc_inner_points()
+
+  defp between(_start, controls, _finish), do: controls
+
+  @spec arc_inner_points(Arc.t() | t()) :: T.point_list()
+  defp arc_inner_points(arc) when is_arc(arc),
+    do: arc |> Arc.hull_points() |> Enum.slice(1..-2//1)
+
+  # An arc that SVG draws as a line, or not at all: no points in between, like a line.
+  defp arc_inner_points(_line), do: []
+
+  # The dashed lines between two knots.
+  @spec lines_to(T.point_tuple(), list(T.point_tuple()) | {:arc, arc_spec()}, T.point_tuple()) ::
+          list(T.point_list())
+  defp lines_to(start, {:arc, spec}, finish),
+    do: start |> Arc.from_svg(spec, finish) |> arc_lines()
+
+  defp lines_to(start, controls, finish), do: handle_lines(start, controls, finish)
+
+  @spec arc_lines(Arc.t() | t()) :: list(T.point_list())
+  defp arc_lines(arc) when is_arc(arc), do: Arc.hull_lines(arc)
+  defp arc_lines(_line), do: []
 
   # The lines from a curve's control points to the knots they pull on, e.g. for SVG's C
   # (start, c0, c1, end) that is start to c0 and c1 to end. A quadratic's one control pulls on
@@ -71,8 +117,14 @@ defmodule Curves.Utils.Segment do
   defp to_segments(points) do
     points
     |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.map(fn [{knot, controls}, {next, _}] -> cubic(knot, controls, next) end)
+    |> Enum.map(fn [{knot, to_next}, {next, _}] -> segment(knot, to_next, next) end)
   end
+
+  # The segment from one knot to the next: an arc (or what SVG draws instead), or a cubic.
+  @spec segment(T.point_tuple(), list(T.point_tuple()) | {:arc, arc_spec()}, T.point_tuple()) ::
+          t()
+  defp segment(start, {:arc, spec}, finish), do: Arc.from_svg(start, spec, finish)
+  defp segment(start, controls, finish), do: cubic(start, controls, finish)
 
   # The same curve as a cubic. A line gets control points a third and two thirds of the way
   # along, so it is also travelled at a steady speed. A quadratic with control point c gets
@@ -91,6 +143,19 @@ defmodule Curves.Utils.Segment do
   defp towards(a, b, fraction), do: Vec.add(a, Vec.scale(Vec.subtract(b, a), fraction))
 
   @spec parse_point(term()) :: parsed_point()
+  defp parse_point([knot, {:arc, rx, ry, rotation, large_arc, sweep}])
+       when is_number(rx) and is_number(ry) and is_number(rotation) and is_boolean(large_arc) and
+              is_boolean(sweep),
+       do: {Vec.new(knot), {:arc, {rx, ry, rotation, large_arc, sweep}}}
+
+  defp parse_point([_knot, arc])
+       when is_tuple(arc) and tuple_size(arc) > 0 and elem(arc, 0) == :arc do
+    raise ArgumentError,
+          "an arc must be {:arc, rx, ry, rotation, large_arc, sweep}, with numbers for rx, ry and " <>
+            "rotation (in degrees), and true or false for large_arc and sweep. Got: #{inspect(arc)}. " <>
+            "See Curves.define_bezier_spline/2."
+  end
+
   defp parse_point([knot | controls] = point) when length(point) in 1..3,
     do: {Vec.new(knot), Enum.map(controls, &Vec.new/1)}
 
@@ -98,7 +163,8 @@ defmodule Curves.Utils.Segment do
   defp parse_point(other) do
     raise ArgumentError,
           "each point of a bezier spline must be a list of 1 to 3 {x, y} tuples: " <>
-            "[knot], [knot, control_point] or [knot, control_point0, control_point1]. " <>
+            "[knot], [knot, control_point] or [knot, control_point0, control_point1], " <>
+            "or an arc: [knot, {:arc, rx, ry, rotation, large_arc, sweep}]. " <>
             "Got: #{inspect(other)}. See Curves.define_bezier_spline/2."
   end
 

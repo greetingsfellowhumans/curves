@@ -58,6 +58,9 @@ defmodule Curves.Types do
   @typedoc "`define_opts/0`, plus the `:alpha` of `Curves.define_centripetal_catmull_rom/2`."
   @type centripetal_opts :: [origin: point_tuple(), alpha: number()]
 
+  @typedoc "`define_opts/0`, plus the tilt and angles (in degrees) of `Curves.define_ellipse/3`."
+  @type ellipse_opts :: [origin: point_tuple(), rotation: number(), from: number(), to: number()]
+
   @typedoc "`define_opts/0`, plus the three dials of `Curves.define_kochanek_bartels/2`."
   @type kochanek_bartels_opts :: [
           origin: point_tuple(),

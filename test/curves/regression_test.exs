@@ -345,6 +345,7 @@ defmodule Curves.RegressionTest do
                :cardinal,
                :catmull_rom,
                :centripetal_catmull_rom,
+               :ellipse,
                :hermite,
                :kochanek_bartels,
                :monotone,

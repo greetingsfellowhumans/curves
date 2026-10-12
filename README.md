@@ -112,6 +112,7 @@ just like the commands in an SVG path (or `bezierCurveTo` on a canvas):
 | `[knot]` | a straight line | `L` |
 | `[knot, c]` | a quadratic curve pulled towards `c` | `Q` |
 | `[knot, c0, c1]` | a cubic curve: leaves `knot` towards `c0`, arrives at the next knot from `c1` | `C` |
+| `[knot, {:arc, rx, ry, rotation, large_arc, sweep}]` | an elliptical arc, exactly like SVG's `A` | `A` |
 
 The last point only ends the curve, so it must be `[knot]`.
 
@@ -130,6 +131,32 @@ curve = Curves.define_bezier_spline(points)
 ```
 
 ![Bezier Spline](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/bezier_spline.svg)
+
+### Bezier Spline with an Arc
+
+SVG's `M 0 0 L 10 0 A 5 5 0 0 1 10 10 L 0 10`: a line, a half circle and another line. Arcs are exact, not made of Bezier curves.
+
+```elixir
+curve = Curves.define_bezier_spline([
+  [{0, 0}],
+  [{10, 0}, {:arc, 5, 5, 0, false, true}],
+  [{10, 10}],
+  [{0, 10}]
+])
+```
+
+![Bezier Spline with an Arc](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/arc_path.svg)
+
+### Ellipse
+
+An exact ellipse or circle, or an arc of one (with the `:from` and `:to` options, in degrees). It is one segment, so `u` goes from `0.0` to `1.0`, once round.
+
+```elixir
+curve = Curves.define_ellipse({0, 0}, {4, 2}, rotation: 30)
+circle = Curves.define_circle({0, 0}, 2, from: 90, to: 180)
+```
+
+![Ellipse](https://github.com/greetingsfellowhumans/curves/raw/main/assets/examples/ellipse.svg)
 
 ### Cubic Hermite Spline
 

@@ -22,6 +22,10 @@ The second release candidate. It has three breaking changes, listed under Change
   - `Curves.define_kochanek_bartels/2`: a TCB spline, Catmull-Rom with `:tension`, `:continuity` and `:bias` dials, as used for keyframes in animation tools.
   - `Curves.define_monotone/2`: a monotone cubic spline (Fritsch–Carlson) for chart data. It never overshoots: between two knots it only goes up, down or stays flat. Each knot's `x` must always increase (or always decrease).
   - `Curves.define_natural_cubic/2`: the smoothest curve through every knot, with a continuous bend everywhere.
+- Exact elliptical arcs, which aren't made of Bezier curves:
+  - `Curves.define_bezier_spline/2` takes `[knot, {:arc, rx, ry, rotation, large_arc, sweep}]`, an arc to the next knot exactly like SVG's `A` command, with SVG's rules for radii that are too small, zero or negative.
+  - `Curves.define_ellipse/3` and `Curves.define_circle/3` make an ellipse or circle, or an arc of one with the `:from` and `:to` options (in degrees), like a canvas's `arc()` and `ellipse()`. It is one segment, so `u` goes from `0.0` to `1.0`, and a whole one ends exactly where it started.
+  - Arcs work with every transform (even different x and y scales), `reverse/1`, `:force_percent` and `Curves.Svg`. They start and end exactly on their knots. The curve stores extra points that the arc stays inside, which `Curves.Svg` draws as dots.
 - A new guide, [Choosing a curve](choosing_a_curve.html), compares every kind of curve, with real-world examples of where each is used. The splines tutorial, its Livebook and the README cover the new splines too.
 - `Curves.Bezier.Predefined`'s docs show a picture of every predefined curve.
 - `Curves.define_polyline/2` makes a `Curves.Polyline.Curve`: knots joined by straight lines, like SVG's `<polyline>`. It is solved with `u` like a spline (each line adds one to `u`), at a steady speed along each line, and works with `take`, the transforms, `:force_percent` and `Curves.Svg`.

@@ -37,6 +37,15 @@ end
 
 # Two knots bunched up between two far away: plain Catmull-Rom loops here, centripetal doesn't.
 bunched = [{0, 0}, {10, 10}, {10.5, 10}, {20, 0}]
+# SVG: M 0 0 L 10 0 A 5 5 0 0 1 10 10 L 0 10
+arc_path =
+  Curves.define_bezier_spline([
+    [{0, 0}],
+    [{10, 0}, {:arc, 5, 5, 0, false, true}],
+    [{10, 10}],
+    [{0, 10}]
+  ])
+
 # Chart data with flat stretches, where most splines overshoot and a monotone one doesn't.
 data = [{0, 2}, {1, 2}, {2, 2}, {3, 8}, {4, 8.5}, {5, 3}, {6, 3}]
 
@@ -180,6 +189,13 @@ images =
          background: "#fff9db",
          show_axes: false
        ]},
+    {"#{guides}/spline_arc_path.svg", arc_path,
+     medium ++
+       [title: "L, then A (a half circle), then L", markers: [{0, 0}, {10, 0}, {10, 10}, {0, 10}]]},
+    {"#{guides}/ellipse.svg", Curves.define_ellipse({0, 0}, {4, 2}, rotation: 30),
+     small ++ [title: "define_ellipse, rotation: 30"]},
+    {"#{guides}/circle_arc.svg", Curves.define_circle({0, 0}, 2, from: 90, to: 180),
+     small ++ [title: "define_circle, from: 90, to: 180", markers: [{0, 0}]]},
 
     # Choosing a curve
     {"#{guides}/choose_data_natural.svg", Curves.define_natural_cubic(data),
@@ -187,6 +203,19 @@ images =
     {"#{guides}/choose_data_polyline.svg", Curves.define_polyline(data),
      small ++ [title: "Polyline: exact, but sharp", markers: data]}
   ] ++
+    for(
+      large_arc <- [false, true],
+      sweep <- [false, true],
+      do:
+        {"#{guides}/arc_flags_#{large_arc}_#{sweep}.svg",
+         Curves.define_bezier_spline([[{0, 0}, {:arc, 10, 10, 0, large_arc, sweep}], [{10, 0}]]),
+         small ++
+           [
+             title: "large_arc: #{large_arc}, sweep: #{sweep}",
+             markers: [{0, 0}, {10, 0}],
+             view: {{-12, -22}, {22, 22}}
+           ]}
+    ) ++
     for(
       tension <- [-0.5, 0.0, 0.5, 1.0],
       do:
@@ -250,7 +279,11 @@ images =
        [width: 400, height: 400, samples: 400, title: "Monotone Spline"]},
       {"#{readme}/natural_cubic.svg",
        Curves.define_natural_cubic([{0, -2}, {3, 4}, {6, 5}, {7, -1}, {10, 3}, {5, 1}, {12, 9}]),
-       [width: 400, height: 400, samples: 400, title: "Natural Cubic Spline"]}
+       [width: 400, height: 400, samples: 400, title: "Natural Cubic Spline"]},
+      {"#{readme}/ellipse.svg", Curves.define_ellipse({0, 0}, {4, 2}, rotation: 30),
+       [width: 400, height: 400, samples: 400, title: "Ellipse (rotation 30)"]},
+      {"#{readme}/arc_path.svg", arc_path,
+       [width: 400, height: 400, samples: 400, title: "Bezier spline with an arc"]}
     ] ++ predefined_gallery
 
 File.mkdir_p!(guides)
