@@ -18,7 +18,11 @@ defmodule Curves.Svg do
   in its own size and view box, with its groups, each shape's own styles (`fill`, `stroke`, `class`,
   ...) and its kept markup (text, `<defs>`, ...), so it looks like the SVG it was read from. Each
   shape is one `<path>`, its curves written exactly with `path_data/1`, and its `transform` kept on
-  it so strokes are as wide as they were.
+  it so strokes are as wide as they were. Each group keeps its own `transform` too, so a
+  `clip-path`, `mask` or `filter` on it still lines up with what is inside it.
+
+  Since every shape becomes a `<path>`, CSS that picks shapes by their element, like
+  `rect { fill: red }` in a `<style>`, no longer matches them. Classes and ids still work.
 
   ```elixir
   drawing = Curves.from_svg(File.read!("logo.svg"))

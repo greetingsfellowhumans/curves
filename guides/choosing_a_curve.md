@@ -11,7 +11,7 @@ knots, control points and `u` are.
 
 | You want... | Use |
 | --- | --- |
-| an easing curve for an animation, like CSS's `ease-in-out` | `Curves.define_bezier/2` with a [predefined name](`Curves.Bezier.Predefined`) |
+| an easing curve for an animation | `Curves.define_bezier/2` with a [predefined name](`Curves.Bezier.Predefined`), or CSS's own points, like `[{0, 0}, {0.42, 0}, {0.58, 1}, {1, 1}]` for `ease-in-out` |
 | one custom bend, from one point to another | `Curves.define_bezier/2` |
 | straight lines between your points | `Curves.define_polyline/2` |
 | to copy an SVG path, or a font outline | `Curves.define_bezier_spline/2` |

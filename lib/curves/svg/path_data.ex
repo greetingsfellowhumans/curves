@@ -83,6 +83,10 @@ defmodule Curves.Svg.PathData do
   defp arguments(data, letter, state, _which) when letter in ["Z", "z"],
     do: data |> skip_space() |> commands(close(state))
 
+  # A comma may separate one set from the next (SVG allows "L1 2,3 4"); a set must follow it.
+  defp arguments(<<?,, rest::binary>>, letter, state, :repeat),
+    do: arguments(skip_space(rest), letter, state, :first)
+
   # After the first set, anything but a number is the next command.
   defp arguments(<<c, _::binary>> = data, _letter, state, :repeat)
        when c not in ~c"+-.0123456789",

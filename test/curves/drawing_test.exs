@@ -115,7 +115,33 @@ defmodule Curves.DrawingTest do
     end
   end
 
+  describe "shapes/1" do
+    test "a shape's own move is reset even when it cancels out its group's" do
+      drawing =
+        Curves.from_svg(~s[<svg><g id="g"><line id="l" x2="1"/></g></svg>])
+        |> Drawing.update("g", &Transform.inc_x(&1, 5))
+        |> Drawing.update("l", &Transform.inc_x(&1, -5))
+
+      [shape] = Drawing.shapes(drawing)
+      assert {shape.origin, shape.scale, shape.rotation} == {{0.0, 0.0}, 1.0, 0.0}
+
+      # So the shape can be put back in a drawing, and is drawn in the same place.
+      assert_near(
+        %Drawing{children: [shape]} |> Drawing.curves() |> hd() |> Curves.solve!(1.0),
+        {1.0, 0.0}
+      )
+    end
+  end
+
   describe "finding and changing parts by id" do
+    test "update_shapes/2 can't delete shapes, and says so" do
+      drawing = Curves.from_svg(~s|<svg><circle r="1"/></svg>|)
+
+      assert_raise ArgumentError, ~r/can't take shapes out.*delete\/2/, fn ->
+        Drawing.update_shapes(drawing, fn _ -> :delete end)
+      end
+    end
+
     test "fetch, get and get_in look anywhere inside, and get_in follows a path" do
       drawing = Curves.from_svg(@svg)
       assert {:ok, %Shape{element: :circle}} = Drawing.fetch(drawing, "back")
@@ -247,6 +273,41 @@ defmodule Curves.DrawingTest do
           |> Enum.min()
         )
     end
+  end
+
+  property "a group and a shape whose changes cancel out give the shape, unchanged" do
+    check all(shape <- StreamData.member_of(@shapes), {there, back} <- change_and_undo()) do
+      plain = Curves.from_svg(~s|<svg><g id="g"><g id="s">#{shape}</g></g></svg>|)
+
+      drawing =
+        plain
+        |> Drawing.update("g", there)
+        |> Drawing.update_in(["g", "s"], back)
+
+      [placed] = Drawing.shapes(drawing)
+      assert {placed.origin, placed.scale, placed.rotation} == {{0.0, 0.0}, 1.0, 0.0}
+
+      again = %Drawing{children: [placed]}
+
+      for {a, b} <- Enum.zip(Drawing.curves(plain), Drawing.curves(again)),
+          i <- 0..10 do
+        u = i / 10 * Curves.max_u(a)
+        {ax, ay} = Curves.solve!(a, u)
+        {bx, by} = Curves.solve!(b, u)
+        assert abs(ax - bx) < 1.0e-6 and abs(ay - by) < 1.0e-6
+      end
+    end
+  end
+
+  # A move of a group, and the move of something in it that undoes it.
+  @spec change_and_undo() :: StreamData.t({(term() -> term()), (term() -> term())})
+  defp change_and_undo do
+    StreamData.map(
+      StreamData.tuple({StreamData.integer(-20..20), StreamData.integer(-20..20)}),
+      fn {x, y} ->
+        {&Transform.inc_position(&1, {x, y}), &Transform.inc_position(&1, {-x, -y})}
+      end
+    )
   end
 
   property "a transformed drawing is drawn where Drawing.curves/1 says its curves are" do

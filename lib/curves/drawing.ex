@@ -35,6 +35,7 @@ defmodule Curves.Drawing do
   | --- | --- |
   | `:width`, `:height` | the `<svg>` element's `width` and `height`, as written (they may have units), or `nil` |
   | `:view_box` | its `viewBox` as `{min_x, min_y, width, height}`, or `nil` |
+  | `:read_with_flip_y` | whether `Curves.from_svg/2` was given `flip_y: true`. `Curves.Svg` uses it to flip the view box of an SVG that has a size but no `viewBox`. It says how the SVG was read, so `Curves.Transform.flip_y/2` doesn't change it. |
   | `:attributes` | all of the `<svg>` element's own attributes, as strings |
   | `:children` | what is in it, in order: a `Curves.Drawing.Shape` for each shape, a `Curves.Drawing.Group` for each group, and a `Curves.Drawing.Raw` for everything else that is kept as markup, like text |
   | `:skipped` | everything that couldn't be read as curves, and why, so nothing goes missing silently |
@@ -76,6 +77,7 @@ defmodule Curves.Drawing do
   defstruct width: nil,
             height: nil,
             view_box: nil,
+            read_with_flip_y: false,
             attributes: %{},
             children: [],
             skipped: [],
@@ -101,6 +103,7 @@ defmodule Curves.Drawing do
           width: String.t() | nil,
           height: String.t() | nil,
           view_box: {float(), float(), float(), float()} | nil,
+          read_with_flip_y: boolean(),
           attributes: %{String.t() => String.t()},
           children: list(child()),
           skipped: list(skipped()),
@@ -150,9 +153,12 @@ defmodule Curves.Drawing do
   @spec place(Shape.t(), Matrix.t()) :: Shape.t()
   defp place(shape, matrix), do: place(shape, matrix, Matrix.identity?(matrix))
 
-  # Nothing to do when nothing has moved, so reading a drawing's shapes stays quick.
+  # The curves don't need moving when nothing has moved them, so reading a drawing's shapes stays
+  # quick. The shape's own move, scale and rotation are still reset: they may only cancel out with
+  # its groups', and are included either way.
   @spec place(Shape.t(), Matrix.t(), boolean()) :: Shape.t()
-  defp place(shape, _matrix, true = _identity), do: shape
+  defp place(shape, _matrix, true = _identity),
+    do: %{shape | origin: {0.0, 0.0}, scale: 1.0, rotation: 0.0}
 
   defp place(shape, matrix, false) do
     %{
@@ -277,6 +283,15 @@ defmodule Curves.Drawing do
           "expected a Curves.Drawing.Shape, Group or Raw to put in the drawing, got: #{inspect(other)}"
   end
 
+  # What update_shapes/2's function returned, which can't be :delete.
+  @spec one_node(term()) :: child()
+  defp one_node(:delete) do
+    raise ArgumentError,
+          "update_shapes/2 can't take shapes out: its function must return a shape, group or raw markup (use delete/2 instead)"
+  end
+
+  defp one_node(node), do: node |> changed() |> hd()
+
   @doc ~s"""
   Puts `node` (a shape, group or raw markup) in place of the shape or group with this `id`. Raises
   an `ArgumentError` if there is none. Handy to take a part out, change it, and put it back.
@@ -352,6 +367,9 @@ defmodule Curves.Drawing do
   An `Access` function for the shape or group with this `id`, to use with Elixir's own
   `Kernel.get_in/2`, `Kernel.update_in/3` and `Kernel.pop_in/2` on a drawing.
 
+  `get_in/2` gives `nil` if there is no such id, while `update_in/3` and `pop_in/2` raise an
+  `ArgumentError`, like `update/3` and `delete/2`.
+
   ## Examples
       iex> drawing = Curves.from_svg(~s(<svg><g id="car"><circle id="wheel" r="1"/></g></svg>))
       iex> wheel = Curves.Drawing.by_id("wheel")
@@ -387,7 +405,8 @@ defmodule Curves.Drawing do
 
   @doc ~s"""
   Changes every shape in the drawing (or group), wherever it is, to what `fun` returns for it.
-  The shapes are as stored: a group's transform isn't applied to them (see `shapes/1`).
+  The shapes are as stored: a group's transform isn't applied to them (see `shapes/1`). `fun` must
+  return a shape, group or raw markup; to take shapes out, use `delete/2`.
 
   ## Examples
       iex> drawing = Curves.from_svg(~s(<svg><circle r="1"/><g><rect width="2" height="1"/></g></svg>))
@@ -400,7 +419,7 @@ defmodule Curves.Drawing do
     do: %{container | children: Enum.map(children, &update_shape(&1, fun))}
 
   @spec update_shape(child(), (Shape.t() -> Shape.t())) :: child()
-  defp update_shape(%Shape{} = shape, fun), do: shape |> fun.() |> changed() |> hd()
+  defp update_shape(%Shape{} = shape, fun), do: shape |> fun.() |> one_node()
   defp update_shape(%Group{} = group, fun), do: update_shapes(group, fun)
   defp update_shape(%Raw{} = raw, _fun), do: raw
 

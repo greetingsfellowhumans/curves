@@ -9,4 +9,12 @@ defmodule Curves.Utils.Errors do
     raise ArgumentError,
           "expected a Curves.Bezier.Curve, Curves.Spline.Curve or Curves.Polyline.Curve, got: #{inspect(term)}"
   end
+
+  # Splines take their points as a list. Anything that can't be listed (like a single {x, y})
+  # raises here, instead of a Protocol.UndefinedError deeper in. Returns the points.
+  @spec check_points!(term()) :: Enumerable.t()
+  def check_points!(points) when is_list(points) or is_map(points), do: points
+
+  def check_points!(other),
+    do: raise(ArgumentError, "a spline takes a list of points, got: #{inspect(other)}")
 end

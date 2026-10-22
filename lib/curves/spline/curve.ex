@@ -6,7 +6,9 @@ defmodule Curves.Spline.Curve do
   alias Curves.Utils.{Arc, Percent, Poly, Segment, Vec}
   import Curves.Utils.Arc, only: [is_arc: 1]
 
-  @minimum_u 0.0 - Curves.Utils.Constants.small_number()
+  # How far past either end u may go, for rounding errors.
+  @slack Curves.Utils.Constants.small_number()
+  @minimum_u 0.0 - @slack
 
   defstruct [
     :points,
@@ -56,7 +58,7 @@ defmodule Curves.Spline.Curve do
   @spec define(list(list(T.point_tuple())), atom(), T.opts()) :: t()
   def define(coords, spline_type, opts \\ []) do
     mod = Curves.Spline.Type.get_mod(spline_type)
-    {originx, originy} = Keyword.get(opts, :origin, {0.0, 0.0})
+    origin = Vec.new(Keyword.get(opts, :origin, {0.0, 0.0}))
 
     segments =
       if mod.override_segment_parsing() do
@@ -80,7 +82,7 @@ defmodule Curves.Spline.Curve do
           scale: 1.0,
           rotation: 0.0,
           max_u: length(segments) * 1.0,
-          origin: Vec.new({originx, originy}),
+          origin: origin,
           opts: opts
         })
       )
@@ -252,10 +254,11 @@ defmodule Curves.Spline.Curve do
   # once for every point instead of once per point.
   @spec solve_resolved(t(), number(), T.opts()) ::
           {:ok, T.point_tuple()} | {:error, {:out_of_bounds, number()}}
-  defp solve_resolved(%{max_u: max}, u, _opts) when u > max or u < @minimum_u,
+  defp solve_resolved(%{max_u: max}, u, _opts) when u > max + @slack or u < @minimum_u,
     do: {:error, {:out_of_bounds, u}}
 
-  defp solve_resolved(%{compressed: cb}, u, opts), do: cb.(u * 1.0, opts)
+  # A u just past the end (a rounding error, like adding 0.1 thirty times) is the end.
+  defp solve_resolved(%{compressed: cb, max_u: max}, u, opts), do: cb.(min(u, max) * 1.0, opts)
 
   # Reads :force_percent once per solve or take call (see Opts.put_force_percent/2).
   @spec resolve_opts(t(), T.opts()) :: T.opts()

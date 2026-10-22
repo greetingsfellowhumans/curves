@@ -235,6 +235,40 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  property "a u just past the end of a spline or polyline (a rounding error) gives its end" do
+    check all(curve <- StreamData.one_of([spline(), polyline()]), extra <- fraction()) do
+      max_u = Curves.max_u(curve)
+      assert Curves.solve!(curve, max_u + extra * 0.001) == Curves.solve!(curve, max_u)
+    end
+  end
+
+  # The box around a curve's extreme points is exactly the box around the curve: every sample is
+  # inside it, and its edges are touched (within how far apart the samples are).
+  property "Extremes.points/1 gives exactly the box around a curve" do
+    check all(curve <- curve()) do
+      box = curve |> Curves.Utils.Extremes.points() |> Curves.Utils.Vec.bounds()
+      samples = [Curves.solve!(curve, 0.0) | Curves.take!(curve, 4000)]
+      sampled = Curves.Utils.Vec.bounds(samples)
+      size = Enum.max([1.0, sampled.xmax - sampled.xmin, sampled.ymax - sampled.ymin])
+
+      spacing =
+        samples
+        |> Enum.chunk_every(2, 1, :discard)
+        |> Enum.map(fn [{x1, y1}, {x2, y2}] -> max(abs(x2 - x1), abs(y2 - y1)) end)
+        |> Enum.max(fn -> 0.0 end)
+
+      for side <- [:xmin, :ymin] do
+        assert Map.fetch!(box, side) <= Map.fetch!(sampled, side) + 1.0e-9 * size
+        assert Map.fetch!(box, side) >= Map.fetch!(sampled, side) - spacing - 1.0e-9 * size
+      end
+
+      for side <- [:xmax, :ymax] do
+        assert Map.fetch!(box, side) >= Map.fetch!(sampled, side) - 1.0e-9 * size
+        assert Map.fetch!(box, side) <= Map.fetch!(sampled, side) + spacing + 1.0e-9 * size
+      end
+    end
+  end
+
   property "splines and polylines are continuous where segments meet" do
     check all(curve <- StreamData.one_of([spline(), polyline()])) do
       for boundary <- 1..(trunc(Curves.max_u(curve)) - 1)//1 do

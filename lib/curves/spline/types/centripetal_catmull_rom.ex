@@ -51,7 +51,7 @@ defmodule Curves.Spline.Type.CentripetalCatmullRom do
   use Curves.Spline.Type
 
   alias Curves.Types, as: T
-  alias Curves.Utils.{Hermite, Opts, Segment, Vec}
+  alias Curves.Utils.{Errors, Hermite, Opts, Segment, Vec}
 
   @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
@@ -62,6 +62,7 @@ defmodule Curves.Spline.Type.CentripetalCatmullRom do
     check_alpha!(Keyword.fetch!(opts, :alpha))
 
     points
+    |> Errors.check_points!()
     |> Enum.map(&[&1])
     |> Curves.define_spline(:centripetal_catmull_rom, opts)
   end

@@ -42,7 +42,7 @@ defmodule Curves.Spline.Type.BSpline do
     override_segment_parsing: true
 
   alias Curves.Types, as: T
-  alias Curves.Utils.Vec
+  alias Curves.Utils.{Errors, Vec}
 
   @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
@@ -63,6 +63,7 @@ defmodule Curves.Spline.Type.BSpline do
     # Checked (and made floats) first: rebuild_points/2 does maths on them straight away.
     points =
       points
+      |> Errors.check_points!()
       |> Enum.map(&Vec.new/1)
       |> rebuild_points(opts)
       |> auto_last([])

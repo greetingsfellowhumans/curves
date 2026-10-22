@@ -24,7 +24,16 @@ defmodule Curves.Svg.PathDataTest do
     {"M0 0 q1 1 2 0 t2 0", [[{0.0, 0.0}, {1.0, 1.0}], [{2.0, 0.0}, {3.0, -1.0}], [{4.0, 0.0}]]},
     # Arc flags squashed together
     {"M0 0 a1 1 0 0010 10", [[{0.0, 0.0}, {:arc, 1.0, 1.0, 0.0, false, false}], [{10.0, 10.0}]]},
-    {"M0 0A5,5,30,1,1,10,0", [[{0.0, 0.0}, {:arc, 5.0, 5.0, 30.0, true, true}], [{10.0, 0.0}]]}
+    {"M0 0A5,5,30,1,1,10,0", [[{0.0, 0.0}, {:arc, 5.0, 5.0, 30.0, true, true}], [{10.0, 0.0}]]},
+    # A comma between repeated sets of arguments
+    {"M0,0,10,10", [[{0.0, 0.0}], [{10.0, 10.0}]]},
+    {"M0 0 L1 2,3 4", [[{0.0, 0.0}], [{1.0, 2.0}], [{3.0, 4.0}]]},
+    {"M0 0 A1 1 0 0 1 5 5 , 1 1 0 0 1 6 6",
+     [
+       [{0.0, 0.0}, {:arc, 1.0, 1.0, 0.0, false, true}],
+       [{5.0, 5.0}, {:arc, 1.0, 1.0, 0.0, false, true}],
+       [{6.0, 6.0}]
+     ]}
   ]
 
   for {data, points} <- @cases do
@@ -74,7 +83,9 @@ defmodule Curves.Svg.PathDataTest do
           {"M0 0 A1 1 0 2 0 5 5",
            "expected an arc flag (0 or 1), got: \"2 0 5 5\" in the A command"},
           {"M0 0 L1 1e400", "number too big: \"1e400\" in the L command"},
-          {"M0 0 Z 5", "expected a path command, got: \"5\""}
+          {"M0 0 Z 5", "expected a path command, got: \"5\""},
+          {"M0 0 L1 1,", "expected a number, got: the end in the L command"},
+          {"M0 0 L1 1,L2 2", "expected a number, got: \"L2 2\" in the L command"}
         ] do
       assert {:error, _subpaths, ^message} = PathData.parse(data)
     end

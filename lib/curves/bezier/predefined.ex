@@ -85,6 +85,13 @@ defmodule Curves.Bezier.Predefined do
       [{0.0, 0.0}, {0.65, 0.0}, {0.35, 1.0}, {1.0, 1.0}]
   ```
 
+  The names are the usual easing names (as on easings.net, and in CSS), but the points are this
+  library's own, and some differ from those curves: `:ease`, `:ease_in` and `:ease_in_cubic` are
+  the same curve, as are `:ease_out` and `:ease_out_cubic`, and `:ease_in_out` and
+  `:ease_in_out_cubic`. For an exact CSS timing function, give its points yourself: CSS's `ease` is
+  `Curves.define_bezier([{0, 0}, {0.25, 0.1}, {0.25, 1}, {1, 1}])`, and `ease-in-out` is
+  `[{0, 0}, {0.42, 0}, {0.58, 1}, {1, 1}]`.
+
   ## Gallery
 
   Each picture shows the curve in blue and the points that shape it in orange.

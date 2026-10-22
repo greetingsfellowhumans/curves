@@ -68,7 +68,9 @@ defmodule Curves.Spline.Type.BezierSpline do
   @doc false
   @impl true
   def define(points, opts \\ []) do
-    Curves.define_spline(points, :bezier_spline, opts)
+    points
+    |> Curves.Utils.Errors.check_points!()
+    |> Curves.define_spline(:bezier_spline, opts)
   end
 
   @doc false

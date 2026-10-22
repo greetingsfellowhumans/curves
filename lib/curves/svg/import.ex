@@ -280,10 +280,12 @@ defmodule Curves.Svg.Import do
   defp entity("#x" <> hex, whole), do: character(String.to_integer(hex, 16), whole)
   defp entity("#" <> decimal, whole), do: character(String.to_integer(decimal), whole)
 
-  # A character reference that isn't a real character stays as it was written.
+  # A character reference to a character XML doesn't allow (like &#0;) stays as it was written.
   @spec character(non_neg_integer(), String.t()) :: String.t()
-  defp character(code, _whole) when code in 0..0xD7FF or code in 0xE000..0x10FFFF,
-    do: <<code::utf8>>
+  defp character(code, _whole)
+       when code in [0x9, 0xA, 0xD] or code in 0x20..0xD7FF or code in 0xE000..0xFFFD or
+              code in 0x10000..0x10FFFF,
+       do: <<code::utf8>>
 
   defp character(_code, whole), do: whole
 
@@ -452,7 +454,8 @@ defmodule Curves.Svg.Import do
   defp tag_close(true = _self_closing), do: "/>"
   defp tag_close(false), do: ">"
 
-  # Makes text safe to put inside an attribute's quotes.
+  # Makes text safe to put inside an attribute's quotes. Tabs and line breaks are written as
+  # character references too, since reading XML turns them into spaces in an attribute.
   @doc false
   @spec escape(String.t()) :: String.t()
   def escape(text) do
@@ -461,6 +464,9 @@ defmodule Curves.Svg.Import do
     |> String.replace("<", "&lt;")
     |> String.replace(">", "&gt;")
     |> String.replace("\"", "&quot;")
+    |> String.replace("\t", "&#9;")
+    |> String.replace("\n", "&#10;")
+    |> String.replace("\r", "&#13;")
   end
 
   ## Elements
@@ -515,6 +521,7 @@ defmodule Curves.Svg.Import do
       width: attrs["width"],
       height: attrs["height"],
       view_box: attrs["viewBox"] |> view_box() |> flip_view_box(flip?(state.opts)),
+      read_with_flip_y: flip?(state.opts),
       attributes: attrs
     }
 
@@ -531,8 +538,7 @@ defmodule Curves.Svg.Import do
           state()
   defp element(name, attrs, parent, state, tag) when name in @groups do
     {matrix, state} = own_matrix(attrs, parent, name, state)
-    group = %Group{element: name, id: attrs["id"], attributes: Map.delete(attrs, "transform")}
-    group_or_markup(state, name, matrix, parent, group, tag)
+    group_or_markup(state, name, matrix, parent, attrs, tag)
   end
 
   defp element(name, attrs, parent, state, tag) when is_map_key(@shapes, name) do
@@ -569,15 +575,23 @@ defmodule Curves.Svg.Import do
           String.t(),
           TransformList.matrix() | nil,
           TransformList.matrix(),
-          Group.t(),
+          map(),
           tag()
         ) ::
           state()
-  defp group_or_markup(state, name, nil, parent, _group, tag),
+  defp group_or_markup(state, name, nil, parent, _attrs, tag),
     do: keep_markup(state, name, parent, tag)
 
-  defp group_or_markup(state, name, matrix, _parent, group, {self_closing, start, _stop}),
-    do: push(state, name, :group, matrix, start, group, self_closing)
+  defp group_or_markup(state, name, matrix, _parent, attrs, {self_closing, start, _stop}) do
+    group = %Group{
+      element: name,
+      id: attrs["id"],
+      attributes: Map.delete(attrs, "transform"),
+      transform: matrix
+    }
+
+    push(state, name, :group, matrix, start, group, self_closing)
+  end
 
   # A shape that couldn't be read is kept as markup when the SVG's viewer would still draw it (see
   # shape/4); anything inside a shape (like a <title>) is ignored.
@@ -802,10 +816,8 @@ defmodule Curves.Svg.Import do
   end
 
   defp subpaths(:ellipse, attrs, matrix) do
-    # A missing rx or ry is the same as the other one (SVG 2's "auto").
-    attrs = attrs |> Map.put_new("rx", attrs["ry"]) |> Map.put_new("ry", attrs["rx"])
-
-    with {:ok, [cx, cy, rx, ry]} <- lengths(attrs, ["cx", "cy", "rx", "ry"]),
+    with {:ok, [cx, cy]} <- lengths(attrs, ["cx", "cy"]),
+         {:ok, rx, ry} <- radii(attrs),
          :ok <- size(rx, "rx"),
          :ok <- size(ry, "ry") do
       {:ok, [ellipse({cx, cy}, rx, ry, matrix)]}
@@ -897,30 +909,43 @@ defmodule Curves.Svg.Import do
   defp drop_empty_lines([point | rest]), do: [point | drop_empty_lines(rest)]
   defp drop_empty_lines([]), do: []
 
-  # A rectangle's corner radii, by SVG's rules: a missing one is the same as the other, both
-  # missing are 0, and neither can be more than half the side.
+  # A rectangle's corner radii (see radii/1), neither more than half the side.
   @spec corner_radii(map(), float(), float()) :: {:ok, float(), float()} | {:skip, term()}
   defp corner_radii(attrs, w, h) do
-    attrs = attrs |> Map.put_new("rx", attrs["ry"]) |> Map.put_new("ry", attrs["rx"])
-
-    with {:ok, [rx, ry]} <- lengths(attrs, ["rx", "ry"]),
-         :ok <- not_negative(rx, "rx"),
-         :ok <- not_negative(ry, "ry") do
-      {:ok, min(rx, w / 2), min(ry, h / 2)}
-    end
+    with {:ok, rx, ry} <- radii(attrs), do: {:ok, min(rx, w / 2), min(ry, h / 2)}
   end
+
+  # An ellipse's or a rounded corner's rx and ry, by SVG 2's rules, as browsers draw them: rx and
+  # ry are CSS properties, so a missing, "auto", negative or unreadable one is "auto", the same as
+  # the other one. Both "auto" is 0. A unit that can't be measured (like %) is still skipped.
+  @spec radii(map()) :: {:ok, float(), float()} | {:skip, term()}
+  defp radii(attrs) do
+    with {:ok, rx} <- radius(attrs["rx"]),
+         {:ok, ry} <- radius(attrs["ry"]),
+         do: {:ok, auto(rx, ry), auto(ry, rx)}
+  end
+
+  @spec radius(String.t() | nil) :: {:ok, float() | :auto} | {:skip, term()}
+  defp radius(nil), do: {:ok, :auto}
+  defp radius(text), do: text |> length_value() |> radius_or_auto()
+
+  @spec radius_or_auto({:ok, float()} | {:skip, term()}) ::
+          {:ok, float() | :auto} | {:skip, term()}
+  defp radius_or_auto({:ok, value}) when value >= 0, do: {:ok, value}
+  defp radius_or_auto({:skip, {:unsupported_unit, _}} = skip), do: skip
+  defp radius_or_auto(_negative_or_unreadable), do: {:ok, :auto}
+
+  # A radius, with "auto" taken from the other one.
+  @spec auto(float() | :auto, float() | :auto) :: float()
+  defp auto(:auto, :auto), do: 0.0
+  defp auto(:auto, other), do: other
+  defp auto(value, _other), do: value
 
   # A size SVG draws: more than 0. A size of 0 is :empty, and below 0 is an error.
   @spec size(float(), String.t()) :: :ok | {:skip, term()}
   defp size(value, _name) when value > 0, do: :ok
   defp size(value, _name) when value == 0, do: {:skip, :empty}
   defp size(value, name), do: {:skip, {:invalid, "#{name} can't be negative, got: #{value}"}}
-
-  @spec not_negative(float(), String.t()) :: :ok | {:skip, term()}
-  defp not_negative(value, name) when value < 0,
-    do: {:skip, {:invalid, "#{name} can't be negative, got: #{value}"}}
-
-  defp not_negative(_value, _name), do: :ok
 
   # The attributes as numbers. A missing one is 0. Only plain numbers and px can be read.
   @spec lengths(map(), list(String.t())) :: {:ok, list(float())} | {:skip, term()}
