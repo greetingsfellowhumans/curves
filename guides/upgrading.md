@@ -1,7 +1,7 @@
 # Upgrading from 0.2.x to 1.0
 
 ```elixir
-{:curves, "~> 1.0.0-rc.2"}
+{:curves, "~> 1.0"}
 ```
 
 ## Why upgrade

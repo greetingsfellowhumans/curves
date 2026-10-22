@@ -11,7 +11,7 @@ It is pure Elixir, with no dependencies, and fast: solving a point takes a fract
 ```elixir
 def deps do
   [
-    {:curves, "~> 1.0.0-rc.2"}
+    {:curves, "~> 1.0"}
   ]
 end
 ```
