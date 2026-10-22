@@ -31,11 +31,11 @@ ends at the last, and is pulled towards the ones in between.
 ## Finding a point: `t`
 
 Every curve travels from start to end, and `t` is the percentage of progress along the segment. `t` goes from `0.0` to `1.0`.
-and `Curves.solve!/2` tells you the `{x, y}` coordinates.
+and `Curves.solve!/2` tells you where you are:
 
 ```elixir
-Curves.solve!(curve, 0.3) # i.e. find the {x, y} point 30% after the beginning of the curve.
-#=> {0.37979999999999997, 0.216}
+Curves.solve!(curve, 0.5)
+#=> {0.5, 0.5}
 ```
 
 ![The point at t = 0.5](images/intro_solve.svg)
