@@ -7,7 +7,7 @@ defmodule Curves.Drawing.Raw do
   | --- | --- |
   | `:element` | its element's name, e.g. `"text"` |
   | `:markup` | its SVG markup. It is the original, made safe and well formed: `<script>` and `<foreignObject>` elements, animations of links and event handlers, event attributes (`onclick` and so on), `javascript:` links and invalid names are taken out, tags left open are closed, and stray or unfinished tags are left out. |
-  | `:transform` | the transforms of the groups around it, as `{a, b, c, d, e, f}` (like SVG's `matrix(a, b, c, d, e, f)`), since those groups are drawn without them. Its own `transform` is still in its markup. |
+  | `:transform` | the transforms of the groups around it, as `{a, b, c, d, e, f}` (like SVG's `matrix(a, b, c, d, e, f)`), so it is drawn in the same place wherever it is put. Its own `transform` is still in its markup. |
   """
 
   defstruct element: nil,

@@ -521,6 +521,7 @@ defmodule Curves.Svg.Import do
       width: attrs["width"],
       height: attrs["height"],
       view_box: attrs["viewBox"] |> view_box() |> flip_view_box(flip?(state.opts)),
+      read_with_flip_y: flip?(state.opts),
       attributes: attrs
     }
 
@@ -537,8 +538,7 @@ defmodule Curves.Svg.Import do
           state()
   defp element(name, attrs, parent, state, tag) when name in @groups do
     {matrix, state} = own_matrix(attrs, parent, name, state)
-    group = %Group{element: name, id: attrs["id"], attributes: Map.delete(attrs, "transform")}
-    group_or_markup(state, name, matrix, parent, group, tag)
+    group_or_markup(state, name, matrix, parent, attrs, tag)
   end
 
   defp element(name, attrs, parent, state, tag) when is_map_key(@shapes, name) do
@@ -575,15 +575,23 @@ defmodule Curves.Svg.Import do
           String.t(),
           TransformList.matrix() | nil,
           TransformList.matrix(),
-          Group.t(),
+          map(),
           tag()
         ) ::
           state()
-  defp group_or_markup(state, name, nil, parent, _group, tag),
+  defp group_or_markup(state, name, nil, parent, _attrs, tag),
     do: keep_markup(state, name, parent, tag)
 
-  defp group_or_markup(state, name, matrix, _parent, group, {self_closing, start, _stop}),
-    do: push(state, name, :group, matrix, start, group, self_closing)
+  defp group_or_markup(state, name, matrix, _parent, attrs, {self_closing, start, _stop}) do
+    group = %Group{
+      element: name,
+      id: attrs["id"],
+      attributes: Map.delete(attrs, "transform"),
+      transform: matrix
+    }
+
+    push(state, name, :group, matrix, start, group, self_closing)
+  end
 
   # A shape that couldn't be read is kept as markup when the SVG's viewer would still draw it (see
   # shape/4); anything inside a shape (like a <title>) is ignored.

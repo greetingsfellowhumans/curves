@@ -21,6 +21,12 @@ defmodule Curves.Svg.ImportTest do
   end
 
   describe "the document" do
+    test "the drawing says whether it was read with flip_y" do
+      refute Curves.from_svg("<svg/>").read_with_flip_y
+      assert Curves.from_svg("<svg/>", flip_y: true).read_with_flip_y
+      assert Curves.from_svg("<svg/>", flip_y: "yes").read_with_flip_y
+    end
+
     test "a character reference to a character XML doesn't allow is kept as written" do
       [shape] = Curves.Drawing.shapes(read(~s|<circle r="1" data-x="a&#0;b&#10;c"/>|))
       assert shape.attributes["data-x"] == "a&#0;b\nc"
@@ -316,6 +322,21 @@ defmodule Curves.Svg.ImportTest do
   end
 
   describe "transforms" do
+    test "a group keeps every transform that applied to it, its own and its groups'" do
+      drawing =
+        read(~s|<g id="a" transform="translate(10 0)"><g id="b" transform="scale(2)"/></g>|)
+
+      assert Curves.Drawing.get(drawing, "a").transform == {1.0, 0.0, 0.0, 1.0, 10.0, 0.0}
+      assert Curves.Drawing.get(drawing, "b") == nil
+
+      drawing =
+        read(
+          ~s|<g id="a" transform="translate(10 0)"><g id="b" transform="scale(2)"><circle r="1"/></g></g>|
+        )
+
+      assert Curves.Drawing.get(drawing, "b").transform == {2.0, 0.0, 0.0, 2.0, 10.0, 0.0}
+    end
+
     test "a shape's transform comes after its groups' (applied right to left)" do
       drawing =
         read(

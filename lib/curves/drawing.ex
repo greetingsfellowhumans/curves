@@ -35,6 +35,7 @@ defmodule Curves.Drawing do
   | --- | --- |
   | `:width`, `:height` | the `<svg>` element's `width` and `height`, as written (they may have units), or `nil` |
   | `:view_box` | its `viewBox` as `{min_x, min_y, width, height}`, or `nil` |
+  | `:read_with_flip_y` | whether `Curves.from_svg/2` was given `flip_y: true`. `Curves.Svg` uses it to flip the view box of an SVG that has a size but no `viewBox`. It says how the SVG was read, so `Curves.Transform.flip_y/2` doesn't change it. |
   | `:attributes` | all of the `<svg>` element's own attributes, as strings |
   | `:children` | what is in it, in order: a `Curves.Drawing.Shape` for each shape, a `Curves.Drawing.Group` for each group, and a `Curves.Drawing.Raw` for everything else that is kept as markup, like text |
   | `:skipped` | everything that couldn't be read as curves, and why, so nothing goes missing silently |
@@ -76,6 +77,7 @@ defmodule Curves.Drawing do
   defstruct width: nil,
             height: nil,
             view_box: nil,
+            read_with_flip_y: false,
             attributes: %{},
             children: [],
             skipped: [],
@@ -101,6 +103,7 @@ defmodule Curves.Drawing do
           width: String.t() | nil,
           height: String.t() | nil,
           view_box: {float(), float(), float(), float()} | nil,
+          read_with_flip_y: boolean(),
           attributes: %{String.t() => String.t()},
           children: list(child()),
           skipped: list(skipped()),

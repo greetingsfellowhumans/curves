@@ -21,7 +21,26 @@ defmodule Curves.Svg.PathWriter do
   # `move` is applied to every point first, e.g. to write a shape in its own coordinates. It must be
   # affine (a matrix), so that it moves arcs exactly too.
   @spec path_data(T.curve_struct(), (T.point_tuple() -> T.point_tuple())) :: String.t()
-  def path_data(curve, move \\ &Function.identity/1) do
+  def path_data(curve, move \\ &Function.identity/1),
+    do: curve |> commands(move) |> Enum.join(" ")
+
+  # Like path_data/2, for a subpath that a Z closes: a last straight line back to the start is left
+  # out, since Z draws it. Otherwise markers would also be drawn at the start a second time.
+  @spec closed_path_data(T.curve_struct(), (T.point_tuple() -> T.point_tuple())) :: String.t()
+  def closed_path_data(curve, move),
+    do: curve |> commands(move) |> drop_closing_line() |> Enum.join(" ")
+
+  @spec drop_closing_line(list(String.t())) :: list(String.t())
+  defp drop_closing_line(["M" <> start | _] = commands),
+    do: drop_last(commands, List.last(commands) == "L" <> start)
+
+  @spec drop_last(list(String.t()), boolean()) :: list(String.t())
+  defp drop_last(commands, true), do: Enum.drop(commands, -1)
+  defp drop_last(commands, false), do: commands
+
+  # The curve as a list of path commands.
+  @spec commands(T.curve_struct(), (T.point_tuple() -> T.point_tuple())) :: list(String.t())
+  defp commands(curve, move) do
     cond do
       is_struct(curve, Bezier) ->
         curve |> Bezier.transformed_points() |> Enum.map(move) |> bezier()
@@ -38,26 +57,24 @@ defmodule Curves.Svg.PathWriter do
   end
 
   # A single Bezier curve: L, Q or C by its number of points. One point is a dot (M only).
-  @spec bezier(T.point_list()) :: String.t()
-  defp bezier([p0]), do: "M" <> point(p0)
-  defp bezier([p0, p1]), do: "M" <> point(p0) <> " L" <> point(p1)
-  defp bezier([p0, c, p1]), do: "M" <> point(p0) <> " Q" <> points([c, p1])
-  defp bezier([p0, c0, c1, p1]), do: "M" <> point(p0) <> " C" <> points([c0, c1, p1])
+  @spec bezier(T.point_list()) :: list(String.t())
+  defp bezier([p0]), do: ["M" <> point(p0)]
+  defp bezier([p0, p1]), do: ["M" <> point(p0), "L" <> point(p1)]
+  defp bezier([p0, c, p1]), do: ["M" <> point(p0), "Q" <> points([c, p1])]
+  defp bezier([p0, c0, c1, p1]), do: ["M" <> point(p0), "C" <> points([c0, c1, p1])]
 
   defp bezier(points) do
     raise ArgumentError,
           "SVG path data can only draw a Bezier curve of 1 to 4 points, got #{length(points)}"
   end
 
-  @spec polyline(T.point_list()) :: String.t()
-  defp polyline([first | rest]),
-    do: Enum.join(["M" <> point(first) | Enum.map(rest, &("L" <> point(&1)))], " ")
+  @spec polyline(T.point_list()) :: list(String.t())
+  defp polyline([first | rest]), do: ["M" <> point(first) | Enum.map(rest, &("L" <> point(&1)))]
 
   # M to the start, then one command (or several, for a long arc) per segment.
-  @spec spline(list()) :: String.t()
-  defp spline([first | _] = segments) do
-    Enum.join(["M" <> point(start(first)) | Enum.flat_map(segments, &segment/1)], " ")
-  end
+  @spec spline(list()) :: list(String.t())
+  defp spline([first | _] = segments),
+    do: ["M" <> point(start(first)) | Enum.flat_map(segments, &segment/1)]
 
   @spec start(list() | tuple()) :: T.point_tuple()
   defp start({:arc, _c, _a, _b, _from, _to, start, _finish}), do: start

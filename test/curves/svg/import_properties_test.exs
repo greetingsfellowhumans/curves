@@ -338,6 +338,67 @@ defmodule Curves.Svg.ImportPropertiesTest do
     end
   end
 
+  @transforms [
+    "",
+    "translate(3 -2)",
+    "scale(2 0.5)",
+    "rotate(30 1 1)",
+    "skewX(20)",
+    "scale(-1 1)",
+    "matrix(1 0.5 -0.3 1.2 4 5)"
+  ]
+
+  @spec matrix_close?(tuple(), tuple()) :: boolean()
+  defp matrix_close?(a, b) do
+    Enum.zip(Tuple.to_list(a), Tuple.to_list(b))
+    |> Enum.all?(fn {x, y} -> abs(x - y) <= 1.0e-9 * max(1.0, abs(x)) end)
+  end
+
+  property "nested groups are drawn with their own transforms, so a drawing reads back the same" do
+    check all(
+            [outer, inner, own] <-
+              StreamData.list_of(StreamData.member_of(@transforms), length: 3),
+            shape <-
+              StreamData.member_of([
+                ~s|<circle cx="2" cy="1" r="4"/>|,
+                ~s|<polygon points="0,0 4,1 2,5"/>|,
+                ~s|<path d="M0 0 L10 0 A5 3 30 0 1 10 10 z"/>|
+              ])
+          ) do
+      original =
+        Curves.from_svg(
+          ~s|<svg><g id="a" transform="#{outer}" clip-path="url(#c)"><g id="b" transform="#{inner}"><text>T</text>| <>
+            String.replace(shape, "/>", ~s| transform="#{own}"/>|) <> "</g></g></svg>"
+        )
+
+      svg = Curves.Svg.render(original)
+      again = Curves.from_svg(svg)
+
+      # Each group keeps its own transform, so whatever is in it (a clip-path, text) is where it was.
+      for id <- ["a", "b"] do
+        assert matrix_close?(
+                 Drawing.get(original, id).transform,
+                 Drawing.get(again, id).transform
+               )
+      end
+
+      [a] = Drawing.shapes(original)
+      [b] = Drawing.shapes(again)
+      assert matrix_close?(a.transform, b.transform)
+
+      for {sa, sb} <- Enum.zip(a.subpaths, b.subpaths) do
+        # Samples are this far apart at most, relative to the curve's size.
+        %{xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax} =
+          Curves.Utils.Vec.bounds(Curves.take!(sa.curve, 100))
+
+        assert furthest(sa.curve, sb.curve) <= 0.01 * max(1.0, max(xmax - xmin, ymax - ymin))
+      end
+
+      # Text inside a group is drawn inside it, with no transform of its own added.
+      assert svg =~ "\n<text>T</text>"
+    end
+  end
+
   property "any attribute value, with line breaks and tabs, reads back the same after drawing" do
     check all(
             value <-

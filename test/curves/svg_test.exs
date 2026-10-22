@@ -392,23 +392,37 @@ defmodule Curves.SvgTest do
                ~s(<defs><linearGradient id="fade"><stop offset="0" stop-color="red"/></linearGradient></defs>)
 
       assert svg =~ ~s|class="box" fill="url(#fade)" stroke="black"/>|
-      assert svg =~ ~s(<g opacity="0.5">)
+      assert svg =~ ~s|<g transform="matrix(2.0 0.0 0.0 2.0 100.0 50.0)" opacity="0.5">|
       assert svg =~ "Hello &amp; bye"
       refute svg =~ "onclick"
       refute svg =~ "<circle"
       refute svg =~ "stroke-dasharray"
     end
 
-    test "a transformed shape is drawn in its own coordinates, with its transform, so strokes scale" do
+    test "a transformed group is drawn with its transform, and its shapes in their own coordinates" do
       svg = Svg.render(Curves.from_svg(@designed))
 
-      assert svg =~
-               ~s|transform="matrix(2.0 0.0 0.0 2.0 100.0 50.0)" fill="orange" stroke="blue" stroke-width="3"/>|
+      [_, d] =
+        Regex.run(~r|<path d="([^"]+)" fill="orange" stroke="blue" stroke-width="3"/>|, svg)
 
+      assert String.starts_with?(d, "M10.0,0.0 A10.0 10.0")
+      # Kept text is inside its group, which has the transform
+      assert svg =~ ~s|opacity="0.5">\n<path d="M10.0|
+      assert svg =~ ~s|stroke-width="3"/>\n<text x="0" y="20">|
+    end
+
+    test "a transformed shape is drawn in its own coordinates, with its transform, so strokes scale" do
+      svg =
+        Svg.render(
+          Curves.from_svg(
+            ~s|<svg viewBox="0 0 100 100"><g transform="translate(5 0)"><circle r="10" transform="scale(2)" stroke-width="3"/></g></svg>|
+          )
+        )
+
+      assert svg =~ ~s|<g transform="matrix(1.0 0.0 0.0 1.0 5.0 0.0)">|
+      assert svg =~ ~s|transform="matrix(2.0 0.0 0.0 2.0 0.0 0.0)" stroke-width="3"/>|
       [_, d] = Regex.run(~r{<path d="([^"]+)" transform="matrix\(2}, svg)
       assert String.starts_with?(d, "M10.0,0.0 A10.0 10.0")
-      # Kept text gets its group's transform around it
-      assert svg =~ ~s|<g transform="matrix(2.0 0.0 0.0 2.0 100.0 50.0)">\n<text x="0" y="20">|
     end
 
     test "dots, dashed lines, markers and a title can be turned on, in the drawing's units" do
@@ -445,6 +459,97 @@ defmodule Curves.SvgTest do
       assert svg =~ ~s(viewBox="1.0 2.0 4.0 8.0")
       flipped = Curves.from_svg(~s|<svg viewBox="0 0 10 20"><line x2="3"/></svg>|, flip_y: true)
       assert flipped.view_box == {0.0, -20.0, 10.0, 20.0}
+    end
+
+    test "a group's clip-path lines up with its shapes, as in the SVG" do
+      svg =
+        Svg.render(
+          Curves.from_svg(
+            ~s|<svg viewBox="0 0 100 100"><defs><clipPath id="c"><rect width="10" height="10"/></clipPath></defs><g transform="translate(50 0)" clip-path="url(#c)"><rect width="10" height="10" fill="red"/></g></svg>|
+          )
+        )
+
+      assert svg =~
+               ~s|<g transform="matrix(1.0 0.0 0.0 1.0 50.0 0.0)" clip-path="url(#c)">\n<path d="M0.0,0.0 L10.0,0.0 L10.0,10.0 L0.0,10.0 Z" fill="red"/>|
+    end
+
+    test "a <use> of a shape in a transformed group gets only the shape's own transform" do
+      svg =
+        Svg.render(
+          Curves.from_svg(
+            ~s|<svg viewBox="0 0 200 200"><g transform="translate(100 0)"><line id="l" x2="5"/></g><use href="#l" y="50"/></svg>|
+          )
+        )
+
+      assert svg =~ ~s|<path d="M0.0,0.0 L5.0,0.0" id="l"/>|
+    end
+
+    test "a group squashed flat by its transform is drawn without it, with its shapes where they are" do
+      drawing =
+        Curves.from_svg(
+          ~s|<svg viewBox="0 0 10 10"><g transform="scale(1 0)"><line x2="4" y2="4"/></g></svg>|
+        )
+
+      svg = Svg.render(drawing)
+      assert svg =~ ~s|<g>\n<path d="M0.0,0.0 L4.0,0.0"/>|
+      again = Curves.from_svg(svg)
+      assert Curves.solve!(hd(Curves.Drawing.curves(again)), 1.0) == {4.0, 0.0}
+    end
+
+    test "a drawing with a size in pixels but no view box shows 0..width by 0..height, as SVG does" do
+      svg = ~s|<svg width="100" height="80px"><circle cx="50" cy="50" r="10"/></svg>|
+      rendered = Svg.render(Curves.from_svg(svg))
+      assert rendered =~ ~s(width="100" height="80px" viewBox="0.0 0.0 100.0 80.0")
+
+      # Read with flip_y, the box is flipped like a real view box, so it still shows the picture.
+      flipped = Curves.from_svg(svg, flip_y: true)
+      assert flipped.read_with_flip_y
+      assert Svg.render(flipped) =~ ~s(viewBox="0.0 -80.0 100.0 80.0")
+
+      # A size with units, or only one size, can't be measured, so the box fits the curves.
+      for other <- [~s|width="10cm" height="10cm"|, ~s|width="100"|] do
+        rendered =
+          Svg.render(Curves.from_svg(~s|<svg #{other}><circle cx="50" cy="50" r="10"/></svg>|))
+
+        assert rendered =~ ~s(viewBox="40.0 40.0 20.0 20.0")
+      end
+    end
+
+    test "a drawing saved before :read_with_flip_y existed is drawn as not flipped" do
+      drawing = Curves.from_svg(~s|<svg width="100" height="80"><circle r="1"/></svg>|)
+      old = Map.delete(drawing, :read_with_flip_y)
+      assert Svg.render(old) == Svg.render(drawing)
+    end
+
+    test "a drawing with a view box but no size is drawn with none, so it fills its space" do
+      svg =
+        Svg.render(
+          Curves.from_svg(~s|<svg viewBox="0 0 1 1"><circle cx="0.5" cy="0.5" r="0.4"/></svg>|)
+        )
+
+      assert svg =~ ~s(<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 1.0 1.0">)
+    end
+
+    test "a closed shape ends with Z, not a line back to its start as well" do
+      svg = Svg.render(Curves.from_svg(~s|<svg><polygon points="0 0 10 0 10 10"/></svg>|))
+      assert svg =~ ~s|<path d="M0.0,0.0 L10.0,0.0 L10.0,10.0 Z"/>|
+    end
+
+    test "the view box fitted to the curves is exact, even at the tips of arcs" do
+      svg = Svg.render(Curves.from_svg(~s|<svg><rect width="10" height="4" rx="3"/></svg>|))
+      assert svg =~ ~s(width="10.0" height="4.0" viewBox="0.0 0.0 10.0 4.0")
+    end
+
+    test "flat content gets a view box 1 unit across that axis" do
+      svg = Svg.render(Curves.from_svg(~s|<svg><line x1="2" y1="3" x2="12" y2="3"/></svg>|))
+      assert svg =~ ~s(width="10.0" height="1.0" viewBox="2.0 2.5 10.0 1.0")
+      svg = Svg.render(Curves.from_svg(~s|<svg><line x1="2" y1="3" x2="2" y2="3"/></svg>|))
+      assert svg =~ ~s(viewBox="1.5 2.5 1.0 1.0")
+    end
+
+    test "line breaks and tabs in an attribute are written so they read back the same" do
+      svg = Svg.render(Curves.from_svg(~s|<svg><circle r="1" data-x="a&#10;b&#9;c"/></svg>|))
+      assert svg =~ ~s(data-x="a&#10;b&#9;c")
     end
 
     test "a shape squashed flat by its transform is drawn where it is, with no transform" do
