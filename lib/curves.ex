@@ -462,7 +462,8 @@ defmodule Curves do
 
   Not read as curves (but kept as markup, so they are still drawn again): text, images, `<use>`, a
   nested `<svg>`, and shapes with sizes in units other than `px`. CSS (`style` attributes and
-  `<style>`) isn't applied to the curves, but it is kept with them.
+  `<style>`) isn't applied to the curves, but it is kept with them. An empty group written as
+  `<g/>` is left out, since it draws nothing.
 
   ## Options
   * `:flip_y` (default `false`) - mirror every y, so y goes up.

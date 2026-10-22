@@ -24,7 +24,8 @@ defmodule Curves.Transform do
 
   Every function here also takes a `Curves.Drawing` (from `Curves.from_svg/2`), or a group or shape
   in one, and changes it as a whole, the same way it changes a curve. Everything in it moves
-  together, text and other kept markup too, and `around: :center` is the middle of all of it.
+  together, text and other kept markup too. `around: :center` is the middle of its shapes: text and
+  other markup can't be measured, so they don't count.
   `Curves.Drawing.update/3` and `update_in/3` change one part, found by its `id`:
 
   ```elixir
@@ -252,6 +253,9 @@ defmodule Curves.Transform do
   different point instead, which then stays exactly where it is: either `:center` (the middle of the
   curve's points) or an `{x, y}` point. Both are in the curve's own coordinates: the points you defined
   it with, before any transforms.
+
+  `around:` keeps that point still by moving the curve's position, and the move stays: setting the
+  rotation back to `0` (or the scale back to `1`) later, without `around:`, leaves the curve moved.
   """
 
   @doc ~s"""
@@ -307,7 +311,8 @@ defmodule Curves.Transform do
 
   @doc ~s"""
   Resize the curve, adding to the existing scale. With an `{x, y}` pair, each direction is added to
-  separately; a single number adds to both.
+  separately; a single number adds to both. A flipped direction has a negative scale, so adding to
+  it brings it towards `0`, making the curve smaller that way.
 
   #{@around_doc}
 
