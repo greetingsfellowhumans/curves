@@ -337,4 +337,43 @@ defmodule Curves.Svg.ImportPropertiesTest do
                Enum.map(original.children, & &1.attributes)
     end
   end
+
+  property "any attribute value, with line breaks and tabs, reads back the same after drawing" do
+    check all(
+            value <-
+              StreamData.string([?\n, ?\t, ?\r, ?&, ?<, ?>, ?", ?', ?\s, ?a..?z, 0x00E0..0x00FF])
+          ) do
+      escaped = Curves.Svg.Import.escape(value)
+      drawing = Curves.from_svg(~s|<svg><circle r="1" data-x="#{escaped}"/></svg>|)
+      [shape] = Drawing.shapes(drawing)
+      assert shape.attributes["data-x"] == value
+
+      [again] = drawing |> Curves.Svg.render() |> Curves.from_svg() |> Drawing.shapes()
+      assert again.attributes["data-x"] == value
+    end
+  end
+
+  property "a comma may separate repeated sets of arguments, as SVG allows" do
+    check all(
+            points <-
+              StreamData.list_of(
+                StreamData.tuple({StreamData.integer(-50..50), StreamData.integer(-50..50)}),
+                min_length: 2,
+                max_length: 8
+              ),
+            letter <- StreamData.member_of(["M", "L"]),
+            separator <- StreamData.member_of([",", " , ", ", ", " ,"])
+          ) do
+      [{x0, y0} | rest] = points
+      repeated = Enum.map_join(rest, separator, fn {x, y} -> "#{x},#{y}" end)
+      start = if letter == "M", do: "M#{x0},#{y0}#{separator}", else: "M#{x0},#{y0} L"
+      [subpath] = Curves.from_svg_path(start <> repeated)
+
+      points
+      |> Enum.with_index()
+      |> Enum.each(fn {{x, y}, i} ->
+        assert Curves.solve!(subpath.curve, i * 1.0) == {x * 1.0, y * 1.0}
+      end)
+    end
+  end
 end

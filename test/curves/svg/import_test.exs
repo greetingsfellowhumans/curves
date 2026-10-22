@@ -21,6 +21,11 @@ defmodule Curves.Svg.ImportTest do
   end
 
   describe "the document" do
+    test "a character reference to a character XML doesn't allow is kept as written" do
+      [shape] = Curves.Drawing.shapes(read(~s|<circle r="1" data-x="a&#0;b&#10;c"/>|))
+      assert shape.attributes["data-x"] == "a&#0;b\nc"
+    end
+
     test "reads the <svg> element's size and view box" do
       drawing = Curves.from_svg(~s|<svg width="10cm" height="5" viewBox="0,0 100 50"></svg>|)
 

@@ -280,10 +280,12 @@ defmodule Curves.Svg.Import do
   defp entity("#x" <> hex, whole), do: character(String.to_integer(hex, 16), whole)
   defp entity("#" <> decimal, whole), do: character(String.to_integer(decimal), whole)
 
-  # A character reference that isn't a real character stays as it was written.
+  # A character reference to a character XML doesn't allow (like &#0;) stays as it was written.
   @spec character(non_neg_integer(), String.t()) :: String.t()
-  defp character(code, _whole) when code in 0..0xD7FF or code in 0xE000..0x10FFFF,
-    do: <<code::utf8>>
+  defp character(code, _whole)
+       when code in [0x9, 0xA, 0xD] or code in 0x20..0xD7FF or code in 0xE000..0xFFFD or
+              code in 0x10000..0x10FFFF,
+       do: <<code::utf8>>
 
   defp character(_code, whole), do: whole
 
@@ -452,7 +454,8 @@ defmodule Curves.Svg.Import do
   defp tag_close(true = _self_closing), do: "/>"
   defp tag_close(false), do: ">"
 
-  # Makes text safe to put inside an attribute's quotes.
+  # Makes text safe to put inside an attribute's quotes. Tabs and line breaks are written as
+  # character references too, since reading XML turns them into spaces in an attribute.
   @doc false
   @spec escape(String.t()) :: String.t()
   def escape(text) do
@@ -461,6 +464,9 @@ defmodule Curves.Svg.Import do
     |> String.replace("<", "&lt;")
     |> String.replace(">", "&gt;")
     |> String.replace("\"", "&quot;")
+    |> String.replace("\t", "&#9;")
+    |> String.replace("\n", "&#10;")
+    |> String.replace("\r", "&#13;")
   end
 
   ## Elements
