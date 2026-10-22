@@ -24,34 +24,28 @@ defmodule Curves.Spline.CatmullRomTest do
       assert hd == [{0.0, 0.0}, {1 / 3, 0.0}, {2 / 3, 0.0}, {1.0, 0.0}]
     end
 
-    test "get_prev and get_next", ctx do
-      {segments_list, _curve} = initial_args(ctx)
-      [{first, 0}, {second, 1} | _] = segments_list
-      assert first == [{0.0, 0.0}, {1 / 3, 0.0}, {2 / 3, 0.0}, {1.0, 0.0}]
-      assert second == [{1.0, 0.0}, {1.0, 1 / 3}, {1.0, 2 / 3}, {1.0, 1.0}]
+    test "each segment gets the points before and after it, mirrored at the ends", ctx do
+      {segments_list, curve} = initial_args(ctx)
+      [first, second | _] = mapped = map_segments(segments_list, curve)
 
-      assert get_prev_coord(segments_list, 1, second) == {0.0, 0.0}
-      assert get_prev_coord(segments_list, 0, first) == {-1.0, 0.0}
+      assert first == [{-1.0, 0.0}, {0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}]
+      assert second == [{0.0, 0.0}, {1.0, 0.0}, {1.0, 1.0}, {0.0, 1.0}]
+      assert mapped |> List.last() |> Enum.drop(2) == [{1.0, 2.0}, {2.0, 2.0}]
 
-      assert get_next_coord(segments_list, 0, first) == {1.0, 1.0}
-      assert get_next_coord(segments_list, 1, second) == {0.0, 1.0}
+      {segments_list, curve} = initial_args(ctx, :catmull_rom2)
+      [first, second | _] = mapped = map_segments(segments_list, curve)
 
-      {last, _} = Enum.at(segments_list, Enum.count(segments_list) - 1)
-      [_, _, _, {1.0, 2.0}] = last
+      assert {hd(first), List.last(first)} == {{8.0, 22.0}, {14.0, 16.0}}
+      assert {hd(second), List.last(second)} == {{10.0, 20.0}, {15.0, 14.0}}
+      assert mapped |> List.last() |> Enum.drop(2) == [{18.0, 10.0}, {20.0, 8.0}]
+    end
 
-      assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {2.0, 2.0}
+    test "a single segment is mirrored at both ends" do
+      segment = [{0.0, 0.0}, {1.0, 0.0}, {2.0, 0.0}, {3.0, 0.0}]
 
-      {segments_list, _curve} = initial_args(ctx, :catmull_rom2)
-      [{first, 0}, {second, 1} | _] = segments_list
-
-      assert get_prev_coord(segments_list, 0, first) == {8.0, 22.0}
-      assert get_prev_coord(segments_list, 1, second) == {10.0, 20.0}
-      assert get_next_coord(segments_list, 0, first) == {14.0, 16.0}
-      assert get_next_coord(segments_list, 1, second) == {15.0, 14.0}
-
-      {last, _} = Enum.at(segments_list, Enum.count(segments_list) - 1)
-      [_, _, _, {18.0, 10.0}] = last
-      assert get_next_coord(segments_list, Enum.count(segments_list) - 1, last) == {20.0, 8.0}
+      assert map_segments([{segment, 0}], nil) == [
+               [{-3.0, 0.0}, {0.0, 0.0}, {3.0, 0.0}, {6.0, 0.0}]
+             ]
     end
 
     # test "get slope", ctx do
