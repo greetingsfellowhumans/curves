@@ -34,12 +34,13 @@ defmodule Curves.Spline.Type.CatmullRom do
   use Curves.Spline.Type
 
   alias Curves.Types, as: T
-  alias Curves.Utils.{Segment, Vec}
+  alias Curves.Utils.{Errors, Segment, Vec}
 
   @doc false
   @impl true
   def define(points, opts \\ []) do
     points
+    |> Errors.check_points!()
     |> Enum.map(&[&1])
     |> Curves.define_spline(:catmull_rom, opts)
   end

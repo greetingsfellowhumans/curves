@@ -235,6 +235,13 @@ defmodule Curves.PropertiesTest do
     end
   end
 
+  property "a u just past the end of a spline or polyline (a rounding error) gives its end" do
+    check all(curve <- StreamData.one_of([spline(), polyline()]), extra <- fraction()) do
+      max_u = Curves.max_u(curve)
+      assert Curves.solve!(curve, max_u + extra * 0.001) == Curves.solve!(curve, max_u)
+    end
+  end
+
   property "splines and polylines are continuous where segments meet" do
     check all(curve <- StreamData.one_of([spline(), polyline()])) do
       for boundary <- 1..(trunc(Curves.max_u(curve)) - 1)//1 do

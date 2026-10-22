@@ -46,7 +46,7 @@ defmodule Curves.Spline.Type.KochanekBartels do
   use Curves.Spline.Type
 
   alias Curves.Types, as: T
-  alias Curves.Utils.{Hermite, Opts, Vec}
+  alias Curves.Utils.{Errors, Hermite, Opts, Vec}
 
   @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
@@ -56,6 +56,7 @@ defmodule Curves.Spline.Type.KochanekBartels do
     opts = Opts.put_numbers!(opts, tension: 0.0, continuity: 0.0, bias: 0.0)
 
     points
+    |> Errors.check_points!()
     |> Enum.map(&[&1])
     |> Curves.define_spline(:kochanek_bartels, opts)
   end

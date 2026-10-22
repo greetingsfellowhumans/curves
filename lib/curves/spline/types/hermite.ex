@@ -34,7 +34,7 @@ defmodule Curves.Spline.Type.Hermite do
     override_segment_parsing: true
 
   alias Curves.Types, as: T
-  alias Curves.Utils.Vec
+  alias Curves.Utils.{Errors, Vec}
 
   @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
@@ -42,6 +42,7 @@ defmodule Curves.Spline.Type.Hermite do
   @impl true
   def define(points, opts \\ []) do
     points
+    |> Errors.check_points!()
     |> Enum.map(&knot_and_tangent/1)
     |> to_bezier_segments()
     |> Curves.define_spline(:hermite, opts)

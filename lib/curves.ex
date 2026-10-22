@@ -69,7 +69,10 @@ defmodule Curves do
   See the `Curves.Transform` module for functions that allow you to move, resize, and rotate existing curves.
 
   ## Options
-  All `define_*`, `solve*`, and `take*` functions can receive the following `opts`.
+  All `define_*`, `solve*`, and `take*` functions can receive the following `opts`, except
+  `:origin`, which only `define_*` functions read (`solve*` and `take*` ignore it).
+
+  Options a function doesn't know are ignored, so a misspelt option has no effect.
 
   | `key` | `default` | `description` |
   | --- | ---     | --- |
@@ -517,6 +520,10 @@ defmodule Curves do
 
   e.g. `t = 0.5` means the coordinate at 50% through *the first segment*. But `t = 1.5` is 50% through the next segment.
 
+  Splines and polylines allow for rounding errors at both ends: a `u` up to `0.001` past
+  `max_u/1` gives the end of the curve, and a `u` down to `-0.001` gives a point just before
+  its start.
+
   ## Examples
       iex> c = Curves.define_bezier([{0.1, 0.9}, {0.5, 0.9}, {0.5, 0.1}, {0.75, 0.1}])
       iex> {:ok, {x, y}} = Curves.solve(c, 0.3)
@@ -578,6 +585,7 @@ defmodule Curves do
   def max_u(%Bezier{}), do: 1.0
   def max_u(%Spline{max_u: max_u}), do: max_u
   def max_u(%Polyline{max_u: max_u}), do: max_u
+  def max_u(other), do: Errors.raise_not_a_curve(other)
 
   @doc ~s"""
   Take `n` samples, evenly spaced along the curve.

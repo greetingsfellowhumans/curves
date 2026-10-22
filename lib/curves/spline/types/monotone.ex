@@ -42,14 +42,14 @@ defmodule Curves.Spline.Type.Monotone do
   use Curves.Spline.Type
 
   alias Curves.Types, as: T
-  alias Curves.Utils.{Hermite, Vec}
+  alias Curves.Utils.{Errors, Hermite, Vec}
 
   @matrix [[1, 0, 0, 0], [-3, 3, 0, 0], [3, -6, 3, 0], [-1, 3, -3, 1]]
 
   @doc false
   @impl true
   def define(points, opts \\ []) do
-    knots = Enum.map(points, &Vec.new/1)
+    knots = points |> Errors.check_points!() |> Enum.map(&Vec.new/1)
     check_x!(knots)
 
     knots
