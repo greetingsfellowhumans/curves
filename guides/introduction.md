@@ -11,7 +11,7 @@ It is pure Elixir, with no dependencies, and fast: solving a point takes a fract
 ```elixir
 def deps do
   [
-    {:curves, "~> 1.0.0-rc.2"}
+    {:curves, "~> 1.0"}
   ]
 end
 ```
@@ -30,7 +30,7 @@ ends at the last, and is pulled towards the ones in between.
 
 ## Finding a point: `t`
 
-Every curve is travelled from start to end as `t` goes from `0.0` to `1.0`. Ask for any `t` in between,
+Every curve travels from start to end, and `t` is the percentage of progress along the segment. `t` goes from `0.0` to `1.0`.
 and `Curves.solve!/2` tells you where you are:
 
 ```elixir

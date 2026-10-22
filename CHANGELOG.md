@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-10-21
+
+The first stable release. From here on, breaking changes wait for 2.0. The code is the same as 1.0.0-rc.2; only the docs have changed since then.
+
+Coming from 0.2.x? The changes are listed under [1.0.0-rc.2](#1-0-0-rc-2-2026-10-11) and [1.0.0-rc.1](#1-0-0-rc-1-2026-10-10) below, and the [upgrade guide](upgrading.html) shows how to update for each breaking change. In short:
+
+- **Faster, with no dependencies**: Nx is gone, everything runs on plain 64-bit floats, and solving a point is 40–130× faster.
+- **More correct**: Hermite splines pass through their knots, B-splines run in order, `:force_percent` works everywhere, and bad input raises a clear `ArgumentError`.
+- **More curves**: polylines, nine kinds of spline, and exact elliptical arcs, ellipses and circles.
+- **More transforms**: separate x and y scales, flips, `reverse/1`, and turning around any point with `around:`.
+- **SVG in and out**: `Curves.Svg` draws any curve or drawing, and `Curves.from_svg/2` reads an SVG's shapes as curves.
+- **New docs**: a four-chapter tutorial with interactive Livebooks, and a guide to choosing a curve.
+
+### Changed
+
+- The [upgrade guide](upgrading.html) is much shorter: why to upgrade, then one before-and-after example for each breaking change.
+- The introduction's first example solves the curve at `t = 0.5`, matching its picture.
+
 ## [1.0.0-rc.2] - 2026-10-11
 
 The second release candidate. It has three breaking changes, listed under Changed; sections 10 to 12 of the [upgrade guide](upgrading.html) show how to update.
