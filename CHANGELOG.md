@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2026-10-21
 
-The first stable release. From here on, breaking changes wait for 2.0. The code is the same as 1.0.0-rc.2; only the docs have changed since then.
+The first stable release. From here on, breaking changes wait for 2.0. Since 1.0.0-rc.2 there are bug fixes and clearer docs, listed below, and no breaking changes.
 
 Coming from 0.2.x? The changes are listed under [1.0.0-rc.2](#1-0-0-rc-2-2026-10-11) and [1.0.0-rc.1](#1-0-0-rc-1-2026-10-10) below, and the [upgrade guide](upgrading.html) shows how to update for each breaking change. In short:
 
@@ -18,10 +18,44 @@ Coming from 0.2.x? The changes are listed under [1.0.0-rc.2](#1-0-0-rc-2-2026-10
 - **SVG in and out**: `Curves.Svg` draws any curve or drawing, and `Curves.from_svg/2` reads an SVG's shapes as curves.
 - **New docs**: a four-chapter tutorial with interactive Livebooks, and a guide to choosing a curve.
 
+### Added
+
+- `Curves.Drawing.Group` has a `:transform` field: every SVG `transform` that applied to the group, like a shape's `:transform`. `Curves.Svg` draws the group with it.
+- `Curves.Drawing` has a `:read_with_flip_y` field: whether `Curves.from_svg/2` was given `flip_y: true`.
+
 ### Changed
 
 - The [upgrade guide](upgrading.html) is much shorter: why to upgrade, then one before-and-after example for each breaking change.
 - The introduction's first example solves the curve at `t = 0.5`, matching its picture.
+- Catmull-Rom splines are built in time proportional to the number of knots, not its square: 8,000 knots take about a fifth of the time.
+- `Curves.Svg` writes a closed shape's path data without the extra line back to its start before `Z`, so markers aren't drawn twice at the start.
+- `Curves.Svg` writes numbers in a transform that are within rounding of a whole number as that number, e.g. `0.0` instead of `6.123233995736766e-17`.
+- Clearer docs:
+  - The options table in `Curves` says that `solve` and `take` ignore `:origin`, and that unknown options are ignored.
+  - `Curves.Bezier.Predefined` says which names share a curve (`:ease` is `:ease_in`, for example), and gives CSS's own points; the guide to choosing a curve no longer says the presets are CSS's.
+  - `Curves.Transform` says that `around: :center` on a drawing counts only its shapes (text can't be measured), that the move made by `around:` stays, and what `inc_scale/3` does to a flipped curve.
+  - `Curves.Svg` says that CSS picking shapes by element (like `rect { ... }`) no longer matches them once drawn, since every shape is a `<path>`.
+  - `Curves.from_svg/2` says that an empty `<g/>` is left out, and `Curves.Drawing.by_id/1` says when it raises.
+
+### Fixed
+
+- A drawing drawn with `Curves.Svg`:
+  - A group's `clip-path`, `mask` or `filter` lines up with its shapes again: the group is drawn with its own `transform`, as in the SVG, not with that transform moved onto each shape inside it.
+  - A `<use>` of a shape inside a transformed group no longer gets the group's transform as well.
+  - An SVG with a `width` and `height` in pixels but no `viewBox` shows `0..width` by `0..height`, as SVG does, instead of being zoomed in to its curves (flipped when read with `flip_y: true`).
+  - An SVG with a `viewBox` but no `width` or `height` is drawn with none, so it fills the space it is shown in, as before, instead of being 1 pixel per unit.
+  - The view box fitted to a drawing without one is exact: it no longer cuts off the tips of arcs, like a rounded rectangle's corners.
+  - Flat content, like a single horizontal line, gets a view box 1 unit across, not `1.0e-9`.
+  - Line breaks and tabs in an attribute are written as `&#10;` and `&#9;`, so they read back the same.
+- Reading SVGs:
+  - Path data may have a comma between repeated sets of arguments, as SVG allows, e.g. `M0,0,10,10` or `L1 2,3 4`.
+  - A character reference to a character XML doesn't allow, like `&#0;`, is kept as written, so a drawing drawn again is still valid XML.
+- `Curves.Drawing.shapes/1` resets a shape's own move, scale and rotation even when they cancel out its groups', so a shape put back into a drawing isn't moved twice.
+- Solving a spline or polyline at a `u` up to `0.001` past `max_u` (a rounding error, like adding `0.1` thirty times) gives its end, instead of an out-of-bounds error. It already allowed the same below `0`.
+- Clear `ArgumentError`s, as for Bezier curves and polylines:
+  - every spline's `define_*` with a bad `:origin` (was a `MatchError`), or with points that aren't a list, like a single `{x, y}` (was a `Protocol.UndefinedError`);
+  - `Curves.max_u/1` with something that isn't a curve (was a `FunctionClauseError`);
+  - `Curves.Drawing.update_shapes/2` with a function that returns `:delete`.
 
 ## [1.0.0-rc.2] - 2026-10-11
 
