@@ -50,6 +50,7 @@ Coming from 0.2.x? The changes are listed under [1.0.0-rc.2](#1-0-0-rc-2-2026-10
 - Reading SVGs:
   - Path data may have a comma between repeated sets of arguments, as SVG allows, e.g. `M0,0,10,10` or `L1 2,3 4`.
   - A character reference to a character XML doesn't allow, like `&#0;`, is kept as written, so a drawing drawn again is still valid XML.
+  - A `<rect>` or `<ellipse>` with a negative, unreadable or `auto` `rx` or `ry` is read as browsers draw it: that radius is the same as the other one (SVG 2's `auto`), instead of the shape being skipped.
 - `Curves.Drawing.shapes/1` resets a shape's own move, scale and rotation even when they cancel out its groups', so a shape put back into a drawing isn't moved twice.
 - Solving a spline or polyline at a `u` up to `0.001` past `max_u` (a rounding error, like adding `0.1` thirty times) gives its end, instead of an out-of-bounds error. It already allowed the same below `0`.
 - Clear `ArgumentError`s, as for Bezier curves and polylines:

@@ -283,15 +283,48 @@ defmodule Curves.Svg.ImportTest do
     test "negative sizes are invalid; units other than px aren't supported" do
       drawing =
         read(
-          ~s|<circle r="-1"/><rect width="10%" height="5"/><rect width="5" height="5" rx="-1"/><line x2="3em"/>|
+          ~s|<circle r="-1"/><rect width="10%" height="5"/><rect width="5" height="5" rx="1em"/><line x2="3em"/>|
         )
 
       assert Enum.map(drawing.skipped, & &1.reason) == [
                {:invalid, "r can't be negative, got: -1.0"},
                {:unsupported_unit, "10%"},
-               {:invalid, "rx can't be negative, got: -1.0"},
+               {:unsupported_unit, "1em"},
                {:unsupported_unit, "3em"}
              ]
+    end
+
+    # As Firefox draws them: rx and ry are CSS properties in SVG 2, so a bad one is "auto".
+    test "a negative, unreadable or auto rx or ry is the same as the other one, as browsers draw it" do
+      starts =
+        for attrs <- [
+              ~s|rx="-5" ry="20"|,
+              ~s|rx="abc" ry="20"|,
+              ~s|rx="20" ry="auto"|,
+              ~s|rx="auto" ry="auto"|,
+              ~s|rx="-5" ry="-5"|
+            ] do
+          drawing = read(~s|<rect width="80" height="80" #{attrs}/>|)
+          assert drawing.skipped == []
+          Curves.solve!(only_curve(drawing), 0.0)
+        end
+
+      # Rounded by 20 three times, then square corners.
+      assert starts == [{20.0, 0.0}, {20.0, 0.0}, {20.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}]
+
+      for {attrs, r} <- [
+            {~s|rx="-5" ry="30"|, 30.0},
+            {~s|rx="abc" ry="30"|, 30.0},
+            {~s|rx="40" ry="auto"|, 40.0}
+          ] do
+        circle = only_curve(read(~s|<ellipse #{attrs}/>|))
+        assert_near(Curves.solve!(circle, 0.0), {r, 0.0})
+      end
+
+      for attrs <- [~s|rx="auto" ry="auto"|, ~s|rx="-5" ry="-5"|] do
+        assert [%{element: "ellipse", reason: :empty, kept: :no}] =
+                 read(~s|<ellipse #{attrs}/>|).skipped
+      end
     end
 
     test "bad path data keeps what came before, and is listed" do
