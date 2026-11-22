@@ -248,8 +248,10 @@ defmodule Curves.Svg.DrawingWriter do
   defp whole(n), do: whole(n, Float.round(n * 1.0))
 
   @spec whole(float(), float()) :: float()
-  defp whole(n, rounded) when abs(n - rounded) <= 1.0e-12 * max(1.0, abs(n)), do: rounded
-  defp whole(n, _rounded), do: n
+  # Not a guard: max/2 is only allowed in guards from OTP 26.
+  defp whole(n, rounded) do
+    if abs(n - rounded) <= 1.0e-12 * max(1.0, abs(n)), do: rounded, else: n
+  end
 
   # ` transform="..."`, or nothing for a transform that changes nothing.
   @spec optional_transform(Matrix.t()) :: String.t()
