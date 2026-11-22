@@ -4,8 +4,8 @@ defmodule Curves.MixProject do
   def project do
     [
       app: :curves,
-      version: "1.0.0",
-      elixir: "~> 1.17",
+      version: "1.1.0",
+      elixir: "~> 1.14",
       description: description(),
       elixirc_paths: elixirc_paths(Mix.env()),
       cli: cli(),

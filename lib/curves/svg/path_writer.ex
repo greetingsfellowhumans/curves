@@ -182,5 +182,5 @@ defmodule Curves.Svg.PathWriter do
   # The shortest text that reads back as exactly the same float.
   @doc false
   @spec number(number()) :: String.t()
-  def number(n), do: :erlang.float_to_binary(n * 1.0, [:short])
+  def number(n), do: Float.to_string(n * 1.0)
 end

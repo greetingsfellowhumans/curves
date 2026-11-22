@@ -7,14 +7,26 @@ on:
 jobs:
   test:
     name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
-    runs-on: ubuntu-latest
+    # ubuntu-latest (26.04) has no Erlang builds for OTP 24 or 25, so those jobs pin an older image.
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # The minimum version mix.exs supports (elixir: "~> 1.17").
+          # The minimum version mix.exs supports (elixir: "~> 1.14"), on its oldest OTP.
+          - elixir: "1.14"
+            otp: "24"
+            os: ubuntu-24.04
+          # OTP 26, and the type checker that crashed on the old max/2 guard.
+          - elixir: "1.15"
+            otp: "26"
+          # The oldest OTP that 1.17 supports.
           - elixir: "1.17"
-            otp: "27"
+            otp: "25"
+            os: ubuntu-24.04
+          # OTP 28's new regex engine, on an Elixir from before it.
+          - elixir: "1.18"
+            otp: "28"
           # The latest version; also runs the format and credo checks,
           # since the formatter's output can differ between Elixir versions.
           - elixir: "1.20"
@@ -42,3 +54,4 @@ jobs:
         if: ${{ matrix.lint }}
       - run: mix credo --strict
         if: ${{ matrix.lint }}
+

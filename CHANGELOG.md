@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-11-21
+
+## Changed
+
+Minimum elixir version is now 1.14. Before it was 1.17. So more users can enjoy `curves`.
+
 ## [1.0.0] - 2026-10-21
 
 The first stable release. From here on, breaking changes wait for 2.0. Since 1.0.0-rc.2 there are bug fixes and clearer docs, listed below, and no breaking changes.
