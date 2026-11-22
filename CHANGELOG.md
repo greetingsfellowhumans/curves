@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/2.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Runs on Elixir 1.14 and OTP 24 or later**, down from Elixir 1.17. This also fixes compiling on Elixir 1.17 with OTP 25, which `~> 1.17` allowed but which failed (a `max/2` in a guard needs OTP 26). CI now tests from Elixir 1.14 on OTP 24 up to the latest.
+
 ## [1.0.0] - 2026-10-21
 
 The first stable release. From here on, breaking changes wait for 2.0. Since 1.0.0-rc.2 there are bug fixes and clearer docs, listed below, and no breaking changes.

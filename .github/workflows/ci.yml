@@ -12,9 +12,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # The minimum version mix.exs supports (elixir: "~> 1.17").
+          # The minimum version mix.exs supports (elixir: "~> 1.14"), on its oldest OTP.
+          - elixir: "1.14"
+            otp: "24"
+          # OTP 26, and the type checker that crashed on the old max/2 guard.
+          - elixir: "1.15"
+            otp: "26"
+          # The oldest OTP that 1.17 supports.
           - elixir: "1.17"
-            otp: "27"
+            otp: "25"
+          # OTP 28's new regex engine, on an Elixir from before it.
+          - elixir: "1.18"
+            otp: "28"
           # The latest version; also runs the format and credo checks,
           # since the formatter's output can differ between Elixir versions.
           - elixir: "1.20"

@@ -179,8 +179,9 @@ defmodule Curves.Svg.PathWriter do
   @spec point(T.point_tuple()) :: String.t()
   defp point({x, y}), do: number(x) <> "," <> number(y)
 
-  # The shortest text that reads back as exactly the same float.
+  # The shortest text that reads back as exactly the same float. (Float.to_string/1 rather than
+  # :erlang.float_to_binary(n, [:short]), which needs OTP 25; both give the same text.)
   @doc false
   @spec number(number()) :: String.t()
-  def number(n), do: :erlang.float_to_binary(n * 1.0, [:short])
+  def number(n), do: Float.to_string(n * 1.0)
 end
